@@ -1,0 +1,12 @@
+{
+  "name": "mms3-adapter",
+  "version": "1.0.0",
+  "main": "app.js",
+  "repository": "https://gitlab.us.lmco.com/mbx/mbee/plugins/mms3-adapter.git",
+  "author": "Lockheed Martin",
+  "license": "LMPI",
+  "private": true,
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
