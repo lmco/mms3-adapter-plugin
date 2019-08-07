@@ -41,13 +41,6 @@ app.route('/mms/login/token/*')
 		return res.status(200).send({username: req.user.username});
 	}
 )
-.options(
-	(req, res, next) => {
-		console.log(`${req.method}: ${req.originalUrl}`);
-		addHeaders(req, res);
-		return res.sendStatus(200);
-	}
-);
 
 // This is the route for orgs
 // This is go and grab all of the org data
@@ -68,13 +61,6 @@ app.route('/orgs')
 		})
 	}
 )
-.options(
-	(req, res, next) => {
-		console.log(`${req.method}: ${req.originalUrl}`);
-		addHeaders(req, res);
-		return res.sendStatus(200);
-	}
-);
 
 // This is the route for projects in a specific org
 // This is go and grab all of the project data
@@ -95,13 +81,26 @@ app.route('/orgs/:orgid/projects')
 		})
 	}
 )
-.options(
+
+// This is the route for branches in a specific project
+// This is go and grab all of the branch data
+// From mcf and return that data to ve as refs
+app.route('/orgs/:orgid/projects/:projectid/refs')
+.get(
+	auth.authenticate,
 	(req, res, next) => {
 		console.log(`${req.method}: ${req.originalUrl}`);
-		addHeaders(req, res);
-		return res.sendStatus(200);
+		ReformatController.getBranches(req)
+		.then((branches) => {
+			addHeaders(req, res);
+			return res.status(200).send({refs: branches});
+		})
+		.catch((error) => {
+			addHeaders(req, res);
+			return res.status(Errors.getStatusCode(error)).send(error.message);
+		})
 	}
-);
+)
 
 // This is all the other routes that get hit
 // Throwing an error saying no
