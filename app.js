@@ -22,13 +22,13 @@ app.route('/login')
 	}
 );
 
-app.route('/mms/login/token')
+app.route('/mms/login/token/:token')
 .get(
 	auth.authenticate,
 	(req, res, next) => {
 		console.log(`${req.method}: ${req.originalUrl}`);
 		addHeaders(req, res);
-		return res.status(200).send({token: req.session.token});
+		return res.status(200).send({username: req.user.username});
 	}
 )
 .options(
