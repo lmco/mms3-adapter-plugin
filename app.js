@@ -76,6 +76,33 @@ app.route('/orgs')
 	}
 );
 
+// This is the route for projects in a specific org
+// This is go and grab all of the project data
+// From mcf and return that data to ve
+app.route('/orgs/:orgid/projects')
+.get(
+	auth.authenticate,
+	(req, res, next) => {
+		console.log(`${req.method}: ${req.originalUrl}`);
+		ReformatController.getProjects(req)
+		.then((projects) => {
+			addHeaders(req, res);
+			return res.status(200).send({projects: projects});
+		})
+		.catch((error) => {
+			addHeaders(req, res);
+			return res.status(Errors.getStatusCode(error)).send(error.message);
+		})
+	}
+)
+.options(
+	(req, res, next) => {
+		console.log(`${req.method}: ${req.originalUrl}`);
+		addHeaders(req, res);
+		return res.sendStatus(200);
+	}
+);
+
 // This is all the other routes that get hit
 // Throwing an error saying no
 app.use('*', (req, res, next) => {
