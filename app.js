@@ -22,6 +22,23 @@ app.route('/login')
 	}
 );
 
+app.route('/mms/login/token')
+.get(
+	auth.authenticate,
+	(req, res, next) => {
+		console.log(`${req.method}: ${req.originalUrl}`);
+		addHeaders(req, res);
+		return res.status(200).send({token: req.session.token});
+	}
+)
+.options(
+	(req, res, next) => {
+		console.log(`${req.method}: ${req.originalUrl}`);
+		addHeaders(req, res);
+		return res.sendStatus(200);
+	}
+);
+
 app.use('*', (req, res, next) => {
 	console.log(`${req.method}: ${req.originalUrl}`);
 	return res.status(501).send('Not Implemented');
