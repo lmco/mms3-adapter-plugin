@@ -57,7 +57,7 @@ app.route('/orgs')
 	auth.authenticate,
 	(req, res, next) => {
 		console.log(`${req.method}: ${req.originalUrl}`);
-		ReformatController.getOrgs()
+		ReformatController.getOrgs(req)
 		.then((orgs) => {
 			addHeaders(req, res);
 			return res.status(200).send({orgs: orgs});

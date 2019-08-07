@@ -5,8 +5,13 @@ module.exports = {
 	getOrgs
 };
 
-const OrgController = M.require('controllers.org-controller');
+const OrgController = M.require('controllers.organization-controller');
 
 async function getOrgs(req) {
-	return await OrgController.find(req.user);
+	try {
+		return await OrgController.find(req.user);
+	}
+	catch(error) {
+		throw error;
+	} 
 }
