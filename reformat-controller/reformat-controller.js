@@ -4,13 +4,15 @@
 const OrgController = M.require('controllers.organization-controller');
 const ProjectController = M.require('controllers.project-controller');
 const BranchController = M.require('controllers.branch-controller');
+const ElementModel = M.require('models.element');
 const GetPublicData = M.require('lib.get-public-data');
 
 // Export the module
 module.exports = {
 	getOrgs,
 	getProjects,
-	getBranches
+	getBranches,
+	getMounts
 };
 
 // This is the get orgs function
@@ -63,6 +65,22 @@ async function getBranches(req) {
 			// Return public data
 			return publicData;
 		});
+	}
+	catch(error) {
+		// Throw error
+		throw error;
+	} 
+}
+
+// This is the gets the mounts of a project
+async function getMounts(req) {
+    try {
+    	// TODO: Eventually add in the ability to look at the project
+    	// references that the elements reference that are not the current
+    	// project and push those projects to array for mounts
+    	// HOWTO: Any elements whos source or target does not start with org:project
+    	// 4 pieces: check soure field regex for 
+    	return [];
 	}
 	catch(error) {
 		// Throw error
