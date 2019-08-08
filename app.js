@@ -122,6 +122,26 @@ app.route('/orgs/:orgid/projects/:projectid/refs/:refid/mounts')
 	}
 )
 
+// This is the route for branches in a specific project
+// This is go and grab all of the branch data
+// From mcf and return that data to ve as refs
+app.route('/orgs/:orgid/projects/:projectid/refs/:refid/groups')
+.get(
+	auth.authenticate,
+	(req, res, next) => {
+		console.log(`${req.method}: ${req.originalUrl}`);
+		ReformatController.getGroups(req)
+		.then((groups) => {
+			addHeaders(req, res);
+			return res.status(200).send({groups: groups});
+		})
+		.catch((error) => {
+			addHeaders(req, res);
+			return res.status(Errors.getStatusCode(error)).send(error.message);
+		})
+	}
+)
+
 // This is all the other routes that get hit
 // Throwing an error saying no
 app.use('*', (req, res, next) => {

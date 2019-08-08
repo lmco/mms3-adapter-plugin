@@ -12,7 +12,8 @@ module.exports = {
 	getOrgs,
 	getProjects,
 	getBranches,
-	getMounts
+	getMounts,
+	getGroups
 };
 
 // This is the get orgs function
@@ -74,6 +75,22 @@ async function getBranches(req) {
 
 // This is the gets the mounts of a project
 async function getMounts(req) {
+    try {
+    	// TODO: Eventually add in the ability to look at the project
+    	// references that the elements reference that are not the current
+    	// project and push those projects to array for mounts
+    	// HOWTO: Any elements whos source or target does not start with org:project
+    	// 4 pieces: check soure field regex for 
+    	return [];
+	}
+	catch(error) {
+		// Throw error
+		throw error;
+	} 
+}
+
+// This is the gets the groups of a ref
+async function getGroups(req) {
     try {
     	// TODO: Eventually add in the ability to look at the project
     	// references that the elements reference that are not the current
