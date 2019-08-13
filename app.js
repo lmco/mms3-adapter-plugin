@@ -6,7 +6,8 @@ const APIController = M.require('controllers.api-controller');
 const AdaptorSessionModel = require('./adaptor-session-model');
 const ReformatController = require('./reformat-controller/reformat-controller');
 const Errors = M.require('lib.errors');
-const db = M.require('lib.db');
+
+
 
 
 // This is the route for login from ve
@@ -18,18 +19,8 @@ app.route('/login')
 	auth.doLogin,
 	(req, res, next) => {
 		console.log(`${req.method}: ${req.originalUrl}`);
-		db.connect()
-		.then(() => {
-			const session = new AdaptorSessionModel({ name: 'leah' });
-			return session.save();
-		})
-		.then(() => {
-			addHeaders(req, res);
-			return res.status(200).send({token: req.session.token});
-		})
-		.catch((error) => {
-			return res.status(500).send('Session failed to create.');
-		})
+		addHeaders(req, res);
+		return res.status(200).send({token: req.session.token});
 	}
 )
 .options(
@@ -82,7 +73,13 @@ app.route('/orgs/:orgid/projects')
 	auth.authenticate,
 	(req, res, next) => {
 		console.log(`${req.method}: ${req.originalUrl}`);
-		ReformatController.getProjects(req)
+		const session = {
+			user: req.user.username,
+			org: req.params.orgid,
+			project: null
+		};
+		AdaptorSessionModel.replaceOne({ user: req.user.username }, session, { upsert: true })
+		.then(() => ReformatController.getProjects(req))
 		.then((projects) => {
 			addHeaders(req, res);
 			return res.status(200).send({projects: projects});

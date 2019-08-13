@@ -1,9 +1,13 @@
 // Import all the needed things
 const mongoose = require('mongoose');
-mongoose.set('debug', true);
 
 const AdaptorSessionSchema = new mongoose.Schema({
-	name: String
+	user: {
+		type: String,
+		index: true
+	},
+	org: String,
+	project: String
 });
 
 module.exports = mongoose.model('AdaptorSession', AdaptorSessionSchema); 
