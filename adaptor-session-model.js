@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const AdaptorSessionSchema = new mongoose.Schema({
 	user: {
 		type: String,
-		index: true
+		unique: true
 	},
 	org: String,
 	project: String

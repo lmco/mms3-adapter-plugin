@@ -94,12 +94,27 @@ app.route('/orgs/:orgid/projects')
 // This is the route for branches in a specific project
 // This is go and grab all of the branch data
 // From mcf and return that data to ve as refs
-app.route('/orgs/:orgid/projects/:projectid/refs')
+app.route('/projects/:projectid/refs')
 .get(
 	auth.authenticate,
 	(req, res, next) => {
 		console.log(`${req.method}: ${req.originalUrl}`);
-		ReformatController.getBranches(req)
+		AdaptorSessionModel.findOne({ user: req.user.username })
+		.then((session) => {
+			if (!session) {
+				return res.status(401).send('Session does not exist for user.');
+			}
+
+			req.params.orgid = session.org;
+			if (session.project !== req.params.projectid) {
+				session.project = req.params.projectid;
+				return session.save();
+			}
+			else {
+				return session;
+			}
+		})
+		.then(() => ReformatController.getBranches(req))
 		.then((branches) => {
 			addHeaders(req, res);
 			return res.status(200).send({refs: branches});
