@@ -75,8 +75,7 @@ app.route('/orgs/:orgid/projects')
 		console.log(`${req.method}: ${req.originalUrl}`);
 		const session = {
 			user: req.user.username,
-			org: req.params.orgid,
-			project: null
+			org: req.params.orgid
 		};
 		AdaptorSessionModel.replaceOne({ user: req.user.username }, session, { upsert: true })
 		.then(() => ReformatController.getProjects(req))
@@ -106,15 +105,8 @@ app.route('/projects/:projectid/refs')
 			}
 
 			req.params.orgid = session.org;
-			if (session.project !== req.params.projectid) {
-				session.project = req.params.projectid;
-				return session.save();
-			}
-			else {
-				return session;
-			}
+			return ReformatController.getBranches(req);
 		})
-		.then(() => ReformatController.getBranches(req))
 		.then((branches) => {
 			addHeaders(req, res);
 			return res.status(200).send({refs: branches});
@@ -129,12 +121,20 @@ app.route('/projects/:projectid/refs')
 // This is the route for branches in a specific project
 // This is go and grab all of the branch data
 // From mcf and return that data to ve as refs
-app.route('/orgs/:orgid/projects/:projectid/refs/:refid/mounts')
+app.route('/projects/:projectid/refs/:refid/mounts')
 .get(
 	auth.authenticate,
 	(req, res, next) => {
 		console.log(`${req.method}: ${req.originalUrl}`);
-		ReformatController.getMounts(req)
+		AdaptorSessionModel.findOne({ user: req.user.username })
+		.then((session) => {
+			if (!session) {
+				return res.status(401).send('Session does not exist for user.');
+			}
+
+			req.params.orgid = session.org;
+			return ReformatController.getMounts(req)
+		})
 		.then((projects) => {
 			addHeaders(req, res);
 			return res.status(200).send({projects: projects});
@@ -149,12 +149,20 @@ app.route('/orgs/:orgid/projects/:projectid/refs/:refid/mounts')
 // This is the route for branches in a specific project
 // This is go and grab all of the branch data
 // From mcf and return that data to ve as refs
-app.route('/orgs/:orgid/projects/:projectid/refs/:refid/groups')
+app.route('/projects/:projectid/refs/:refid/groups')
 .get(
 	auth.authenticate,
 	(req, res, next) => {
 		console.log(`${req.method}: ${req.originalUrl}`);
-		ReformatController.getGroups(req)
+		AdaptorSessionModel.findOne({ user: req.user.username })
+		.then((session) => {
+			if (!session) {
+				return res.status(401).send('Session does not exist for user.');
+			}
+
+			req.params.orgid = session.org;
+			return ReformatController.getGroups(req)
+		})
 		.then((groups) => {
 			addHeaders(req, res);
 			return res.status(200).send({groups: groups});

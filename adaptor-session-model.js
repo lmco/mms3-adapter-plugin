@@ -6,8 +6,7 @@ const AdaptorSessionSchema = new mongoose.Schema({
 		type: String,
 		unique: true
 	},
-	org: String,
-	project: String
+	org: String
 });
 
 module.exports = mongoose.model('AdaptorSession', AdaptorSessionSchema); 
