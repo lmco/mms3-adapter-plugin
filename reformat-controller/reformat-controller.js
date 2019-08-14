@@ -80,8 +80,10 @@ async function getMounts(req) {
     	// references that the elements reference that are not the current
     	// project and push those projects to array for mounts
     	// HOWTO: Any elements whos source or target does not start with org:project
-    	// 4 pieces: check soure field regex for 
-    	return [];
+    	// 4 pieces: check soure field regex for
+    	const projects = await ProjectController.find(req.user, req.params.orgid, req.params.projectid);
+    	projects[0]._mounts = [];
+    	return projects;
 	}
 	catch(error) {
 		// Throw error

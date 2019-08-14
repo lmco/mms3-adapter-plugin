@@ -135,7 +135,7 @@ app.route('/projects/:projectid/refs/:refid/mounts')
 		.then(() => ReformatController.getMounts(req))
 		.then((projects) => {
 			addHeaders(req, res);
-			return res.status(200).send({projects: projects});
+			return res.status(200).send({ projects: projects });
 		})
 		.catch((error) => {
 			addHeaders(req, res);
