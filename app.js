@@ -167,6 +167,28 @@ app.route('/projects/:projectid/refs/:refid/groups')
 	}
 )
 
+// This is the route for elements specifically one
+app.route('/projects/:projectid/refs/:refid/elements/:elementid')
+.get(
+	auth.authenticate,
+	(req, res, next) => {
+		console.log(`${req.method}: ${req.originalUrl}`);
+
+		// Grabs the org id from the session user
+		utils.getOrgId(req)
+		// Grabs the mounts information
+		.then(() => ReformatController.getElement(req))
+		.then((projects) => {
+			addHeaders(req, res);
+			return res.status(200).send({ projects: projects });
+		})
+		.catch((error) => {
+			addHeaders(req, res);
+			return res.status(Errors.getStatusCode(error)).send(error.message);
+		})
+	}
+)
+
 // This is all the other routes that get hit
 // Throwing an error saying no
 app.use('*', (req, res, next) => {

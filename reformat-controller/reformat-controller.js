@@ -4,6 +4,7 @@
 const OrgController = M.require('controllers.organization-controller');
 const ProjectController = M.require('controllers.project-controller');
 const BranchController = M.require('controllers.branch-controller');
+const ElementController = M.require('controllers.element-controller');
 const ElementModel = M.require('models.element');
 const GetPublicData = M.require('lib.get-public-data');
 
@@ -13,7 +14,8 @@ module.exports = {
 	getProjects,
 	getBranches,
 	getMounts,
-	getGroups
+	getGroups,
+	getElement
 };
 
 // This is the get orgs function
@@ -100,6 +102,31 @@ async function getGroups(req) {
     	// HOWTO: Any elements whos source or target does not start with org:project
     	// 4 pieces: check soure field regex for 
     	return [];
+	}
+	catch(error) {
+		// Throw error
+		throw error;
+	} 
+}
+
+// This is the gets the element
+async function getElement(req) {
+    try {
+		// Grabs an element from controller
+		const element = await ElementController.find(req.user, req.params.orgid, req.params.projectid, req.params.refid, req.params.elementid);
+		
+		// Verify the extended parameter is provided
+		// TODO use the function that checks for circular references to grab all of the parent ids
+		if (req.query.extended) {
+			// Add the qualified name to the element
+			// TODO: Put the actual qualified name in the qualified name section
+			// The qualified name is where the element lies in the tree
+			element._qualifiedName = `/${req.params.projectid}/Model/`;
+			element._qualifiedId = '/Stuff/For/Qualified/ID';
+		}
+
+		// Return the public data of an element
+		return ;
 	}
 	catch(error) {
 		// Throw error
