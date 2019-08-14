@@ -6,6 +6,7 @@ const APIController = M.require('controllers.api-controller');
 const AdaptorSessionModel = require('./adaptor-session-model');
 const ReformatController = require('./reformat-controller/reformat-controller');
 const Errors = M.require('lib.errors');
+const utils = require('./utils.js');
 
 
 
@@ -25,6 +26,7 @@ app.route('/login')
 )
 .options(
 	(req, res, next) => {
+		console.log('hello');
 		console.log(`${req.method}: ${req.originalUrl}`);
 		addHeaders(req, res);
 		return res.sendStatus(200);
@@ -77,7 +79,11 @@ app.route('/orgs/:orgid/projects')
 			user: req.user.username,
 			org: req.params.orgid
 		};
+
+		// Find or replace the session for user trying to use ve
+		// This will either create a new mongo document with orgid in db
 		AdaptorSessionModel.replaceOne({ user: req.user.username }, session, { upsert: true })
+		// Grab the project information
 		.then(() => ReformatController.getProjects(req))
 		.then((projects) => {
 			addHeaders(req, res);
@@ -98,15 +104,11 @@ app.route('/projects/:projectid/refs')
 	auth.authenticate,
 	(req, res, next) => {
 		console.log(`${req.method}: ${req.originalUrl}`);
-		AdaptorSessionModel.findOne({ user: req.user.username })
-		.then((session) => {
-			if (!session) {
-				return res.status(401).send('Session does not exist for user.');
-			}
 
-			req.params.orgid = session.org;
-			return ReformatController.getBranches(req);
-		})
+		// Grabs the org id from the session user
+		utils.getOrgId(req)
+		// Grabs the branches information
+		.then(() => ReformatController.getBranches(req))
 		.then((branches) => {
 			addHeaders(req, res);
 			return res.status(200).send({refs: branches});
@@ -126,15 +128,11 @@ app.route('/projects/:projectid/refs/:refid/mounts')
 	auth.authenticate,
 	(req, res, next) => {
 		console.log(`${req.method}: ${req.originalUrl}`);
-		AdaptorSessionModel.findOne({ user: req.user.username })
-		.then((session) => {
-			if (!session) {
-				return res.status(401).send('Session does not exist for user.');
-			}
 
-			req.params.orgid = session.org;
-			return ReformatController.getMounts(req)
-		})
+		// Grabs the org id from the session user
+		utils.getOrgId(req)
+		// Grabs the mounts information
+		.then(() => ReformatController.getMounts(req))
 		.then((projects) => {
 			addHeaders(req, res);
 			return res.status(200).send({projects: projects});
@@ -154,15 +152,10 @@ app.route('/projects/:projectid/refs/:refid/groups')
 	auth.authenticate,
 	(req, res, next) => {
 		console.log(`${req.method}: ${req.originalUrl}`);
-		AdaptorSessionModel.findOne({ user: req.user.username })
-		.then((session) => {
-			if (!session) {
-				return res.status(401).send('Session does not exist for user.');
-			}
-
-			req.params.orgid = session.org;
-			return ReformatController.getGroups(req)
-		})
+		// Grabs the org id from the session user
+		utils.getOrgId(req)
+		// Grab the group information
+		.then(() => ReformatController.getGroups(req))
 		.then((groups) => {
 			addHeaders(req, res);
 			return res.status(200).send({groups: groups});
