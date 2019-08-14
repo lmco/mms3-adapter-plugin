@@ -115,6 +115,17 @@ async function getElement(req) {
 		// Grabs an element from controller
 		const element = await ElementController.find(req.user, req.params.orgid, req.params.projectid, req.params.refid, req.params.elementid);
 		
+		// Things to swap over:
+		// _creator field : createdBy
+		// _created : creadtedOn
+		// _modifier : lastModifiedBy
+	    // _modified : updatedOn
+	    // ownerId : parent
+	    // _refId: branch id
+	    // _projectId: project id
+	    // 
+
+
 		// Verify the extended parameter is provided
 		// TODO use the function that checks for circular references to grab all of the parent ids
 		if (req.query.extended) {
