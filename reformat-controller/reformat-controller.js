@@ -7,6 +7,7 @@ const BranchController = M.require('controllers.branch-controller');
 const ElementController = M.require('controllers.element-controller');
 const ElementModel = M.require('models.element');
 const GetPublicData = M.require('lib.get-public-data');
+const fomatElement = require('./format-element.js');
 
 // Export the module
 module.exports = {
@@ -123,7 +124,8 @@ async function getElement(req) {
 	    // ownerId : parent
 	    // _refId: branch id
 	    // _projectId: project id
-	    // 
+
+	    const newElemObj = formatElement(element);
 
 
 		// Verify the extended parameter is provided
@@ -132,12 +134,12 @@ async function getElement(req) {
 			// Add the qualified name to the element
 			// TODO: Put the actual qualified name in the qualified name section
 			// The qualified name is where the element lies in the tree
-			element._qualifiedName = `/${req.params.projectid}/Model/`;
-			element._qualifiedId = '/Stuff/For/Qualified/ID';
+			newElemObj._qualifiedName = `/${req.params.projectid}/Model/`;
+			newElemObj._qualifiedId = '/Stuff/For/Qualified/ID';
 		}
 
 		// Return the public data of an element
-		return ;
+		return newElemObj;
 	}
 	catch(error) {
 		// Throw error
