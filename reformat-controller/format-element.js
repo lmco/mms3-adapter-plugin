@@ -2,7 +2,6 @@ const utils = M.require('lib.utils');
 
 // Export the module
 module.exports = function formatElement(elemObj) {
-	console.log(elemObj);
 	return {
 		id: utils.parseID(elemObj._id).pop(),
 		documentation: elemObj.documentation,

@@ -82,11 +82,16 @@ async function getMounts(req) {
     	// TODO: Eventually add in the ability to look at the project
     	// references that the elements reference that are not the current
     	// project and push those projects to array for mounts
-    	// HOWTO: Any elements whos source or target does not start with org:project
-    	// 4 pieces: check soure field regex for
+    	// HOWTO: Any elements whose source or target does not start with org:project
+    	// 4 pieces: check source field regex for
     	const projects = await ProjectController.find(req.user, req.params.orgid, req.params.projectid);
-    	projects[0]._mounts = [];
-    	return projects;
+  		const pubProjects = projects.map((p) => {
+  			let retObj = GetPublicData.getPublicData(p, 'project');
+  			retObj._mounts = [];
+  			return retObj;
+  		});
+
+    	return pubProjects;
 	}
 	catch(error) {
 		// Throw error
@@ -100,8 +105,8 @@ async function getGroups(req) {
     	// TODO: Eventually add in the ability to look at the project
     	// references that the elements reference that are not the current
     	// project and push those projects to array for mounts
-    	// HOWTO: Any elements whos source or target does not start with org:project
-    	// 4 pieces: check soure field regex for 
+    	// HOWTO: Any elements whose source or target does not start with org:project
+    	// 4 pieces: check source field regex for 
     	return [];
 	}
 	catch(error) {

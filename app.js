@@ -178,9 +178,9 @@ app.route('/projects/:projectid/refs/:refid/elements/:elementid')
 		utils.getOrgId(req)
 		// Grabs the mounts information
 		.then(() => ReformatController.getElement(req))
-		.then((projects) => {
+		.then((elements) => {
 			addHeaders(req, res);
-			return res.status(200).send({ projects: projects });
+			return res.status(200).send({ elements: elements });
 		})
 		.catch((error) => {
 			addHeaders(req, res);
