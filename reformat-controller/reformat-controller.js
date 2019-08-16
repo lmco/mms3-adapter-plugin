@@ -7,7 +7,7 @@ const BranchController = M.require('controllers.branch-controller');
 const ElementController = M.require('controllers.element-controller');
 const ElementModel = M.require('models.element');
 const GetPublicData = M.require('lib.get-public-data');
-const fomatElement = require('./format-element.js');
+const formatElement = require('./format-element.js');
 
 // Export the module
 module.exports = {
@@ -114,7 +114,12 @@ async function getGroups(req) {
 async function getElement(req) {
     try {
 		// Grabs an element from controller
-		const element = await ElementController.find(req.user, req.params.orgid, req.params.projectid, req.params.refid, req.params.elementid);
+		const elements = await ElementController.find(req.user, req.params.orgid, req.params.projectid, req.params.refid, req.params.elementid);
+
+		// If no elements are found, throw an error
+		if (elements.length === 0)  {
+			throw new M.NotFoundError(`Element ${req.params.elementid} not found.`, 'warn');
+		}
 		
 		// Things to swap over:
 		// _creator field : createdBy
@@ -125,7 +130,8 @@ async function getElement(req) {
 	    // _refId: branch id
 	    // _projectId: project id
 
-	    const newElemObj = formatElement(element);
+	    // Format the element object
+	    const newElemObj = formatElement(elements[0]);
 
 
 		// Verify the extended parameter is provided
