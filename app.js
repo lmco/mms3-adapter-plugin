@@ -8,9 +8,6 @@ const ReformatController = require('./reformat-controller/reformat-controller');
 const Errors = M.require('lib.errors');
 const utils = require('./utils.js');
 
-
-
-
 // This is the route for login from ve
 // Re directs to the authentication modules
 // Authenticates the user and passes it back to ve
@@ -26,7 +23,6 @@ app.route('/login')
 )
 .options(
 	(req, res, next) => {
-		console.log('hello');
 		console.log(`${req.method}: ${req.originalUrl}`);
 		addHeaders(req, res);
 		return res.sendStatus(200);
@@ -181,6 +177,29 @@ app.route('/projects/:projectid/refs/:refid/elements/:elementid')
 		.then((elements) => {
 			addHeaders(req, res);
 			return res.status(200).send({ elements: elements });
+		})
+		.catch((error) => {
+			addHeaders(req, res);
+			return res.status(Errors.getStatusCode(error)).send(error.message);
+		})
+	}
+)
+
+
+// This is the route for elements specifically one
+app.route('/projects/:projectid/refs/:refid/documents')
+.get(
+	auth.authenticate,
+	(req, res, next) => {
+		console.log(`${req.method}: ${req.originalUrl}`);
+
+		// Grabs the org id from the session user
+		utils.getOrgId(req)
+		// Grabs the mounts information
+		.then(() => ReformatController.getDocuments(req))
+		.then((documents) => {
+			addHeaders(req, res);
+			return res.status(200).send({ documents: documents });
 		})
 		.catch((error) => {
 			addHeaders(req, res);

@@ -16,7 +16,8 @@ module.exports = {
 	getBranches,
 	getMounts,
 	getGroups,
-	getElement
+	getElement,
+	getDocuments
 };
 
 // This is the get orgs function
@@ -151,6 +152,136 @@ async function getElement(req) {
 
 		// Return the public data of an element
 		return newElemObj;
+	}
+	catch(error) {
+		// Throw error
+		throw error;
+	} 
+}
+
+// This is the gets the element
+async function getDocuments(req) {
+    try {
+		// Grabs an element from controller
+		const documents = [
+	        {
+	            "_appliedStereotypeIds": [
+	                "_17_0_2_3_87b0275_1371477871400_792964_43374"
+	            ],
+	            "appliedStereotypeInstanceId": "MMS_1558638679755_df47fccf-ee76-453e-bfee-5a50132eac0c_asi",
+	            "classifierBehaviorId": null,
+	            "clientDependencyIds": [],
+	            "collaborationUseIds": [],
+	            "documentation": "",
+	            "elementImportIds": [],
+	            "generalizationIds": [],
+	            "interfaceRealizationIds": [],
+	            "isAbstract": false,
+	            "isActive": false,
+	            "isFinalSpecialization": false,
+	            "isLeaf": false,
+	            "mdExtensionsIds": [],
+	            "name": "TestDoc-001",
+	            "nameExpression": null,
+	            "ownedAttributeIds": [],
+	            "ownedOperationIds": [],
+	            "ownerId": "holding_bin_PROJECT-d37a8ce7-fdac-4893-822d-8f7975190012",
+	            "packageImportIds": [],
+	            "powertypeExtentIds": [],
+	            "redefinedClassifierIds": [],
+	            "representationId": null,
+	            "substitutionIds": [],
+	            "supplierDependencyIds": [],
+	            "syncElementId": null,
+	            "templateBindingIds": [],
+	            "templateParameterId": null,
+	            "type": "Class",
+	            "useCaseIds": [],
+	            "visibility": "public",
+	            "id": "MMS_1558638679755_df47fccf-ee76-453e-bfee-5a50132eac0c",
+	            "_allowedElements": [],
+	            "_displayedElementIds": [
+	                "MMS_1558638679755_df47fccf-ee76-453e-bfee-5a50132eac0c"
+	            ],
+	            "_contents": {
+	                "appliedStereotypeInstanceId": null,
+	                "clientDependencyIds": [],
+	                "documentation": "",
+	                "mdExtensionsIds": [],
+	                "name": "",
+	                "nameExpression": null,
+	                "supplierDependencyIds": [],
+	                "syncElementId": null,
+	                "templateParameterId": null,
+	                "typeId": null,
+	                "visibility": "public",
+	                "_appliedStereotypeIds": [],
+	                "operand": [
+	                    {
+	                        "appliedStereotypeInstanceId": null,
+	                        "clientDependencyIds": [],
+	                        "documentation": "",
+	                        "mdExtensionsIds": [],
+	                        "name": "",
+	                        "nameExpression": null,
+	                        "supplierDependencyIds": [],
+	                        "syncElementId": null,
+	                        "templateParameterId": null,
+	                        "typeId": null,
+	                        "visibility": "public",
+	                        "_appliedStereotypeIds": [],
+	                        "type": "InstanceValue",
+	                        "instanceId": "_hidden_MMS_1558638679755_9a668b4f-917b-465d-a2f0-229e98e9d464_pei"
+	                    }
+	                ],
+	                "type": "Expression",
+	                "id": "MMS_1558638679755_df47fccf-ee76-453e-bfee-5a50132eac0c_vc_expression",
+	                "ownerId": "MMS_1558638679755_df47fccf-ee76-453e-bfee-5a50132eac0c_vc"
+	            },
+	            "_projectId": `${req.params.projectid}`,
+	            "_refId": `${req.params.refid}`,
+	            "_inRefIds": [
+	                "master"
+	            ],
+	            "_creator": "e302143",
+	            "_created": "2019-05-23T19:09:49.034+0000",
+	            "_elasticId": "628c040f-271f-44f4-9ef1-edaabe11b696",
+	            "_commitId": "6fcbd411-9ea6-469a-98ac-dd4eb91c7131",
+	            "_modifier": "e302143",
+	            "_modified": "2019-05-23T19:09:49.034+0000",
+	            "_childViews": [],
+	            "_editable": true
+	        }
+	    ];
+
+		// If no documents are found, throw an error
+		if (documents.length === 0)  {
+			throw new M.NotFoundError(`Documents not found.`, 'warn');
+		}
+		
+		// Things to swap over:
+		// (compared to normal elements)
+		// _allowedElements: []
+		// _childViews: []
+		// _content: {<containing an element information>}
+		// _displayedElementsIds: [<element id>]
+
+	    // TODO: Format the document object from the elements
+	    // const newDocumentObj = formatElement(0]);
+
+
+		// Verify the extended parameter is provided
+		// TODO use the function that checks for circular references to grab all of the parent ids
+		if (req.query.extended) {
+			// Add the qualified name to the element
+			// TODO: Put the actual qualified name in the qualified name section
+			// The qualified name is where the element lies in the tree
+			newElemObj._qualifiedName = `/${req.params.projectid}/Model/`;
+			newElemObj._qualifiedId = '/Stuff/For/Qualified/ID';
+		}
+
+		// Return the public data of the documents
+		return documents;
 	}
 	catch(error) {
 		// Throw error
