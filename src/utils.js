@@ -7,10 +7,10 @@
  *
  * @license LMPI - Lockheed Martin Proprietary Information
  *
- * @owner Austin Bieber <austin.j.bieber@lmco.com>
+ * @owner Austin Bieber
  *
- * @author Leah De Laurell <leah.p.delaurell@lmco.com>
- * @author Austin Bieber <austin.j.bieber@lmco.com>
+ * @author Leah De Laurell
+ * @author Austin Bieber
  *
  * @description Defines and exports utility functions used throughout the
  * plugin.

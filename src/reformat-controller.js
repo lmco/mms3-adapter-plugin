@@ -7,10 +7,10 @@
  *
  * @license LMPI - Lockheed Martin Proprietary Information
  *
- * @owner Austin Bieber <austin.j.bieber@lmco.com>
+ * @owner Austin Bieber
  *
- * @author Leah De Laurell <leah.p.delaurell@lmco.com>
- * @author Austin Bieber <austin.j.bieber@lmco.com>
+ * @author Leah De Laurell
+ * @author Austin Bieber
  *
  * @description The controller which contains the main middleware logic for
  * converting MMS3 formatted data to MCF format, calling MCF controller
@@ -42,6 +42,7 @@ module.exports = {
 /**
  * @description Gets all organizations a requesting user has access to. Returns
  * an array of organizations, properly formatted for the MMS3 API.
+ * @async
  *
  * @param {object} req - The request object.
  * @param {object} req.user - The requesting user object. This object is used to
@@ -61,6 +62,7 @@ async function getOrgs(req) {
 /**
  * @description Gets all projects on a specific org which a requesting user has
  * access to. Returns an array of projects, properly formatted for the MMS3 API.
+ * @async
  *
  * @param {object} req - The request object.
  * @param {object} req.user - The requesting user object. This object is used to
@@ -82,6 +84,7 @@ async function getProjects(req) {
  * @description Gets all branches on a specific project which a requesting user
  * has access to. Returns an array of branches, properly formatted for the MMS3
  * API.
+ * @async
  *
  * @param {object} req - The request object.
  * @param {object} req.user - The requesting user object. This object is used to
@@ -120,6 +123,7 @@ async function getBranches(req) {
  * @description Gets all mounts (referenced projects) and returns the requested
  * project, containing an array of the mounts (referenced projects). Returns
  * the project formatted properly for the MMS3 API.
+ * @async
  *
  * @param {object} req - The request object.
  * @param {object} req.user - The requesting user object. This object is used to
@@ -151,6 +155,7 @@ async function getMounts(req) {
  * @description Returns a refs (branches) groups. At this point in time we still
  * do not know the purpose of groups. For this reason, an empty array is all
  * that is being returned for now.
+ * @async
  *
  * @param {object} req - The request object.
  *
@@ -165,6 +170,7 @@ async function getGroups(req) {
 /**
  * @description Gets a single element by ID and returns it, properly formatted
  * for the MMS3 API.
+ * @async
  *
  * @param {object} req - The request object.
  * @param {object} req.user - The requesting user object. This object is used to
@@ -198,6 +204,7 @@ async function getElement(req) {
 /**
  * @description Returns all documents on a specified branch. This function still
  * needs to be implemented.
+ * @async
  *
  * @param {object} req - The request object.
  *

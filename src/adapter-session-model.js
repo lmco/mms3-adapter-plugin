@@ -7,10 +7,10 @@
  *
  * @license LMPI - Lockheed Martin Proprietary Information
  *
- * @owner Austin Bieber <austin.j.bieber@lmco.com>
+ * @owner Austin Bieber
  *
- * @author Leah De Laurell <leah.p.delaurell@lmco.com>
- * @author Austin Bieber <austin.j.bieber@lmco.com>
+ * @author Leah De Laurell
+ * @author Austin Bieber
  *
  * @description Defines the Adapter Session Model. Used to store the ID of the
  * org a user's current session is on. Helps to resolve issue of MMS3 endpoints
