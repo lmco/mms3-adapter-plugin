@@ -16,17 +16,17 @@
  * initialization and all routing.
  */
 
-// Import all the needed things
+// NPM modules
 const express = require('express');
 const app = express();
 
 // MBEE modules
-const auth = M.require('lib.auth');
-const errors = M.require('lib.errors');
+const { authenticate, doLogin } = M.require('lib.auth');
+const { getStatusCode } = M.require('lib.errors');
 const { logRoute } = M.require('lib.middleware');
 
 // Adapter modules
-const AdaptorSessionModel = require('./src/adapter-session-model');
+const AdapterSession = require('./src/adapter-session-model');
 const ReformatController = require('./src/reformat-controller');
 const utils = require('./src/utils.js');
 
@@ -58,9 +58,9 @@ const utils = require('./src/utils.js');
  */
 app.route('/login')
 .post(
-	auth.authenticate,
+	authenticate,
 	logRoute,
-	auth.doLogin,
+	doLogin,
 	utils.addHeaders,
 	(req, res, next) => {
 		return res.status(200).send({ token: req.session.token });
@@ -95,7 +95,7 @@ app.route('/login')
  */
 app.route('/mms/login/token/*')
 .get(
-	auth.authenticate,
+	authenticate,
 	logRoute,
 	utils.addHeaders,
 	(req, res, next) => {
@@ -128,16 +128,16 @@ app.route('/mms/login/token/*')
  */
 app.route('/orgs')
 .get(
-	auth.authenticate,
+	authenticate,
 	logRoute,
 	utils.addHeaders,
 	(req, res, next) => {
 		ReformatController.getOrgs(req)
 		.then((orgs) => {
-			return res.status(200).send({orgs: orgs});
+			return res.status(200).send({ orgs: orgs });
 		})
 		.catch((error) => {
-			return res.status(errors.getStatusCode(error)).send(error.message);
+			return res.status(getStatusCode(error)).send(error.message);
 		})
 	}
 );
@@ -176,10 +176,11 @@ app.route('/orgs')
  */
 app.route('/orgs/:orgid/projects')
 .get(
-	auth.authenticate,
+	authenticate,
 	logRoute,
 	utils.addHeaders,
 	(req, res, next) => {
+
 		const session = {
 			user: req.user._id,
 			org: req.params.orgid
@@ -187,14 +188,21 @@ app.route('/orgs/:orgid/projects')
 
 		// Find or replace the session for user trying to use ve
 		// This will either create a new mongo document with orgid in db
-		AdaptorSessionModel.replaceOne({ user: req.user._id }, session, { upsert: true })
+		const bulkWriteObj = {
+			replaceOne: {
+				filter: { user: req.user._id },
+				replacement: session,
+				upsert: true
+			}
+		};
+		AdapterSession.bulkWrite([bulkWriteObj])
 		// Grab the project information
 		.then(() => ReformatController.getProjects(req))
 		.then((projects) => {
 			return res.status(200).send({projects: projects});
 		})
 		.catch((error) => {
-			return res.status(errors.getStatusCode(error)).send(error.message);
+			return res.status(getStatusCode(error)).send(error.message);
 		})
 	}
 );
@@ -232,7 +240,7 @@ app.route('/orgs/:orgid/projects')
  */
 app.route('/projects/:projectid/refs')
 .get(
-	auth.authenticate,
+	authenticate,
 	logRoute,
 	utils.addHeaders,
 	(req, res, next) => {
@@ -244,7 +252,7 @@ app.route('/projects/:projectid/refs')
 			return res.status(200).send({refs: branches});
 		})
 		.catch((error) => {
-			return res.status(errors.getStatusCode(error)).send(error.message);
+			return res.status(getStatusCode(error)).send(error.message);
 		})
 	}
 );
@@ -252,7 +260,7 @@ app.route('/projects/:projectid/refs')
 // TODO: Document this route
 app.route('/projects/:projectid/refs/:refid/mounts')
 .get(
-	auth.authenticate,
+	authenticate,
 	logRoute,
 	utils.addHeaders,
 	(req, res, next) => {
@@ -264,7 +272,7 @@ app.route('/projects/:projectid/refs/:refid/mounts')
 			return res.status(200).send({ projects: projects });
 		})
 		.catch((error) => {
-			return res.status(errors.getStatusCode(error)).send(error.message);
+			return res.status(getStatusCode(error)).send(error.message);
 		})
 	}
 );
@@ -272,7 +280,7 @@ app.route('/projects/:projectid/refs/:refid/mounts')
 // TODO: Document this route
 app.route('/projects/:projectid/refs/:refid/groups')
 .get(
-	auth.authenticate,
+	authenticate,
 	logRoute,
 	utils.addHeaders,
 	(req, res, next) => {
@@ -284,7 +292,7 @@ app.route('/projects/:projectid/refs/:refid/groups')
 			return res.status(200).send({groups: groups});
 		})
 		.catch((error) => {
-			return res.status(errors.getStatusCode(error)).send(error.message);
+			return res.status(getStatusCode(error)).send(error.message);
 		})
 	}
 );
@@ -334,7 +342,7 @@ app.route('/projects/:projectid/refs/:refid/groups')
  */
 app.route('/projects/:projectid/refs/:refid/elements/:elementid')
 .get(
-	auth.authenticate,
+	authenticate,
 	logRoute,
 	utils.addHeaders,
 	(req, res, next) => {
@@ -346,7 +354,7 @@ app.route('/projects/:projectid/refs/:refid/elements/:elementid')
 			return res.status(200).send({ elements: elements });
 		})
 		.catch((error) => {
-			return res.status(errors.getStatusCode(error)).send(error.message);
+			return res.status(getStatusCode(error)).send(error.message);
 		})
 	}
 );
@@ -355,7 +363,7 @@ app.route('/projects/:projectid/refs/:refid/elements/:elementid')
 // TODO: Document this route
 app.route('/projects/:projectid/refs/:refid/documents')
 .get(
-	auth.authenticate,
+	authenticate,
 	logRoute,
 	utils.addHeaders,
 	(req, res, next) => {
@@ -367,7 +375,7 @@ app.route('/projects/:projectid/refs/:refid/documents')
 			return res.status(200).send({ documents: documents });
 		})
 		.catch((error) => {
-			return res.status(errors.getStatusCode(error)).send(error.message);
+			return res.status(getStatusCode(error)).send(error.message);
 		})
 	}
 );
@@ -378,7 +386,6 @@ app.use('*', (req, res, next) => {
 	console.log(`${req.method}: ${req.originalUrl}`);
 	return res.status(501).send('Not Implemented');
 });
-
 
 
 // Export the module
