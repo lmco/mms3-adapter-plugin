@@ -62,16 +62,12 @@ app.route('/login')
 	logRoute,
 	doLogin,
 	utils.addHeaders,
-	(req, res, next) => {
-		return res.status(200).send({ token: req.session.token });
-	}
+	(req, res, next) => res.status(200).send({ token: req.session.token })
 )
 .options(
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		return res.sendStatus(200);
-	}
+	(req, res, next) => res.sendStatus(200)
 );
 
 
@@ -98,9 +94,7 @@ app.route('/mms/login/token/*')
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		return res.status(200).send({ username: req.user._id });
-	}
+	(req, res, next) => res.status(200).send({ username: req.user._id })
 );
 
 /**
