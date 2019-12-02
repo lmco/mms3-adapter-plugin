@@ -22,8 +22,8 @@ const app = express();
 
 // MBEE modules
 const auth = M.require('lib.auth');
-const Errors = M.require('lib.errors');
-const middleware = M.require('lib.middleware');
+const errors = M.require('lib.errors');
+const { logRoute } = M.require('lib.middleware');
 
 // Adapter modules
 const AdaptorSessionModel = require('./src/adapter-session-model');
@@ -59,7 +59,7 @@ const utils = require('./src/utils.js');
 app.route('/login')
 .post(
 	auth.authenticate,
-	middleware.logRoute,
+	logRoute,
 	auth.doLogin,
 	utils.addHeaders,
 	(req, res, next) => {
@@ -67,7 +67,7 @@ app.route('/login')
 	}
 )
 .options(
-	middleware.logRoute,
+	logRoute,
 	utils.addHeaders,
 	(req, res, next) => {
 		return res.sendStatus(200);
@@ -96,7 +96,7 @@ app.route('/login')
 app.route('/mms/login/token/*')
 .get(
 	auth.authenticate,
-	middleware.logRoute,
+	logRoute,
 	utils.addHeaders,
 	(req, res, next) => {
 		return res.status(200).send({ username: req.user._id });
@@ -129,7 +129,7 @@ app.route('/mms/login/token/*')
 app.route('/orgs')
 .get(
 	auth.authenticate,
-	middleware.logRoute,
+	logRoute,
 	utils.addHeaders,
 	(req, res, next) => {
 		ReformatController.getOrgs(req)
@@ -137,7 +137,7 @@ app.route('/orgs')
 			return res.status(200).send({orgs: orgs});
 		})
 		.catch((error) => {
-			return res.status(Errors.getStatusCode(error)).send(error.message);
+			return res.status(errors.getStatusCode(error)).send(error.message);
 		})
 	}
 );
@@ -177,7 +177,7 @@ app.route('/orgs')
 app.route('/orgs/:orgid/projects')
 .get(
 	auth.authenticate,
-	middleware.logRoute,
+	logRoute,
 	utils.addHeaders,
 	(req, res, next) => {
 		const session = {
@@ -194,7 +194,7 @@ app.route('/orgs/:orgid/projects')
 			return res.status(200).send({projects: projects});
 		})
 		.catch((error) => {
-			return res.status(Errors.getStatusCode(error)).send(error.message);
+			return res.status(errors.getStatusCode(error)).send(error.message);
 		})
 	}
 );
@@ -233,7 +233,7 @@ app.route('/orgs/:orgid/projects')
 app.route('/projects/:projectid/refs')
 .get(
 	auth.authenticate,
-	middleware.logRoute,
+	logRoute,
 	utils.addHeaders,
 	(req, res, next) => {
 		// Grabs the org id from the session user
@@ -244,7 +244,7 @@ app.route('/projects/:projectid/refs')
 			return res.status(200).send({refs: branches});
 		})
 		.catch((error) => {
-			return res.status(Errors.getStatusCode(error)).send(error.message);
+			return res.status(errors.getStatusCode(error)).send(error.message);
 		})
 	}
 );
@@ -253,7 +253,7 @@ app.route('/projects/:projectid/refs')
 app.route('/projects/:projectid/refs/:refid/mounts')
 .get(
 	auth.authenticate,
-	middleware.logRoute,
+	logRoute,
 	utils.addHeaders,
 	(req, res, next) => {
 		// Grabs the org id from the session user
@@ -264,7 +264,7 @@ app.route('/projects/:projectid/refs/:refid/mounts')
 			return res.status(200).send({ projects: projects });
 		})
 		.catch((error) => {
-			return res.status(Errors.getStatusCode(error)).send(error.message);
+			return res.status(errors.getStatusCode(error)).send(error.message);
 		})
 	}
 );
@@ -273,7 +273,7 @@ app.route('/projects/:projectid/refs/:refid/mounts')
 app.route('/projects/:projectid/refs/:refid/groups')
 .get(
 	auth.authenticate,
-	middleware.logRoute,
+	logRoute,
 	utils.addHeaders,
 	(req, res, next) => {
 		// Grabs the org id from the session user
@@ -284,7 +284,7 @@ app.route('/projects/:projectid/refs/:refid/groups')
 			return res.status(200).send({groups: groups});
 		})
 		.catch((error) => {
-			return res.status(Errors.getStatusCode(error)).send(error.message);
+			return res.status(errors.getStatusCode(error)).send(error.message);
 		})
 	}
 );
@@ -335,7 +335,7 @@ app.route('/projects/:projectid/refs/:refid/groups')
 app.route('/projects/:projectid/refs/:refid/elements/:elementid')
 .get(
 	auth.authenticate,
-	middleware.logRoute,
+	logRoute,
 	utils.addHeaders,
 	(req, res, next) => {
 		// Grabs the org id from the session user
@@ -346,7 +346,7 @@ app.route('/projects/:projectid/refs/:refid/elements/:elementid')
 			return res.status(200).send({ elements: elements });
 		})
 		.catch((error) => {
-			return res.status(Errors.getStatusCode(error)).send(error.message);
+			return res.status(errors.getStatusCode(error)).send(error.message);
 		})
 	}
 );
@@ -356,7 +356,7 @@ app.route('/projects/:projectid/refs/:refid/elements/:elementid')
 app.route('/projects/:projectid/refs/:refid/documents')
 .get(
 	auth.authenticate,
-	middleware.logRoute,
+	logRoute,
 	utils.addHeaders,
 	(req, res, next) => {
 		// Grabs the org id from the session user
@@ -367,7 +367,7 @@ app.route('/projects/:projectid/refs/:refid/documents')
 			return res.status(200).send({ documents: documents });
 		})
 		.catch((error) => {
-			return res.status(Errors.getStatusCode(error)).send(error.message);
+			return res.status(errors.getStatusCode(error)).send(error.message);
 		})
 	}
 );
