@@ -27,7 +27,26 @@ MCF. For example, to login through the MMS3 API on a localhost server on port
 `http://localhost:6233/plugins/mms3-adapter/login`.
 
 ### View Editor Configuration
-ADD DOCUMENTATION HERE
+To get the MMS3 Adapter working with View Editor, follow the instructions below.
+Please note that the instructions below assuming you are running an unmodified
+instance of View Editor from the Open-MBEE GitHub.
+
+1. Clone the Open-MBEE instance of VE into a directory titled angular-mms.
+`git clone https://github.com/Open-MBEE/ve.git angular-mms`
+2. Follow instructions 1-6 in the VE README and ensure that the hostname value
+in the `angular-mms-grunt-servers.json` is the url of your MCF server.
+3. Modify the following lines in the view editor code
+
+    3a. In `app/js/mms/app.js` replace lines 49 and 50 with the following
+   ```javascript
+   URLServiceProvider.setMmsUrl('http://{your-mcf-host}:{your-mcf-port}/plugins/mms3-adapter');
+   URLServiceProvider.setBaseUrl('http://{your-mcf-host}:{your-mcf-port}/plugins/mms3-adapter');
+   ```
+   3b. In `src/services/AuthorizationServices.js` replace line 25 with the following
+   ```javascript
+   var loginURL = URLService.getRoot() + '/api/login';
+   ```
+4. Run the command `grunt server:ems` to start VE on port 9000
 
 ### MDK Configuration
 ADD DOCUMENTATION HERE
