@@ -24,7 +24,7 @@ should be accessible through the MCF API. Simply append
 **/plugins/mms3-adapter** to the normal MMS3 endpoint to access that endpoint in
 MCF. For example, to login through the MMS3 API on a localhost server on port
 6233, the POST request route would look like 
-`http://localhost:6233/plugins/mms3-adapter/login`.
+`http://localhost:6233/plugins/mms3-adapter/api/login`.
 
 ### View Editor Configuration
 To get the MMS3 Adapter working with View Editor, follow the instructions below.
@@ -39,12 +39,17 @@ instance of View Editor from the Open-MBEE GitHub.
 in the `angular-mms-grunt-servers.json` is the url of your MCF server.
 3. Modify the following lines in the view editor code
 
-    3a. In `app/js/mms/app.js` replace lines 49 and 50 with the following
+   3a. In `app/js/mms/app.js` replace lines 49 and 50 with the following. This
+   allows View Editor to point to your MCF server.
+   
    ```javascript
    URLServiceProvider.setMmsUrl('http://{your-mcf-host}:{your-mcf-port}/plugins/mms3-adapter');
    URLServiceProvider.setBaseUrl('http://{your-mcf-host}:{your-mcf-port}/plugins/mms3-adapter');
    ```
-   3b. In `src/services/AuthorizationServices.js` replace line 25 with the following
+   3b. In `src/services/AuthorizationServices.js` replace line 25 with the
+   following line. This allows View Editor to NOT point to alfresco for user
+   authorization.
+   
    ```javascript
    var loginURL = URLService.getRoot() + '/api/login';
    ```
