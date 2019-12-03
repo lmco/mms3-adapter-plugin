@@ -32,7 +32,7 @@ const utils = require('./src/utils.js');
 
 /**
  * @swagger
- * /login:
+ * /api/login:
  *   post:
  *     tags:
  *       - general
@@ -56,13 +56,13 @@ const utils = require('./src/utils.js');
  *       200:
  *         description: OK
  */
-app.route('/login')
+app.route('/api/login')
 .post(
 	authenticate,
 	logRoute,
 	doLogin,
 	utils.addHeaders,
-	(req, res, next) => res.status(200).send({ token: req.session.token })
+	(req, res, next) => res.status(200).send({ data: { ticket: req.session.token } })
 )
 .options(
 	logRoute,
@@ -73,7 +73,7 @@ app.route('/login')
 
 /**
  * @swagger
- * /mms/login/token/*:
+ * /mms/login/ticket/*:
  *   get:
  *     tags:
  *       - general
@@ -89,7 +89,7 @@ app.route('/login')
  *       500:
  *         description: Internal Server Error
  */
-app.route('/mms/login/token/*')
+app.route('/mms/login/ticket/*')
 .get(
 	authenticate,
 	logRoute,
