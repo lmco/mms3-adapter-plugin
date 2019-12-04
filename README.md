@@ -38,6 +38,11 @@ instance of View Editor from the Open-MBEE GitHub.
 2. Follow instructions 1-5 in the VE README and ensure that the hostname value
 in the `angular-mms-grunt-servers.json` is the url of your MCF server (ex: 
 'localhost').
+
+   2a. If you receive an error during the NPM install, try running the following
+   command to fix git URLs and re-run the npm install:
+   `git config --global url."https://".insteadOf git://`
+   
 3. Modify the following lines in the view editor code
 
    3a. In `app/js/mms/app.js` replace lines 49 and 50 with the following. This
