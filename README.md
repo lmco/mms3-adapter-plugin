@@ -53,7 +53,16 @@ in the `angular-mms-grunt-servers.json` is the url of your MCF server.
    ```javascript
    var loginURL = URLService.getRoot() + '/api/login';
    ```
-4. Run the command `grunt server:ems` to start VE on port 9000
+4. To avoid a self signed certificate error when using grunt, create a file in
+the root `angular-mms` directory called `.bowerrc`. The contents of the should
+be a JSON object, containing a single key, `ca`, pointing to your Lockheed 
+Martin certificate.
+    ```json
+    {
+      "ca": "path/to/your/LockheedMartinRootCertificationAuthority.pem"   
+    }
+    ```
+5. Run the command `grunt server:ems` to start VE on port 9000
 
 ### MDK Configuration
 ADD DOCUMENTATION HERE
