@@ -36,7 +36,8 @@ instance of View Editor from the Open-MBEE GitHub.
     git clone https://github.com/Open-MBEE/ve.git angular-mms
     ```
 2. Follow instructions 1-5 in the VE README and ensure that the hostname value
-in the `angular-mms-grunt-servers.json` is the url of your MCF server.
+in the `angular-mms-grunt-servers.json` is the url of your MCF server (ex: 
+'localhost').
 3. Modify the following lines in the view editor code
 
    3a. In `app/js/mms/app.js` replace lines 49 and 50 with the following. This
