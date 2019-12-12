@@ -41,7 +41,10 @@ in the `angular-mms-grunt-servers.json` is the url of your MCF server (ex:
 
    2a. If you receive an error during the NPM install, try running the following
    command to fix git URLs and re-run the npm install:
-   `git config --global url."https://".insteadOf git://`
+   
+   ```
+   git config --global url."https://".insteadOf git://
+   ```
    
 3. Modify the following lines in the view editor code
 
