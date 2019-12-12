@@ -62,6 +62,9 @@ in the `angular-mms-grunt-servers.json` is the url of your MCF server (ex:
    ```javascript
    var loginURL = URLService.getRoot() + '/api/login';
    ```
+   3c. In `app/mms.html`, comment out line 14 which attempts to load
+   `/mms-ts/tsperspectives/TSWebView.css`. This file is nowhere to be found...
+   
 4. To avoid a self signed certificate error when using grunt, create a file in
 the root `angular-mms` directory called `.bowerrc`. The contents of the should
 be a JSON object, containing a single key, `ca`, pointing to your Lockheed 
