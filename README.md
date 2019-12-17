@@ -28,7 +28,7 @@ MCF. For example, to login through the MMS3 API on a localhost server on port
 
 ### View Editor Configuration
 To get the MMS3 Adapter working with View Editor, follow the instructions below.
-Please note that the instructions below assuming you are running an unmodified
+Please note that the instructions below assume you are running an **unmodified**
 instance of View Editor from the Open-MBEE GitHub.
 
 1. Clone the Open-MBEE instance of VE into a directory titled angular-mms.
@@ -77,4 +77,52 @@ Martin certificate.
 5. Run the command `grunt server:ems` to start VE on port 9000
 
 ### MDK Configuration
-ADD DOCUMENTATION HERE
+To get a local version of MDK working with the MMS3 Adapter plugin, follow the
+instructions below. Please note that the instructions below assume you are
+running the **modified** instance of MDK for Lockheed Martin. These instructions
+assume that you also have an instance of the Lockheed Martin version of Cameo,
+which comes bundled with necessary plugins. If you do not have this, please
+download and setup the zip file from
+[artifactory](https://repo-1.mbx.us.lmco.com/artifactory/webapp/#/artifacts/browse/tree/General/mbx-release-local/com/lmco/mbx/magicdraw/mbx-cameo-enterprise-architecture/4.1.0/mbx-cameo-enterprise-architecture-4.1.0.zip).
+
+1. Clone the Lockheed instance of MDK.
+    ```bash
+    git clone https://gitlab.us.lmco.com/mbx/se/mbx-magicdraw-mdk.git mdk
+    ```
+    
+2. Install Eclipse from the LM App Store. These steps have been preformed with
+Eclipse 4.6.3, so it is recomended you download this version to ensure success.
+
+3. Install the Eclipse plugins for Gradle. **NOTE**: this step MUST be preformed
+off the LMI due to proxy interference. We are currently working on finding a
+better solution for this.
+    
+    3a. Go to: *Help > Install New Software*
+
+    3b. Enter the following URL in the `Work with` bar and hit Enter. 
+    https://download.eclipse.org/buildship/updates/latest/
+    
+    3c. Check the box for installing the Gradle plugin, and hit `Finish` to
+    install the plugin. This will require a restart of Eclipse at some point.
+    
+4. Update the following line in `gradle.properties` to be an absolute path,
+rather than a relative path.
+    ```
+    systemProp.javax.net.ssl.trustStore=./certs/cacerts.jks
+    ```
+    
+5. Go to: *Window > Show View > Other* and search for the view `Gradle Tasks`.
+Select this view, and a new tab should appear in Eclipse.
+
+6. In the `Gradle Tasks` view, there should be an `mdk` dropdown. Select this
+dropdown, and run: *build > jar*. This will create a new jar file titled
+`mdk-4.1.0-SNAPSHOT.jar` and it will be located in: *build > libs*.
+
+7. Rename the jar file to `mdk-4.1.0.jar`.
+
+8. Find the Cameo folder in your terminal, and replace the `mdk-4.1.0.jar` file
+located in: *plugins > com.lmco.mbee.magicdraw.mdk* with the jar file created in
+the build directory.
+
+9. Restart Cameo to successfully install and run the plugin.
+    
