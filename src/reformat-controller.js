@@ -30,7 +30,9 @@ const formatter = require('./formatter.js');
 
 // Export the module
 module.exports = {
+	getOrg,
 	getOrgs,
+	getProject,
 	getProjects,
 	getBranches,
 	getMounts,
@@ -38,6 +40,28 @@ module.exports = {
 	getElement,
 	getDocuments
 };
+
+/**
+ * @description Gets a single organizations by id which a requesting user has
+ * access to. Returns an array containing the single organization, properly
+ * formatted for the MMS3 API.
+ * @async
+ *
+ * @param {object} req - The request object.
+ * @param {object} req.user - The requesting user object. This object is used to
+ * find the organizations that the specific user has access to.
+ * @param {object} req.params.orgid - The ID of the organization to find.
+ *
+ * @returns {Promise<object[]>} An array of properly formatted organization
+ * objects.
+ */
+async function getOrg(req) {
+	// Grab all the orgs from controller
+	const orgs = await OrgController.find(req.user, req.params.orgid);
+	// Return all the public data of orgs
+	// TODO: Ensure ONLY expected fields are returned
+	return orgs.map((org) => getPublicData(org, 'org'));
+}
 
 /**
  * @description Gets all organizations a requesting user has access to. Returns
@@ -57,6 +81,31 @@ async function getOrgs(req) {
 	// Return all the public data of orgs
 	// TODO: Ensure ONLY expected fields are returned
 	return orgs.map((org) => getPublicData(org, 'org'));
+}
+
+/**
+ * @description Gets a single project on a specific org which a requesting user
+ * has access to. Returns a single found project, properly formatted for the
+ * MMS3 API.
+ * @async
+ *
+ * @param {object} req - The request object.
+ * @param {object} req.user - The requesting user object. This object is used to
+ * find the projects that the specific user has access to.
+ * @param {string} req.params.orgid - The ID of the organization to find
+ * project on.
+ * @param {string} req.params.projectid - The ID of the project to find.
+ *
+ * @returns {Promise<object[]>} An array of properly formatted project objects.
+ */
+async function getProject(req) {
+	// Grab the specific project from the controller
+	const project = await ProjectController.find(req.user, req.params.orgid,
+		req.params.projectid);
+
+	// Return all the public data of projects
+	// TODO: Ensure ONLY expected fields are returned
+	return [project].map((p) => getPublicData(p, 'project'));
 }
 
 /**

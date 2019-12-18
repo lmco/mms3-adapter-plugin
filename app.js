@@ -19,6 +19,7 @@
 // NPM modules
 const express = require('express');
 const app = express();
+const router = express.Router();
 
 // MBEE modules
 const { authenticate, doLogin } = M.require('lib.auth');
@@ -26,9 +27,10 @@ const { getStatusCode } = M.require('lib.errors');
 const { logRoute } = M.require('lib.middleware');
 
 // Adapter modules
-const AdapterSession = require('./src/adapter-session-model');
 const ReformatController = require('./src/reformat-controller');
 const utils = require('./src/utils.js');
+
+app.use('/alfresco/service', router);
 
 /**
  * @swagger
@@ -56,7 +58,7 @@ const utils = require('./src/utils.js');
  *       200:
  *         description: OK
  */
-app.route('/api/login')
+router.route('/api/login')
 .post(
 	authenticate,
 	logRoute,
@@ -89,8 +91,12 @@ app.route('/api/login')
  *       500:
  *         description: Internal Server Error
  */
-app.route('/mms/login/ticket/*')
+router.route('/mms/login/ticket/*')
 .get(
+	(req, res, next) => {
+		req.headers.authorization = `Bearer ${req.params[0]}`;
+		next();
+	},
 	authenticate,
 	logRoute,
 	utils.addHeaders,
@@ -120,13 +126,52 @@ app.route('/mms/login/ticket/*')
  *       500:
  *         description: Internal Server Error
  */
-app.route('/orgs')
+router.route('/orgs')
 .get(
+	utils.handleTicket,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
 	(req, res, next) => {
 		ReformatController.getOrgs(req)
+		.then((orgs) => {
+			return res.status(200).send({ orgs: orgs });
+		})
+		.catch((error) => {
+			return res.status(getStatusCode(error)).send(error.message);
+		})
+	}
+);
+
+/**
+ * @swagger
+ * /orgs/{orgid}:
+ *   get:
+ *     tags:
+ *       - organizations
+ *     description: Finds and returns an array containing a single organization.
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/orgs/:orgid')
+.get(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	(req, res, next) => {
+		ReformatController.getOrg(req)
 		.then((orgs) => {
 			return res.status(200).send({ orgs: orgs });
 		})
@@ -168,36 +213,120 @@ app.route('/orgs')
  *       500:
  *         description: Internal Server Error
  */
-app.route('/orgs/:orgid/projects')
+router.route('/orgs/:orgid/projects')
 .get(
 	authenticate,
 	logRoute,
 	utils.addHeaders,
 	(req, res, next) => {
-
-		const session = {
-			user: req.user._id,
-			org: req.params.orgid
-		};
-
-		// Find or replace the session for user trying to use ve
-		// This will either create a new mongo document with orgid in db
-		const bulkWriteObj = {
-			replaceOne: {
-				filter: { user: req.user._id },
-				replacement: session,
-				upsert: true
-			}
-		};
-		AdapterSession.bulkWrite([bulkWriteObj])
 		// Grab the project information
-		.then(() => ReformatController.getProjects(req))
+		ReformatController.getProjects(req)
 		.then((projects) => {
 			return res.status(200).send({projects: projects});
 		})
 		.catch((error) => {
 			return res.status(getStatusCode(error)).send(error.message);
 		})
+	}
+);
+
+/**
+ * @swagger
+ * /projects:
+ *   get:
+ *     tags:
+ *       - projects
+ *     description: Finds and returns an array containing all projects the user
+ *        has at least read access on. Returns the projects formatted for the
+ *        MMS3 API.
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/projects')
+	.get(
+		utils.handleTicket,
+		authenticate,
+		logRoute,
+		utils.addHeaders,
+		(req, res, next) => {
+			// Set the orgid to null, specifying to find all projects
+			req.params.orgid = null;
+
+			// Find the projects
+			ReformatController.getProjects(req)
+			.then((projects) => {
+				return res.status(200).send({ projects: projects });
+			})
+			.catch((error) => {
+				return res.status(getStatusCode(error)).send(error.message);
+			});
+		}
+	);
+
+/**
+ * @swagger
+ * /projects/{projectid}:
+ *   get:
+ *     tags:
+ *       - projects
+ *     description: Finds and returns an array containing a single project
+ *        object. Returns the project formatted for the MMS3 API.
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project to find.
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/projects/:projectid')
+.get(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	(req, res, next) => {
+		utils.getOrgId(req)
+		.then((orgID) => {
+			req.params.orgid = orgID;
+			return ReformatController.getProject(req);
+		})
+		.then((projects) => {
+			return res.status(200).send({ projects: projects });
+		})
+		.catch((error) => {
+			if (getStatusCode(error) === 404) {
+				return res.status(getStatusCode(error)).send({});
+			}
+			return res.status(getStatusCode(error)).send(error.message);
+		});
 	}
 );
 
@@ -232,8 +361,9 @@ app.route('/orgs/:orgid/projects')
  *       500:
  *         description: Internal Server Error
  */
-app.route('/projects/:projectid/refs')
+router.route('/projects/:projectid/refs')
 .get(
+	utils.handleTicket,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
@@ -252,7 +382,7 @@ app.route('/projects/:projectid/refs')
 );
 
 // TODO: Document this route
-app.route('/projects/:projectid/refs/:refid/mounts')
+router.route('/projects/:projectid/refs/:refid/mounts')
 .get(
 	authenticate,
 	logRoute,
@@ -272,7 +402,7 @@ app.route('/projects/:projectid/refs/:refid/mounts')
 );
 
 // TODO: Document this route
-app.route('/projects/:projectid/refs/:refid/groups')
+router.route('/projects/:projectid/refs/:refid/groups')
 .get(
 	authenticate,
 	logRoute,
@@ -334,7 +464,7 @@ app.route('/projects/:projectid/refs/:refid/groups')
  *       500:
  *         description: Internal Server Error
  */
-app.route('/projects/:projectid/refs/:refid/elements/:elementid')
+router.route('/projects/:projectid/refs/:refid/elements/:elementid')
 .get(
 	authenticate,
 	logRoute,
@@ -355,7 +485,7 @@ app.route('/projects/:projectid/refs/:refid/elements/:elementid')
 
 
 // TODO: Document this route
-app.route('/projects/:projectid/refs/:refid/documents')
+router.route('/projects/:projectid/refs/:refid/documents')
 .get(
 	authenticate,
 	logRoute,
