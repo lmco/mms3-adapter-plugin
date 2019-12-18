@@ -32,8 +32,10 @@ const formatter = require('./formatter.js');
 module.exports = {
 	getOrg,
 	getOrgs,
+	postOrgs,
 	getProject,
 	getProjects,
+	postProjects,
 	getBranches,
 	getMounts,
 	getGroups,
@@ -84,6 +86,43 @@ async function getOrgs(req) {
 }
 
 /**
+ * @description Creates multiple organizations.
+ * @async
+ *
+ * @param {object} req - The request object.
+ * @param {object} req.user - The requesting user object.
+ * @param {object} req.body - An object which should contain data used to create
+ * new organizations.
+ *
+ * @returns {Promise<object[]>} An array of properly formatted organization
+ * objects.
+ */
+async function postOrgs(req) {
+	const orgData = req.body.orgs;
+	const bodyKeys = Object.keys(req.body);
+
+	// Add each additional property in the request body to each org.
+	orgData.forEach((o) => {
+		// Define the custom data field
+		o.custom = {};
+
+		// Add each key to custom data
+		bodyKeys.forEach((k) => {
+			if (k !== 'orgs') {
+				o.custom[k] = req.body[k];
+			}
+		});
+	});
+
+	// Create the orgs
+	const orgs = await OrgController.create(req.user, orgData);
+
+	// Return all the public data of orgs
+	// TODO: Ensure ONLY expected fields are returned
+	return orgs.map((org) => getPublicData(org, 'org'));
+}
+
+/**
  * @description Gets a single project on a specific org which a requesting user
  * has access to. Returns a single found project, properly formatted for the
  * MMS3 API.
@@ -105,7 +144,7 @@ async function getProject(req) {
 
 	// Return all the public data of projects
 	// TODO: Ensure ONLY expected fields are returned
-	return [project].map((p) => getPublicData(p, 'project'));
+	return project.map((p) => getPublicData(p, 'project'));
 }
 
 /**
@@ -125,6 +164,46 @@ async function getProjects(req) {
 	// Grab all the projects from controller
 	const projects = await ProjectController.find(req.user, req.params.orgid);
 	// Return all the public data of projects
+	// TODO: Ensure ONLY expected fields are returned
+	return projects.map((project) => getPublicData(project, 'project'));
+}
+
+/**
+ * @description Creates multiple projects under a specified organization.
+ * @async
+ *
+ * @param {object} req - The request object.
+ * @param {object} req.user - The requesting user object.
+ * @param {string} req.params.orgid - The ID of the organization to create the
+ * projects under.
+ * @param {object} req.body - An object which should contain data used to create
+ * new projects.
+ *
+ * @returns {Promise<object[]>} An array of properly formatted project objects.
+ */
+async function postProjects(req) {
+	const projData = req.body.projects;
+
+	// Add each field
+	projData.forEach((p) => {
+		const knownKeys = ['id', 'name'];
+
+		// Define the custom data field
+		p.custom = {};
+
+		// Add extra keys to custom data
+		Object.keys(p).forEach((k) => {
+			if (!knownKeys.includes(k)) {
+				p.custom[k] = p[k];
+				delete p[k];
+			}
+		});
+	});
+
+	// Create the projects
+	const projects = await ProjectController.create(req.user, req.params.orgid, projData);
+
+	// Return all the public data of the newly created projects
 	// TODO: Ensure ONLY expected fields are returned
 	return projects.map((project) => getPublicData(project, 'project'));
 }

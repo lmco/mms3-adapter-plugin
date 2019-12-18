@@ -38,11 +38,11 @@ async function getOrgId(req) {
 
 	const projectID = projects.filter(p =>
 		p._id.endsWith(`${mcfUtils.ID_DELIMITER}${req.params.projectid}`)
-	);
+	).map(p => p._id);
 
 	if (projectID.length > 1) {
 		throw new M.ServerError('Multiple projects with the same ID exist. Please'
-			+ 'contact your local administrator.')
+			+ 'contact your local administrator.', 'error')
 	}
 	else if (projectID.length === 0) {
 		throw new M.NotFoundError(`The project ${req.params.projectid} was not found.`)

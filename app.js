@@ -141,6 +141,21 @@ router.route('/orgs')
 			return res.status(getStatusCode(error)).send(error.message);
 		})
 	}
+)
+.post(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	(req, res, next) => {
+		ReformatController.postOrgs(req)
+		.then((orgs) => {
+			return res.status(200).send({ orgs: orgs });
+		})
+		.catch((error) => {
+			return res.status(getStatusCode(error)).send(error.message);
+		})
+	}
 );
 
 /**
@@ -215,6 +230,7 @@ router.route('/orgs/:orgid')
  */
 router.route('/orgs/:orgid/projects')
 .get(
+	utils.handleTicket,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
@@ -222,7 +238,23 @@ router.route('/orgs/:orgid/projects')
 		// Grab the project information
 		ReformatController.getProjects(req)
 		.then((projects) => {
-			return res.status(200).send({projects: projects});
+			return res.status(200).send({ projects: projects });
+		})
+		.catch((error) => {
+			return res.status(getStatusCode(error)).send(error.message);
+		})
+	}
+)
+.post(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	(req, res, next) => {
+		// Create the projects
+		ReformatController.postProjects(req)
+		.then((projects) => {
+			return res.status(200).send({ projects: projects });
 		})
 		.catch((error) => {
 			return res.status(getStatusCode(error)).send(error.message);
@@ -314,14 +346,12 @@ router.route('/projects/:projectid')
 	utils.addHeaders,
 	(req, res, next) => {
 		utils.getOrgId(req)
-		.then((orgID) => {
-			req.params.orgid = orgID;
-			return ReformatController.getProject(req);
-		})
+		.then(() => ReformatController.getProject(req))
 		.then((projects) => {
 			return res.status(200).send({ projects: projects });
 		})
 		.catch((error) => {
+			console.log(error);
 			if (getStatusCode(error) === 404) {
 				return res.status(getStatusCode(error)).send({});
 			}
