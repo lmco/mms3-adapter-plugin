@@ -16,7 +16,9 @@
  * format.
  */
 
+// MCF Modules
 const mcfUtils = M.require('lib.utils');
+const { getPublicData } = M.require('lib.getPublicData');
 
 module.exports = {
 	org,
@@ -71,12 +73,15 @@ function project(projObj) {
  * @returns {object} An MMS3 formatted ref.
  */
 function ref(branchObj) {
+	// Format branch object for return from MCF API
+	const publicBranch = getPublicData(branchObj, 'branch');
+
 	// TODO: Handle twcId, _elasticId
 	return {
-		id: mcfUtils.parseId(branchObj._id).pop(),
+		id: branchObj.id,
 		name: branchObj.name,
 		type: (branchObj.tag) ? 'tag' : 'branch',
-		parentRefId: (branchObj.source) ? mcfUtils.parseId(branchObj.source).pop() : 'noParent',
+		parentRefId: (branchObj.source) ? branchObj.source : 'noParent',
 		_modified: branchObj.updatedOn,
 		_modifier: branchObj.lastModifiedBy
 	};

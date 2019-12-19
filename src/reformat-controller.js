@@ -36,6 +36,7 @@ module.exports = {
 	getProject,
 	getProjects,
 	postProjects,
+	getBranch,
 	getBranches,
 	getMounts,
 	getGroups,
@@ -195,6 +196,31 @@ async function postProjects(req) {
 }
 
 /**
+ * @description Gets a specific branch by ID. Returns the single branch in an
+ * array, properly formatted for the MMS3 API.
+ * @async
+ *
+ * @param {object} req - The request object.
+ * @param {object} req.user - The requesting user object. This object is used to
+ * find the branches that the specific user has access to.
+ * @param {string} req.params.orgid - The ID of the organization containing the
+ * project.
+ * @param {string} req.params.projectid - The ID of the project to find the
+ * branch on.
+ * @param {string} req.params.refid - The ID of the ref (branch) to find.
+ *
+ * @returns {Promise<object[]>} An array of properly formatted branch objects.
+ */
+async function getBranch(req) {
+	// Grab all the branches from controller
+	const branches = await BranchController.find(req.user, req.params.orgid,
+		req.params.projectid, req.params.refid);
+
+	// Format data for MMS API response and return
+	return branches.map(b => formatter.ref(b));
+}
+
+/**
  * @description Gets all branches on a specific project which a requesting user
  * has access to. Returns an array of branches, properly formatted for the MMS3
  * API.
@@ -213,24 +239,9 @@ async function postProjects(req) {
 async function getBranches(req) {
   // Grab all the branches from controller
 	const branches = await BranchController.find(req.user, req.params.orgid, req.params.projectid);
-	// Return all the public data of branches in ve form
-	// TODO: Ensure ONLY expected fields are returned
-	return branches.map((branch) => {
-		// Get public data of branches
-		const publicData = getPublicData(branch, 'branch');
-		// Verify if a tag
-		if (branch.tag) {
-			// Add type field as a tag
-			publicData.type = 'Tag';
-		}
-		else {
-			// Add type field as a branch
-			publicData.type = 'Branch';
-		}
 
-		// Return public data
-		return publicData;
-	});
+	// Format data for MMS API response and return
+	return branches.map(b => formatter.ref(b));
 }
 
 /**

@@ -411,6 +411,68 @@ router.route('/projects/:projectid/refs')
 	}
 );
 
+/**
+ * @swagger
+ * /projects/{projectid}/refs/{refid}:
+ *   get:
+ *     tags:
+ *       - branches
+ *     description: Finds and returns a single branch from the refid provided in
+ *        the request params. Returns the branch (ref) formatted for the MMS3
+ *        API.
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project which contains the searched
+ *                      branch/ref.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: refid
+ *         description: The ID of the ref to find.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: alf_ticket
+ *         description: A token passed in the query, used for authorization.
+ *         in: query
+ *         required: false
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/projects/:projectid/refs/:refid')
+.get(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	(req, res, next) => {
+		// Adds the orgID to the request
+		utils.getOrgId(req)
+		// Grabs the branch information
+		.then(() => ReformatController.getBranch(req))
+		.then((branches) => {
+			return res.status(200).send({ refs: branches });
+		})
+		.catch((error) => {
+			return res.status(getStatusCode(error)).send(error.message);
+		})
+	}
+);
+
 // TODO: Document this route
 router.route('/projects/:projectid/refs/:refid/mounts')
 .get(
