@@ -9,8 +9,8 @@
  *
  * @owner Austin Bieber
  *
- * @author Leah De Laurell
  * @author Austin Bieber
+ * @author Leah De Laurell
  *
  * @description Exports functions which format MCF objects into the MMS3 API
  * format.
@@ -18,7 +18,7 @@
 
 // MCF Modules
 const mcfUtils = M.require('lib.utils');
-const { getPublicData } = M.require('lib.getPublicData');
+const { getPublicData } = M.require('lib.get-public-data');
 
 module.exports = {
 	org,
@@ -78,12 +78,12 @@ function ref(branchObj) {
 
 	// TODO: Handle twcId, _elasticId
 	return {
-		id: branchObj.id,
-		name: branchObj.name,
-		type: (branchObj.tag) ? 'tag' : 'branch',
-		parentRefId: (branchObj.source) ? branchObj.source : 'noParent',
-		_modified: branchObj.updatedOn,
-		_modifier: branchObj.lastModifiedBy
+		id: publicBranch.id,
+		name: publicBranch.name,
+		type: (publicBranch.tag) ? 'tag' : 'branch',
+		parentRefId: (publicBranch.source) ? publicBranch.source : 'noParent',
+		_modified: publicBranch.updatedOn,
+		_modifier: publicBranch.lastModifiedBy
 	};
 }
 

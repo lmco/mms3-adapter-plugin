@@ -9,8 +9,8 @@
  *
  * @owner Austin Bieber
  *
- * @author Leah De Laurell
  * @author Austin Bieber
+ * @author Leah De Laurell
  *
  * @description The main application for the MMS3 Adapter. Handles router
  * initialization and all routing.
@@ -390,6 +390,33 @@ router.route('/projects/:projectid')
  *         description: Not Found
  *       500:
  *         description: Internal Server Error
+ *   post:
+ *     tags:
+ *       - branches
+ *     description: Creates multiple branches under the specified project.
+ *        Returns the branches (refs) formatted for the MMS3 API.
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project which contains the searched
+ *                      branches/refs.
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
  */
 router.route('/projects/:projectid/refs')
 .get(
@@ -404,6 +431,24 @@ router.route('/projects/:projectid/refs')
 		.then(() => ReformatController.getBranches(req))
 		.then((branches) => {
 			return res.status(200).send({refs: branches});
+		})
+		.catch((error) => {
+			return res.status(getStatusCode(error)).send(error.message);
+		})
+	}
+)
+.post(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	(req, res, next) => {
+		// Grabs the org id from the session user
+		utils.getOrgId(req)
+		// Create the branches
+		.then(() => ReformatController.postBranches(req))
+		.then((branches) => {
+			return res.status(200).send({ refs: branches });
 		})
 		.catch((error) => {
 			return res.status(getStatusCode(error)).send(error.message);
@@ -465,6 +510,7 @@ router.route('/projects/:projectid/refs/:refid')
 		// Grabs the branch information
 		.then(() => ReformatController.getBranch(req))
 		.then((branches) => {
+			console.log(branches)
 			return res.status(200).send({ refs: branches });
 		})
 		.catch((error) => {

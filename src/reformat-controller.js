@@ -9,8 +9,8 @@
  *
  * @owner Austin Bieber
  *
- * @author Leah De Laurell
  * @author Austin Bieber
+ * @author Leah De Laurell
  *
  * @description The controller which contains the main middleware logic for
  * converting MMS3 formatted data to MCF format, calling MCF controller
@@ -24,6 +24,8 @@ const OrgController = M.require('controllers.organization-controller');
 const ProjectController = M.require('controllers.project-controller');
 // TODO: Consider moving getPublicData usage to formatter.js
 const { getPublicData } = M.require('lib.get-public-data');
+const mcfUtils = M.require('lib.utils');
+const Branch = M.require('models.branch');
 
 // Adapter Modules
 const formatter = require('./formatter.js');
@@ -38,6 +40,7 @@ module.exports = {
 	postProjects,
 	getBranch,
 	getBranches,
+	postBranches,
 	getMounts,
 	getGroups,
 	getElement,
@@ -242,6 +245,46 @@ async function getBranches(req) {
 
 	// Format data for MMS API response and return
 	return branches.map(b => formatter.ref(b));
+}
+
+/**
+ * @description Creates multiple refs (branches) under a specified project.
+ * @async
+ *
+ * @param {object} req - The request object.
+ * @param {object} req.user - The requesting user object.
+ * @param {string} req.params.orgid - The ID of the organization containing the
+ * project.
+ * @param {string} req.params.projectid - The ID of the project to create the
+ * refs (branches) under.
+ * @param {object} req.body - An object which should contain data used to create
+ * new refs (branches).
+ *
+ * @returns {Promise<object[]>} An array of properly formatted ref objects.
+ */
+async function postBranches(req) {
+	// Define two arrays, used for creating vs updating branches
+	const create = [];
+	const update = [];
+
+	const branches = req.body.refs;
+	const ids = branches.map(b => mcfUtils.createID(req.params.orgid,
+		req.params.projectid, b.id));
+
+	const findQuery = { _id: { $in: ids }};
+	const foundBranches = await Branch.find(findQuery);
+
+	const foundBranchIDs = foundBranches.map(b => mcfUtils.parseID(b._id).pop());
+	branches.forEach((b) => {
+		// Handle branches to update
+		if (foundBranchIDs.includes(b.id)) {
+
+		}
+		// Handle branches to create
+		else {
+
+		}
+	})
 }
 
 /**
