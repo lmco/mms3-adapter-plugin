@@ -33,8 +33,11 @@ module.exports = {
  * @returns {object} An MMS3 formatted org.
  */
 function org(orgObj) {
-	// TODO
-	return orgObj;
+	// TODO: Handle _elasticId
+	return {
+		id: orgObj._id,
+		name: orgObj.name
+	};
 }
 
 /**
@@ -45,8 +48,19 @@ function org(orgObj) {
  * @returns {object} An MMS3 formatted project.
  */
 function project(projObj) {
-	// TODO
-	return projObj;
+	// TODO: Handle twcId, categoryId, _elasticId
+	return {
+		type: 'Project',
+		name: projObj.name,
+		id: mcfUtils.parseID(projObj._id).pop(),
+		_creator: projObj.createdBy,
+		_created: projObj.createdOn,
+		_modifier: projObj.lastModifiedBy,
+		_modified: projObj.updatedOn,
+		_projectId: mcfUtils.parseID(projObj._id).pop(),
+		_refId: "master",
+		orgId: projObj.org
+	}
 }
 
 /**
@@ -57,8 +71,15 @@ function project(projObj) {
  * @returns {object} An MMS3 formatted ref.
  */
 function ref(branchObj) {
-	// TODO
-	return branchObj;
+	// TODO: Handle twcId, _elasticId
+	return {
+		id: mcfUtils.parseId(branchObj._id).pop(),
+		name: branchObj.name,
+		type: (branchObj.tag) ? 'tag' : 'branch',
+		parentRefId: (branchObj.source) ? mcfUtils.parseId(branchObj.source).pop() : 'noParent',
+		_modified: branchObj.updatedOn,
+		_modifier: branchObj.lastModifiedBy
+	};
 }
 
 /**

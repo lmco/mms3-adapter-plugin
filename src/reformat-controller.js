@@ -99,20 +99,6 @@ async function getOrgs(req) {
  */
 async function postOrgs(req) {
 	const orgData = req.body.orgs;
-	const bodyKeys = Object.keys(req.body);
-
-	// Add each additional property in the request body to each org.
-	orgData.forEach((o) => {
-		// Define the custom data field
-		o.custom = {};
-
-		// Add each key to custom data
-		bodyKeys.forEach((k) => {
-			if (k !== 'orgs') {
-				o.custom[k] = req.body[k];
-			}
-		});
-	});
 
 	// Create the orgs
 	const orgs = await OrgController.create(req.user, orgData);
