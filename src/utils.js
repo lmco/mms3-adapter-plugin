@@ -79,8 +79,19 @@ function addHeaders(req, res, next) {
  */
 function handleTicket(req, res, next) {
 	if (req.query.alf_ticket) {
-		req.headers.authorization = `Bearer ${req.query.alf_ticket}`;
+		// Parse token from URI encoding
+		const token = decodeURIComponent(req.query.alf_ticket);
+
+		req.headers.authorization = `Bearer ${token}`;
 	}
+	next();
+}
+
+function formatTicketRequest(req, res, next) {
+	// Parse token from URI encoding
+	const token = decodeURIComponent(req.params[0]);
+
+	req.headers.authorization = `Bearer ${token}`;
 	next();
 }
 
@@ -88,5 +99,6 @@ function handleTicket(req, res, next) {
 module.exports = {
 	getOrgId,
 	addHeaders,
-	handleTicket
+	handleTicket,
+	formatTicketRequest
 };

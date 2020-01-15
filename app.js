@@ -24,10 +24,10 @@ const router = express.Router();
 // MBEE modules
 const { authenticate, doLogin } = M.require('lib.auth');
 const { getStatusCode } = M.require('lib.errors');
-const { logRoute } = M.require('lib.middleware');
+const { logRoute, logResponse, respond } = M.require('lib.middleware');
 
 // Adapter modules
-const ReformatController = require('./src/reformat-controller');
+const APIController = require('./src/api-controller');
 const utils = require('./src/utils.js');
 
 app.use('/alfresco/service', router);
@@ -64,12 +64,16 @@ router.route('/api/login')
 	logRoute,
 	doLogin,
 	utils.addHeaders,
-	(req, res, next) => res.status(200).send({ data: { ticket: req.session.token } })
+	APIController.postLogin,
+	logResponse,
+	respond
 )
 .options(
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => res.sendStatus(200)
+	APIController.optionsLogin,
+	logResponse,
+	respond
 );
 
 
@@ -93,14 +97,24 @@ router.route('/api/login')
  */
 router.route('/mms/login/ticket/*')
 .get(
-	(req, res, next) => {
-		req.headers.authorization = `Bearer ${req.params[0]}`;
-		next();
-	},
+	utils.formatTicketRequest,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => res.status(200).send({ username: req.user._id })
+	APIController.getTicket,
+	logResponse,
+	respond
+);
+
+// TODO: Document this route. Seems to only be used by View Editor
+router.route('/connection/jms')
+.get(
+	utils.addHeaders,
+	(req, res, next) => {
+		res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, authorization');
+		res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+		res.status(200).send();
+	}
 );
 
 /**
@@ -132,30 +146,18 @@ router.route('/orgs')
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		ReformatController.getOrgs(req)
-		.then((orgs) => {
-			return res.status(200).send({ orgs: orgs });
-		})
-		.catch((error) => {
-			return res.status(getStatusCode(error)).send(error.message);
-		})
-	}
+	APIController.getOrgs,
+	logResponse,
+	respond
 )
 .post(
 	utils.handleTicket,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		ReformatController.postOrgs(req)
-		.then((orgs) => {
-			return res.status(200).send({ orgs: orgs });
-		})
-		.catch((error) => {
-			return res.status(getStatusCode(error)).send(error.message);
-		})
-	}
+	APIController.postOrgs,
+	logResponse,
+	respond
 );
 
 /**
@@ -185,15 +187,9 @@ router.route('/orgs/:orgid')
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		ReformatController.getOrg(req)
-		.then((orgs) => {
-			return res.status(200).send({ orgs: orgs });
-		})
-		.catch((error) => {
-			return res.status(getStatusCode(error)).send(error.message);
-		})
-	}
+	APIController.getOrgs,
+	logResponse,
+	respond
 );
 
 /**
@@ -234,32 +230,18 @@ router.route('/orgs/:orgid/projects')
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		// Grab the project information
-		ReformatController.getProjects(req)
-		.then((projects) => {
-			return res.status(200).send({ projects: projects });
-		})
-		.catch((error) => {
-			return res.status(getStatusCode(error)).send(error.message);
-		})
-	}
+	APIController.getProjects,
+	logResponse,
+	respond
 )
 .post(
 	utils.handleTicket,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		// Create the projects
-		ReformatController.postProjects(req)
-		.then((projects) => {
-			return res.status(200).send({ projects: projects });
-		})
-		.catch((error) => {
-			return res.status(getStatusCode(error)).send(error.message);
-		})
-	}
+	APIController.postProjects,
+	logResponse,
+	respond
 );
 
 /**
@@ -293,19 +275,9 @@ router.route('/projects')
 		authenticate,
 		logRoute,
 		utils.addHeaders,
-		(req, res, next) => {
-			// Set the orgid to null, specifying to find all projects
-			req.params.orgid = null;
-
-			// Find the projects
-			ReformatController.getProjects(req)
-			.then((projects) => {
-				return res.status(200).send({ projects: projects });
-			})
-			.catch((error) => {
-				return res.status(getStatusCode(error)).send(error.message);
-			});
-		}
+		APIController.getAllProjects,
+		logResponse,
+		respond
 	);
 
 /**
@@ -344,20 +316,9 @@ router.route('/projects/:projectid')
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		utils.getOrgId(req)
-		.then(() => ReformatController.getProject(req))
-		.then((projects) => {
-			return res.status(200).send({ projects: projects });
-		})
-		.catch((error) => {
-			console.log(error);
-			if (getStatusCode(error) === 404) {
-				return res.status(getStatusCode(error)).send({});
-			}
-			return res.status(getStatusCode(error)).send(error.message);
-		});
-	}
+	APIController.getProject,
+	logResponse,
+	respond
 );
 
 /**
@@ -424,36 +385,18 @@ router.route('/projects/:projectid/refs')
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		// Grabs the org id from the session user
-		utils.getOrgId(req)
-		// Grabs the branches information
-		.then(() => ReformatController.getBranches(req))
-		.then((branches) => {
-			return res.status(200).send({refs: branches});
-		})
-		.catch((error) => {
-			return res.status(getStatusCode(error)).send(error.message);
-		})
-	}
+	APIController.getRefs,
+	logResponse,
+	respond
 )
 .post(
 	utils.handleTicket,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		// Grabs the org id from the session user
-		utils.getOrgId(req)
-		// Create the branches
-		.then(() => ReformatController.postBranches(req))
-		.then((branches) => {
-			return res.status(200).send({ refs: branches });
-		})
-		.catch((error) => {
-			return res.status(getStatusCode(error)).send(error.message);
-		})
-	}
+	APIController.postRefs,
+	logResponse,
+	respond
 );
 
 /**
@@ -504,59 +447,63 @@ router.route('/projects/:projectid/refs/:refid')
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		// Adds the orgID to the request
-		utils.getOrgId(req)
-		// Grabs the branch information
-		.then(() => ReformatController.getBranch(req))
-		.then((branches) => {
-			console.log(branches)
-			return res.status(200).send({ refs: branches });
-		})
-		.catch((error) => {
-			return res.status(getStatusCode(error)).send(error.message);
-		})
-	}
+	APIController.getRef,
+	logResponse,
+	respond
 );
 
 // TODO: Document this route
 router.route('/projects/:projectid/refs/:refid/mounts')
 .get(
+	utils.handleTicket,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		// Grabs the org id from the session user
-		utils.getOrgId(req)
-		// Grabs the mounts information
-		.then(() => ReformatController.getMounts(req))
-		.then((projects) => {
-			return res.status(200).send({ projects: projects });
-		})
-		.catch((error) => {
-			return res.status(getStatusCode(error)).send(error.message);
-		})
-	}
+	APIController.getMounts,
+	logResponse,
+	respond
 );
 
 // TODO: Document this route
 router.route('/projects/:projectid/refs/:refid/groups')
 .get(
+	utils.handleTicket,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		// Grabs the org id from the session user
-		utils.getOrgId(req)
-		// Grab the group information
-		.then(() => ReformatController.getGroups(req))
-		.then((groups) => {
-			return res.status(200).send({groups: groups});
-		})
-		.catch((error) => {
-			return res.status(getStatusCode(error)).send(error.message);
-		})
-	}
+	APIController.getGroups,
+	logResponse,
+	respond
+);
+
+// TODO: documentation
+router.route('/projects/:projectid/refs/:refid/elements')
+.post(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.postElements,
+	logResponse,
+	respond
+)
+.put(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.putElements,
+	logResponse,
+	respond
+)
+.delete(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.deleteElements,
+	logResponse,
+	respond
 );
 
 /**
@@ -604,48 +551,44 @@ router.route('/projects/:projectid/refs/:refid/groups')
  */
 router.route('/projects/:projectid/refs/:refid/elements/:elementid')
 .get(
+	utils.handleTicket,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		// Grabs the org id from the session user
-		utils.getOrgId(req)
-		// Grabs the mounts information
-		.then(() => ReformatController.getElement(req))
-		.then((elements) => {
-			return res.status(200).send({ elements: elements });
-		})
-		.catch((error) => {
-			return res.status(getStatusCode(error)).send(error.message);
-		})
-	}
+	APIController.getElement,
+	logResponse,
+	respond
 );
 
 
-// TODO: Document this route
+// TODO: Document this route and eventually find a solution for documents
 router.route('/projects/:projectid/refs/:refid/documents')
 .get(
+	utils.handleTicket,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		// Grabs the org id from the session user
-		utils.getOrgId(req)
-		// Grabs the mounts information
-		.then(() => ReformatController.getDocuments(req))
-		.then((documents) => {
-			return res.status(200).send({ documents: documents });
-		})
-		.catch((error) => {
-			return res.status(getStatusCode(error)).send(error.message);
-		})
-	}
+	APIController.getDocuments,
+	logResponse,
+	respond
+);
+
+// TODO: Document this route and eventually find a solution for commits
+router.route('/projects/:projectid/refs/:refid/commits')
+.get(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.getCommits,
+	logResponse,
+	respond
 );
 
 // This is all the other routes that get hit
 // Throwing an error saying no
 app.use('*', (req, res, next) => {
-	console.log(`${req.method}: ${req.originalUrl}`);
+	console.log(`Request for route not implemented: ${req.method}: ${req.originalUrl}`);
 	return res.status(501).send('Not Implemented');
 });
 

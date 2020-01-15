@@ -60,7 +60,7 @@ function project(projObj) {
 		_modifier: projObj.lastModifiedBy,
 		_modified: projObj.updatedOn,
 		_projectId: mcfUtils.parseID(projObj._id).pop(),
-		_refId: "master",
+		_refId: 'master',
 		orgId: projObj.org
 	}
 }
@@ -76,12 +76,14 @@ function ref(branchObj) {
 	// Format branch object for return from MCF API
 	const publicBranch = getPublicData(branchObj, 'branch');
 
-	// TODO: Handle twcId, _elasticId
+	// Note: _elasticId is MMS-only
+
 	return {
 		id: publicBranch.id,
 		name: publicBranch.name,
-		type: (publicBranch.tag) ? 'tag' : 'branch',
-		parentRefId: (publicBranch.source) ? publicBranch.source : 'noParent',
+		type: (publicBranch.tag) ? 'tag' : 'Branch',
+		twcId: (publicBranch.custom.twcId) ? publicBranch.custom.twcId : null, // TODO: not sure about null here
+		parentRefId: (publicBranch.source) ? publicBranch.source : 'master',
 		_modified: publicBranch.updatedOn,
 		_modifier: publicBranch.lastModifiedBy
 	};
@@ -95,7 +97,11 @@ function ref(branchObj) {
  * @returns {object} An MMS3 formatted element.
  */
 function element(elemObj) {
-	return {
+	const knownFields = ['documentation', 'type', 'ownerID', 'name', '_projectId', '_refId',
+		'_creator', '_created', '_modifier', '_modified', '_editable'];
+	//TODO: const twcFields = [];
+
+	const elem = {
 		id: mcfUtils.parseID(elemObj._id).pop(),
 		documentation: elemObj.documentation,
 		type: elemObj.type,
@@ -109,4 +115,21 @@ function element(elemObj) {
 		_modified: elemObj.updatedOn,
 		_editable: true
 	};
+
+	// handle custom
+	Object.keys(elemObj.custom).forEach((field) => {
+		//TODO: if (twcFields.includes(field)) {
+		elem[field] = elemObj.custom[field];
+	});
+
+	// remove the name if it was set to null
+	if (elem.name === null) {
+		delete elem.name;
+	}
+	// remove the documentation if it was set to null
+	if (elem.documentation === null) {
+		delete elem.documentation;
+	}
+
+	return elem;
 }
