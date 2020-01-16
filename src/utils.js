@@ -16,8 +16,9 @@
  * plugin.
  */
 
-// Adapter modules
-const AdapterSession = require('./adapter-session-model');
+// MBEE modules
+const Project = M.require('models.project');
+const mcfUtils = M.require('lib.utils');
 
 /**
  * @description Retrieves an AdapterSession object from the database, based on
@@ -33,22 +34,22 @@ const AdapterSession = require('./adapter-session-model');
  * lookup the AdapterSession document.
  */
 async function getOrgId(req) {
-	try {
-		const session = await AdapterSession.findOne({ user: req.user._id });
+	const projects = await Project.find({});
 
-		if (!session) {
-			// Throw error that user does not have permissions on
-			throw new M.PermissionError('User does not have a session.', 'warn');
-		}
+	const projectID = projects.filter(p =>
+		p._id.endsWith(`${mcfUtils.ID_DELIMITER}${req.params.projectid}`)
+	).map(p => p._id);
 
-		// Modify the requesting object
-		req.params.orgid = session.org;
+	if (projectID.length > 1) {
+		throw new M.ServerError('Multiple projects with the same ID exist. Please'
+			+ 'contact your local administrator.', 'error')
+	}
+	else if (projectID.length === 0) {
+		throw new M.NotFoundError(`The project ${req.params.projectid} was not found.`)
 	}
 
-	catch(error) {
-		// Throw server error
-		throw new M.ServerError('Something went wrong.', 'warn');
-	}
+	// Modify the requesting object
+	req.params.orgid = mcfUtils.parseID(projectID[0])[0];
 }
 
 /**
@@ -67,8 +68,37 @@ function addHeaders(req, res, next) {
 	next();
 }
 
+/**
+ * @description Checks the request query for the key alf_ticket, and if it
+ * exists, it removes the ticket and adds an auth header for token auth
+ *
+ * @param {object} req - The request object to parse/modify.
+ * @param {object} res - THe response object.
+ * @param {Function} next - The callback function to call after completion of
+ * the function.
+ */
+function handleTicket(req, res, next) {
+	if (req.query.alf_ticket) {
+		// Parse token from URI encoding
+		const token = decodeURIComponent(req.query.alf_ticket);
+
+		req.headers.authorization = `Bearer ${token}`;
+	}
+	next();
+}
+
+function formatTicketRequest(req, res, next) {
+	// Parse token from URI encoding
+	const token = decodeURIComponent(req.params[0]);
+
+	req.headers.authorization = `Bearer ${token}`;
+	next();
+}
+
 // Export the module
 module.exports = {
 	getOrgId,
-	addHeaders
+	addHeaders,
+	handleTicket,
+	formatTicketRequest
 };

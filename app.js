@@ -9,8 +9,8 @@
  *
  * @owner Austin Bieber
  *
- * @author Leah De Laurell
  * @author Austin Bieber
+ * @author Leah De Laurell
  *
  * @description The main application for the MMS3 Adapter. Handles router
  * initialization and all routing.
@@ -19,16 +19,18 @@
 // NPM modules
 const express = require('express');
 const app = express();
+const router = express.Router();
 
 // MBEE modules
 const { authenticate, doLogin } = M.require('lib.auth');
 const { getStatusCode } = M.require('lib.errors');
-const { logRoute } = M.require('lib.middleware');
+const { logRoute, logResponse, respond } = M.require('lib.middleware');
 
 // Adapter modules
-const AdapterSession = require('./src/adapter-session-model');
-const ReformatController = require('./src/reformat-controller');
+const APIController = require('./src/api-controller');
 const utils = require('./src/utils.js');
+
+app.use('/alfresco/service', router);
 
 /**
  * @swagger
@@ -56,18 +58,22 @@ const utils = require('./src/utils.js');
  *       200:
  *         description: OK
  */
-app.route('/api/login')
+router.route('/api/login')
 .post(
 	authenticate,
 	logRoute,
 	doLogin,
 	utils.addHeaders,
-	(req, res, next) => res.status(200).send({ data: { ticket: req.session.token } })
+	APIController.postLogin,
+	logResponse,
+	respond
 )
 .options(
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => res.sendStatus(200)
+	APIController.optionsLogin,
+	logResponse,
+	respond
 );
 
 
@@ -89,12 +95,26 @@ app.route('/api/login')
  *       500:
  *         description: Internal Server Error
  */
-app.route('/mms/login/ticket/*')
+router.route('/mms/login/ticket/*')
 .get(
+	utils.formatTicketRequest,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => res.status(200).send({ username: req.user._id })
+	APIController.getTicket,
+	logResponse,
+	respond
+);
+
+// TODO: Document this route. Seems to only be used by View Editor
+router.route('/connection/jms')
+.get(
+	utils.addHeaders,
+	(req, res, next) => {
+		res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, authorization');
+		res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+		res.status(200).send();
+	}
 );
 
 /**
@@ -120,20 +140,56 @@ app.route('/mms/login/ticket/*')
  *       500:
  *         description: Internal Server Error
  */
-app.route('/orgs')
+router.route('/orgs')
 .get(
+	utils.handleTicket,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		ReformatController.getOrgs(req)
-		.then((orgs) => {
-			return res.status(200).send({ orgs: orgs });
-		})
-		.catch((error) => {
-			return res.status(getStatusCode(error)).send(error.message);
-		})
-	}
+	APIController.getOrgs,
+	logResponse,
+	respond
+)
+.post(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.postOrgs,
+	logResponse,
+	respond
+);
+
+/**
+ * @swagger
+ * /orgs/{orgid}:
+ *   get:
+ *     tags:
+ *       - organizations
+ *     description: Finds and returns an array containing a single organization.
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/orgs/:orgid')
+.get(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.getOrgs,
+	logResponse,
+	respond
 );
 
 /**
@@ -168,37 +224,101 @@ app.route('/orgs')
  *       500:
  *         description: Internal Server Error
  */
-app.route('/orgs/:orgid/projects')
+router.route('/orgs/:orgid/projects')
 .get(
+	utils.handleTicket,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
+	APIController.getProjects,
+	logResponse,
+	respond
+)
+.post(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.postProjects,
+	logResponse,
+	respond
+);
 
-		const session = {
-			user: req.user._id,
-			org: req.params.orgid
-		};
+/**
+ * @swagger
+ * /projects:
+ *   get:
+ *     tags:
+ *       - projects
+ *     description: Finds and returns an array containing all projects the user
+ *        has at least read access on. Returns the projects formatted for the
+ *        MMS3 API.
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/projects')
+	.get(
+		utils.handleTicket,
+		authenticate,
+		logRoute,
+		utils.addHeaders,
+		APIController.getAllProjects,
+		logResponse,
+		respond
+	);
 
-		// Find or replace the session for user trying to use ve
-		// This will either create a new mongo document with orgid in db
-		const bulkWriteObj = {
-			replaceOne: {
-				filter: { user: req.user._id },
-				replacement: session,
-				upsert: true
-			}
-		};
-		AdapterSession.bulkWrite([bulkWriteObj])
-		// Grab the project information
-		.then(() => ReformatController.getProjects(req))
-		.then((projects) => {
-			return res.status(200).send({projects: projects});
-		})
-		.catch((error) => {
-			return res.status(getStatusCode(error)).send(error.message);
-		})
-	}
+/**
+ * @swagger
+ * /projects/{projectid}:
+ *   get:
+ *     tags:
+ *       - projects
+ *     description: Finds and returns an array containing a single project
+ *        object. Returns the project formatted for the MMS3 API.
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project to find.
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/projects/:projectid')
+.get(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.getProject,
+	logResponse,
+	respond
 );
 
 /**
@@ -231,64 +351,159 @@ app.route('/orgs/:orgid/projects')
  *         description: Not Found
  *       500:
  *         description: Internal Server Error
+ *   post:
+ *     tags:
+ *       - branches
+ *     description: Creates multiple branches under the specified project.
+ *        Returns the branches (refs) formatted for the MMS3 API.
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project which contains the searched
+ *                      branches/refs.
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
  */
-app.route('/projects/:projectid/refs')
+router.route('/projects/:projectid/refs')
 .get(
+	utils.handleTicket,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		// Grabs the org id from the session user
-		utils.getOrgId(req)
-		// Grabs the branches information
-		.then(() => ReformatController.getBranches(req))
-		.then((branches) => {
-			return res.status(200).send({refs: branches});
-		})
-		.catch((error) => {
-			return res.status(getStatusCode(error)).send(error.message);
-		})
-	}
+	APIController.getRefs,
+	logResponse,
+	respond
+)
+.post(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.postRefs,
+	logResponse,
+	respond
+);
+
+/**
+ * @swagger
+ * /projects/{projectid}/refs/{refid}:
+ *   get:
+ *     tags:
+ *       - branches
+ *     description: Finds and returns a single branch from the refid provided in
+ *        the request params. Returns the branch (ref) formatted for the MMS3
+ *        API.
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project which contains the searched
+ *                      branch/ref.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: refid
+ *         description: The ID of the ref to find.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: alf_ticket
+ *         description: A token passed in the query, used for authorization.
+ *         in: query
+ *         required: false
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/projects/:projectid/refs/:refid')
+.get(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.getRef,
+	logResponse,
+	respond
 );
 
 // TODO: Document this route
-app.route('/projects/:projectid/refs/:refid/mounts')
+router.route('/projects/:projectid/refs/:refid/mounts')
 .get(
+	utils.handleTicket,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		// Grabs the org id from the session user
-		utils.getOrgId(req)
-		// Grabs the mounts information
-		.then(() => ReformatController.getMounts(req))
-		.then((projects) => {
-			return res.status(200).send({ projects: projects });
-		})
-		.catch((error) => {
-			return res.status(getStatusCode(error)).send(error.message);
-		})
-	}
+	APIController.getMounts,
+	logResponse,
+	respond
 );
 
 // TODO: Document this route
-app.route('/projects/:projectid/refs/:refid/groups')
+router.route('/projects/:projectid/refs/:refid/groups')
 .get(
+	utils.handleTicket,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		// Grabs the org id from the session user
-		utils.getOrgId(req)
-		// Grab the group information
-		.then(() => ReformatController.getGroups(req))
-		.then((groups) => {
-			return res.status(200).send({groups: groups});
-		})
-		.catch((error) => {
-			return res.status(getStatusCode(error)).send(error.message);
-		})
-	}
+	APIController.getGroups,
+	logResponse,
+	respond
+);
+
+// TODO: documentation
+router.route('/projects/:projectid/refs/:refid/elements')
+.post(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.postElements,
+	logResponse,
+	respond
+)
+.put(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.putElements,
+	logResponse,
+	respond
+)
+.delete(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.deleteElements,
+	logResponse,
+	respond
 );
 
 /**
@@ -334,50 +549,46 @@ app.route('/projects/:projectid/refs/:refid/groups')
  *       500:
  *         description: Internal Server Error
  */
-app.route('/projects/:projectid/refs/:refid/elements/:elementid')
+router.route('/projects/:projectid/refs/:refid/elements/:elementid')
 .get(
+	utils.handleTicket,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		// Grabs the org id from the session user
-		utils.getOrgId(req)
-		// Grabs the mounts information
-		.then(() => ReformatController.getElement(req))
-		.then((elements) => {
-			return res.status(200).send({ elements: elements });
-		})
-		.catch((error) => {
-			return res.status(getStatusCode(error)).send(error.message);
-		})
-	}
+	APIController.getElement,
+	logResponse,
+	respond
 );
 
 
-// TODO: Document this route
-app.route('/projects/:projectid/refs/:refid/documents')
+// TODO: Document this route and eventually find a solution for documents
+router.route('/projects/:projectid/refs/:refid/documents')
 .get(
+	utils.handleTicket,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	(req, res, next) => {
-		// Grabs the org id from the session user
-		utils.getOrgId(req)
-		// Grabs the mounts information
-		.then(() => ReformatController.getDocuments(req))
-		.then((documents) => {
-			return res.status(200).send({ documents: documents });
-		})
-		.catch((error) => {
-			return res.status(getStatusCode(error)).send(error.message);
-		})
-	}
+	APIController.getDocuments,
+	logResponse,
+	respond
+);
+
+// TODO: Document this route and eventually find a solution for commits
+router.route('/projects/:projectid/refs/:refid/commits')
+.get(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.getCommits,
+	logResponse,
+	respond
 );
 
 // This is all the other routes that get hit
 // Throwing an error saying no
 app.use('*', (req, res, next) => {
-	console.log(`${req.method}: ${req.originalUrl}`);
+	console.log(`Request for route not implemented: ${req.method}: ${req.originalUrl}`);
 	return res.status(501).send('Not Implemented');
 });
 
