@@ -7,8 +7,6 @@
   "license": "LMPI",
   "private": true,
   "dependencies": {
-    "express": "^4.17.1",
-    "request": "^2.34",
-    "request-promise": "^4.2.4"
+    "express": "^4.17.1"
   }
 }
