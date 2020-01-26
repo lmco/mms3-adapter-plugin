@@ -504,25 +504,105 @@ async function postElements(req) {
  * @returns The found elements.
  */
 async function putElements(req) {
+  // Define options and ids
+  // Note: Undefined if not set
+  let options;
+  let format;
+  let minified = false;
 	const results = [];
 
 	const elements = req.body.elements;
 	const elemIDs = elements.map((e) => e.id);
 
 	console.log(`There were ${elements.length} elements requested via PUT`);
+  // Define valid option and its parsed type
+  const validOptions = {
+    //MMS3 Compatible options
+    alf_ticket: 'string',
+    depth: 'number',
+    //Standard MCF Options
+    populate: 'array',
+    archived: 'boolean',
+    includeArchived: 'boolean',
+    subtree: 'boolean',
+    fields: 'array',
+    limit: 'number',
+    skip: 'number',
+    sort: 'string',
+    ids: 'array',
+    format: 'string',
+    minified: 'boolean',
+    parent: 'string',
+    source: 'string',
+    target: 'string',
+    type: 'string',
+    name: 'string',
+    createdBy: 'string',
+    lastModifiedBy: 'string',
+    archivedBy: 'string',
+    artifact: 'string'
+  };
+
+  // Loop through req.query
+  if (req.query) {
+    Object.keys(req.query).forEach((k) => {
+      // If the key starts with custom., add it to the validOptions object
+      if (k.startsWith('custom.')) {
+        validOptions[k] = 'string';
+      }
+    });
+  }
+
+  // Sanity Check: there should always be a user in the request
+  if (!req.user) return noUserError(req, res, next);
+
+  // Attempt to parse query options
+  try {
+    // Extract options from request query
+    options = mcfUtils.parseOptions(req.query, validOptions);
+    // Remove MMS3 ticket from find
+    delete options.alf_ticket;
+    // Convert MMS3 depth to MCF
+    //TODO: Introduce depth to subtree functionality in core MCF or build custom depth search here
+    if (options.depth !== 0) {
+      options.subtree = true;
+    }
+    delete options.depth;
+  }
+  catch (error) {
+    // Error occurred with options, report it
+    return mcfUtils.formatResponse(req, res, error.message, errors.getStatusCode(error), next);
+  }
+
+  // Check query for element IDs
+  //if (options.ids) {
+  //  elemIDs = options.ids;
+  //  delete options.ids;
+  //}
 
 	// console.log('MDK JSON for PUT Elements')
 	// console.log(elements)
 
 	// See if the elements already exist
 	const foundElements = await ElementController.find(req.user, req.params.orgid,
-		req.params.projectid, req.params.refid, elemIDs);
+		req.params.projectid, req.params.refid, elemIDs, options);
 	foundElements.forEach((e) => e._id = mcfUtils.parseID(e._id).pop());
 	const foundElementIDs = foundElements.map((e) => mcfUtils.parseID(e._id).pop());
 	const foundElementsJMI = mcfJMI.convertJMI(1, 2, foundElements);
 	const mcfFields = ['id', 'name', 'documentation', 'type', 'parent', 'source', 'target', 'project', 'branch', 'artifact'];
 
-	// Format the elements for mcf
+	//Add subtree elements to request array
+  if (options.subtree) {
+    foundElementIDs.forEach((foundID) => {
+      const foundSubElement = {};
+      foundSubElement.id = foundID;
+      if (!elemIDs.includes(foundID)) {
+        elements.push(foundSubElement);
+      }
+    });
+  }
+
+  //Format the elements for mcf
 	elements.forEach((element) => {
 		element.custom = {};
 		Object.keys(element).forEach((field) => {

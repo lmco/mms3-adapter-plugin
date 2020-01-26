@@ -183,6 +183,8 @@ async function getProject(req, res, next) {
     res.locals.statusCode = getStatusCode(error);
     if (getStatusCode(error) !== 404) {
       res.locals.message = error.message;
+    }else{
+      res.locals.message = { projects: [] };
     }
   }
   next();
