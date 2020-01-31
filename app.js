@@ -24,7 +24,8 @@ const router = express.Router();
 // MBEE modules
 const { authenticate, doLogin } = M.require('lib.auth');
 const { getStatusCode } = M.require('lib.errors');
-const { logRoute, logResponse, respond } = M.require('lib.middleware');
+const { logRoute, logResponse, respond, disableUserAPI } = M.require('lib.middleware');
+const { version, login, whoami, getUser } = M.require('controllers.api-controller');
 
 // Adapter modules
 const APIController = require('./src/api-controller');
@@ -76,6 +77,50 @@ router.route('/api/login')
 	respond
 );
 
+/**
+ * @swagger
+ * /api/login/ticket:
+ *   post:
+ *     tags:
+ *       - general
+ *     description: Authenticates a user using the MCF auth module and returns
+ *        a response containing a barer token.
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal Server Error
+ *   options:
+ *     tags:
+ *       - general
+ *     description: Returns a response containing headers which specify the
+ *        allowed headers for POST.
+ *     responses:
+ *       200:
+ *         description: OK
+ */
+router.route('/api/login/ticket')
+.post(
+	authenticate,
+	logRoute,
+	doLogin,
+	utils.addHeaders,
+	login,
+	logResponse,
+	respond
+)
+.options(
+	logRoute,
+	utils.addHeaders,
+	APIController.optionsLogin,
+	logResponse,
+	respond
+);
+
 
 /**
  * @swagger
@@ -96,15 +141,187 @@ router.route('/api/login')
  *         description: Internal Server Error
  */
 router.route('/mms/login/ticket/*')
+	.get(
+		utils.formatTicketRequest,
+		authenticate,
+		logRoute,
+		utils.addHeaders,
+		APIController.getTicket,
+		logResponse,
+		respond
+	)
+	.options(
+		logRoute,
+		utils.addHeaders,
+		APIController.optionsDefault,
+		logResponse,
+		respond
+	);
+
+/**
+ * @swagger
+ * /api/version:
+ *   get:
+ *     tags:
+ *       - general
+ *     description: Returns the application version as JSON.
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: OK, Succeeded to get version.
+ *       401:
+ *         description: Unauthorized, Failed to get version due to not being
+ *                      logged in.
+ *       500:
+ *         description: Internal Server Error, Failed to get version due to
+ *                      server side issue.
+ */
+router.route('/api/version')
 .get(
-	utils.formatTicketRequest,
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	APIController.getTicket,
+	version,
+	logResponse,
+	respond
+)
+.options(
+	logRoute,
+	utils.addHeaders,
+	APIController.optionsDefault,
 	logResponse,
 	respond
 );
+
+/**
+ * @swagger
+ * /api/users/whoami:
+ *   get:
+ *     tags:
+ *       - users
+ *     description: Returns the currently logged in user's public information.
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: minified
+ *         description: If true, the returned JSON is minified. If false, the
+ *                      returned JSON is formatted based on the format specified
+ *                      in the config. The default value is false.
+ *         in: query
+ *         type: boolean
+ *         default: false
+ *     responses:
+ *       200:
+ *         description: OK, Succeeded to GET current user information returns
+ *                      user public data.
+ *       401:
+ *         description: Unauthorized, Failed to GET user information due to not
+ *                      being logged in.
+ *       403:
+ *         description: Forbidden, Failed to GET user information due to not
+ *                      having permissions.
+ *       404:
+ *         description: Not Found, Failed to GET current user information due to
+ *                      not finding user.
+ *       500:
+ *         description: Internal Server Error, Failed to GET user info due to
+ *                      server side issue.
+ */
+router.route('/api/users/whoami')
+    .get(
+        authenticate,
+        logRoute,
+        utils.addHeaders,
+        whoami,
+        logResponse,
+        respond
+    )
+    .options(
+        logRoute,
+        utils.addHeaders,
+        APIController.optionsDefault,
+        logResponse,
+        respond
+    );
+
+/**
+ * @swagger
+ * /api/users/{username}:
+ *   get:
+ *     tags:
+ *       - users
+ *     description: Finds and returns a users public data.
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: username
+ *         description: The username of the user to find.
+ *         required: true
+ *         type: string
+ *         in: path
+ *       - name: populate
+ *         description: Comma separated list of values to be populated on return
+ *                      of the object. [archivedBy, lastModifiedBy, createdBy]
+ *         in: query
+ *         type: string
+ *         required: false
+ *       - name: archived
+ *         description: If true, archived objects will be also be searched
+ *                      through.
+ *         in: query
+ *         type: boolean
+ *       - name: fields
+ *         description: Comma separated list of specific fields to return. By
+ *                      default the username field is returned. To specifically
+ *                      NOT include a field, include a '-' in front of the field
+ *                      (-name). [admin, archived, archivedBy, archivedOn,
+ *                      createdBy, createdOn, custom, email, fname,
+ *                      lastModifiedBy, lname, username, preferredName,
+ *                      updatedOn]
+ *         in: query
+ *         type: string
+ *       - name: minified
+ *         description: If true, the returned JSON is minified. If false, the
+ *                      returned JSON is formatted based on the format specified
+ *                      in the config. The default value is false.
+ *         in: query
+ *         type: boolean
+ *         default: false
+ *     responses:
+ *       200:
+ *         description: OK, Succeeded to GET user, returns user's public data.
+ *       400:
+ *         description: Bad Request, Failed to GET user due to invalid data.
+ *       401:
+ *         description: Unauthorized, Failed to GET user due to not being logged
+ *                      in.
+ *       403:
+ *         description: Forbidden, Failed to GET user due to not having
+ *                      permissions.
+ *       404:
+ *         description: Not Found, Failed to GET user due to user not existing.
+ *       500:
+ *         description: Internal Server Error, Failed to GET user due to server
+ *                      side issue.
+ */
+router.route('/api/users/:username')
+    .get(
+        authenticate,
+        logRoute,
+        disableUserAPI,
+        utils.addHeaders,
+        getUser,
+        logResponse,
+        respond
+    )
+    .options(
+        logRoute,
+        utils.addHeaders,
+        APIController.optionsDefault,
+        logResponse,
+        respond
+    );
 
 // TODO: Document this route. Seems to only be used by View Editor
 router.route('/connection/jms')
@@ -115,6 +332,13 @@ router.route('/connection/jms')
 		res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
 		res.status(200).send();
 	}
+)
+.options(
+	logRoute,
+	utils.addHeaders,
+	APIController.optionsDefault,
+	logResponse,
+	respond
 );
 
 /**
@@ -158,6 +382,13 @@ router.route('/orgs')
 	APIController.postOrgs,
 	logResponse,
 	respond
+)
+.options(
+	logRoute,
+	utils.addHeaders,
+	APIController.optionsDefault,
+	logResponse,
+	respond
 );
 
 /**
@@ -188,6 +419,13 @@ router.route('/orgs/:orgid')
 	logRoute,
 	utils.addHeaders,
 	APIController.getOrgs,
+	logResponse,
+	respond
+)
+.options(
+	logRoute,
+	utils.addHeaders,
+	APIController.optionsDefault,
 	logResponse,
 	respond
 );
@@ -242,6 +480,13 @@ router.route('/orgs/:orgid/projects')
 	APIController.postProjects,
 	logResponse,
 	respond
+)
+.options(
+	logRoute,
+	utils.addHeaders,
+	APIController.optionsDefault,
+	logResponse,
+	respond
 );
 
 /**
@@ -270,15 +515,22 @@ router.route('/orgs/:orgid/projects')
  *         description: Internal Server Error
  */
 router.route('/projects')
-	.get(
-		utils.handleTicket,
-		authenticate,
-		logRoute,
-		utils.addHeaders,
-		APIController.getAllProjects,
-		logResponse,
-		respond
-	);
+.get(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.getAllProjects,
+	logResponse,
+	respond
+)
+.options(
+	logRoute,
+	utils.addHeaders,
+	APIController.optionsDefault,
+	logResponse,
+	respond
+);
 
 /**
  * @swagger
@@ -317,6 +569,13 @@ router.route('/projects/:projectid')
 	logRoute,
 	utils.addHeaders,
 	APIController.getProject,
+	logResponse,
+	respond
+)
+.options(
+	logRoute,
+	utils.addHeaders,
+	APIController.optionsDefault,
 	logResponse,
 	respond
 );
@@ -397,6 +656,13 @@ router.route('/projects/:projectid/refs')
 	APIController.postRefs,
 	logResponse,
 	respond
+)
+.options(
+	logRoute,
+	utils.addHeaders,
+	APIController.optionsDefault,
+	logResponse,
+	respond
 );
 
 /**
@@ -450,6 +716,13 @@ router.route('/projects/:projectid/refs/:refid')
 	APIController.getRef,
 	logResponse,
 	respond
+)
+.options(
+	logRoute,
+	utils.addHeaders,
+	APIController.optionsDefault,
+	logResponse,
+	respond
 );
 
 // TODO: Document this route
@@ -462,6 +735,13 @@ router.route('/projects/:projectid/refs/:refid/mounts')
 	APIController.getMounts,
 	logResponse,
 	respond
+)
+.options(
+	logRoute,
+	utils.addHeaders,
+	APIController.optionsDefault,
+	logResponse,
+	respond
 );
 
 // TODO: Document this route
@@ -472,6 +752,13 @@ router.route('/projects/:projectid/refs/:refid/groups')
 	logRoute,
 	utils.addHeaders,
 	APIController.getGroups,
+	logResponse,
+	respond
+)
+.options(
+	logRoute,
+	utils.addHeaders,
+	APIController.optionsDefault,
 	logResponse,
 	respond
 );
@@ -502,6 +789,13 @@ router.route('/projects/:projectid/refs/:refid/elements')
 	logRoute,
 	utils.addHeaders,
 	APIController.deleteElements,
+	logResponse,
+	respond
+)
+.options(
+	logRoute,
+	utils.addHeaders,
+	APIController.optionsDefault,
 	logResponse,
 	respond
 );
@@ -556,6 +850,13 @@ router.route('/projects/:projectid/refs/:refid/elements/:elementid')
 	logRoute,
 	utils.addHeaders,
 	APIController.getElement,
+	logResponse,
+	respond
+)
+.options(
+	logRoute,
+	utils.addHeaders,
+	APIController.optionsDefault,
 	logResponse,
 	respond
 );

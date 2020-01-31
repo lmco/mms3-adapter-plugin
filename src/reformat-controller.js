@@ -379,14 +379,14 @@ async function getMounts(req) {
     return {
 			type: 'Project',
 			name: project.name,
-			id: mcfUtils.parseID(project._id).pop(),
+			id: project.id,
 			twcId: project.custom.twcId,
 			categoryId: null,
 			_creator: project.createdBy,
 			_created: project.createdOn,
 			_modifier: project.lastModifiedBy,
 			_modified: project.updatedOn,
-			_projectId: mcfUtils.parseID(project._id).pop(),
+			_projectId: project.id,
 			_refId: "master",
 			orgId: project.org,
 			_mounts: [],
@@ -408,7 +408,42 @@ async function getMounts(req) {
 async function getGroups(req) {
 	// TODO: Figure out what groups are used for, how to get them from MCF and
 	//  implement this function!
-	return [];
+	const groups = [];
+    const results = [];
+    const groupQuery = {"custom._isGroup": "true"};
+
+    // See if the groups already exist
+    const foundGroups = await ElementController.search(req.user, req.params.orgid, req.params.projectid,
+        req.params.refid,"",groupQuery);
+    foundGroups.forEach((e) => e._id = mcfUtils.parseID(e._id).pop());
+    const foundGroupIDs = foundGroups.map((e) => mcfUtils.parseID(e._id).pop());
+    const foundGroupsJMI = mcfJMI.convertJMI(1, 2, foundGroups);
+    const mcfFields = ['id', 'name', 'documentation', 'type', 'parent', 'source', 'target', 'project', 'branch', 'artifact'];
+
+	foundGroupIDs.forEach((foundID) => {
+		const foundSubGroup = {};
+		foundSubGroup.id = foundID;
+		groups.push(foundSubGroup);
+	});
+
+    //Format the groups for mcf
+    groups.forEach((group) => {
+        group.custom = {};
+        Object.keys(group).forEach((field) => {
+            if (!mcfFields.includes(field)) {
+                group.custom[field] = group[field];
+                delete group[field]
+            }
+        });
+        if (foundGroupIDs.includes(group.id)) {
+            // Return the group that already exists
+            results.push(foundGroupsJMI[group.id]);
+        }
+    });
+
+    console.log(`There were ${results.length} groups returned for GET /groups`);
+
+    return results.map((e) => formatter.element(e));
 }
 
 /**

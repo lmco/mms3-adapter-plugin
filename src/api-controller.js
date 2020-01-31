@@ -58,6 +58,18 @@ function optionsLogin(req, res, next) {
  * @param {object} res - Response express object.
  * @param {Function} next - Middleware callback to trigger the next function
  */
+function optionsDefault(req, res, next) {
+    res.locals.statusCode = 200;
+    next();
+}
+
+/**
+ * @description
+ *
+ * @param {object} req - Request express object.
+ * @param {object} res - Response express object.
+ * @param {Function} next - Middleware callback to trigger the next function
+ */
 function getTicket(req, res, next) {
   res.locals.statusCode = 200;
   res.locals.message = { username: req.user._id };
@@ -473,6 +485,7 @@ async function getCommits(req, res, next) {
 module.exports = {
   postLogin,
   optionsLogin,
+  optionsDefault,
   getTicket,
   getOrgs,
   postOrgs,
