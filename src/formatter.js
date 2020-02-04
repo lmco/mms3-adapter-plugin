@@ -12,20 +12,159 @@
  * @author Austin Bieber
  * @author Leah De Laurell
  *
- * @description Exports functions which format MCF objects into the MMS3 API
+ * @description Exports functions which format MDK requests into MCF-friendly objects
+ * and MCF objects into MMS3 objects
  * format.
  */
 
 // MCF Modules
+const ElementController = M.require('controllers.element-controller');
 const mcfUtils = M.require('lib.utils');
 const { getPublicData } = M.require('lib.get-public-data');
 
+// Adapter modules
+const namespace = require('./utils').customDataNamespace;
+
 module.exports = {
-	org,
-	project,
-	ref,
-	element
+	mcfOrg,
+	mcfProject,
+	mcfBranch,
+	mcfElements,
+	mmsOrg,
+	mmsProject,
+	mmsRef,
+	mmsElement
 };
+
+/**
+ *
+ * @param org
+ * @returns {*}
+ */
+function mcfOrg(org) {
+	// Define known MCF fields
+	const knownKeys = ['id', 'name', 'custom'];
+
+	// Define the custom data field
+	org.custom = {
+		[namespace]: {}
+	};
+
+	// Add extra keys to custom data
+	Object.keys(org).forEach((k) => {
+		if (!knownKeys.includes(k)) {
+			proj.custom[namespace][k] = org[k];
+			delete org[k];
+		}
+	});
+
+	return org;
+}
+
+/**
+ *
+ * @param proj
+ * @returns {*}
+ */
+function mcfProject(proj) {
+	// Define known MCF fields
+	const knownKeys = ['id', 'name', 'custom'];
+
+	// Define the custom data field
+	proj.custom = {
+		[namespace]: {}
+	};
+
+	// Add extra keys to custom data
+	Object.keys(proj).forEach((k) => {
+		if (!knownKeys.includes(k)) {
+			proj.custom[namespace][k] = proj[k];
+			delete proj[k];
+		}
+	});
+
+	return proj;
+}
+
+/**
+ *
+ * @param branch
+ * @returns {*}
+ */
+function mcfBranch(branch) {
+	// Define known MCF fields
+	const knownKeys = ['id', 'name', 'source', 'custom'];
+
+	// Define the custom data field
+	branch.custom = {
+		[namespace]: {}
+	};
+
+	if (branch.id !== 'master') branch.source = branch.parentRefId;
+
+	// Add extra keys to custom data
+	Object.keys(branch).forEach((k) => {
+		if (!knownKeys.includes(k)) {
+			branch.custom[namespace][k] = branch[k];
+			delete branch[k];
+		}
+	});
+
+	return branch;
+}
+
+/**
+ * @description
+ * @async
+ *
+ * @param {object} req - The request object. Used for its orgid, projectid, and refid parameters.
+ * @param {object} elements - The elements to format.
+ * @returns The formatted element
+ */
+async function mcfElements(req, elements) {
+	const mcfFields = ['id', 'name', 'documentation', 'type', 'parent', 'source', 'target', 'project', 'branch', 'artifact', 'custom'];
+	const promises = [];
+
+	elements.forEach((elem) => {
+		elem.custom = {
+			[namespace]: {}
+		};
+		Object.keys(elem).forEach( (field) => {
+			// Handle ownerId/parent
+			if (field === 'ownerId' && elem[field] !== undefined && elem[field] !== null) {
+				elem.parent = elem.ownerId;
+				// Check if the parent is also being created
+				if (!elements.map((e) => e.id).includes(elem.parent)) {
+					promises.push(ElementController.find(req.user, req.params.orgid, req.params.projectid,
+						req.params.refid, elem.parent)
+						.then((parent) => {
+							if (parent.length === 0) delete elem.parent;
+						}));
+				}
+			}
+
+			if (!mcfFields.includes(field)) {
+				elem.custom[namespace][field] = elem[field];
+				delete elem[field]
+			}
+		});
+		// Sometimes Cameo wants to store the value as null
+		if (elem.target === null) {
+			elem.custom[namespace].target = null;
+			delete elem.target;
+		}
+		// Sometimes Cameo wants to store nothing; null for these fields will result in the fields
+		// not being returned in mmsElement()
+		if (!elem.hasOwnProperty('name')) {
+			elem.custom[namespace].name = null;
+		}
+		if (!elem.hasOwnProperty('documentation')) {
+			elem.custom[namespace].documentation = null;
+		}
+	});
+
+	await Promise.all(promises);
+}
 
 /**
  * @description Formats an MCF org into an MMS3 org.
@@ -34,34 +173,43 @@ module.exports = {
  *
  * @returns {object} An MMS3 formatted org.
  */
-function org(orgObj) {
+function mmsOrg(reqUser, orgObj) {
 	// TODO: Handle _elasticId
+	const org = getPublicData(reqUser, orgObj, 'org');
+
 	return {
-		id: orgObj._id,
-		name: orgObj.name
+		id: org.id,
+		name: org.name
 	};
 }
 
 /**
  * @description Formats an MCF project into an MMS3 project.
  *
+ * @param {object} reqUser
  * @param {object} projObj - The MCF project to format
  *
  * @returns {object} An MMS3 formatted project.
  */
-function project(projObj) {
-	// TODO: Handle twcId, categoryId, _elasticId
+function mmsProject(reqUser, projObj) {
+	// Get the public data of the project
+	const proj = getPublicData(reqUser, projObj, 'project');
+
+	// TODO: Handle categoryId, _elasticId
+
+	// TODO: convert custom[namespace] into fields
+
 	return {
 		type: 'Project',
-		name: projObj.name,
-		id: mcfUtils.parseID(projObj._id).pop(),
-		_creator: projObj.createdBy,
-		_created: projObj.createdOn,
-		_modifier: projObj.lastModifiedBy,
-		_modified: projObj.updatedOn,
-		_projectId: mcfUtils.parseID(projObj._id).pop(),
+		name: proj.name,
+		id: proj.id,
+		_creator: proj.createdBy,
+		_created: proj.createdOn,
+		_modifier: proj.lastModifiedBy,
+		_modified: proj.updatedOn,
+		_projectId: proj.id,
 		_refId: 'master',
-		orgId: projObj.org
+		orgId: proj.org
 	}
 }
 
@@ -72,21 +220,32 @@ function project(projObj) {
  *
  * @returns {object} An MMS3 formatted ref.
  */
-function ref(branchObj) {
-	// Format branch object for return from MCF API
-	const publicBranch = getPublicData(branchObj, 'branch');
-
+function mmsRef(reqUser, branchObj) {
+	// Get the public data of the branch
+	console.log('-------')
+	console.log(branchObj)
+	const publicBranch = getPublicData(reqUser, branchObj, 'branch');
+	console.log(publicBranch)
 	// Note: _elasticId is MMS-only
 
-	return {
+	// TODO: convert custom[namespace] into fields
+
+	const branch = {
 		id: publicBranch.id,
 		name: publicBranch.name,
 		type: (publicBranch.tag) ? 'tag' : 'Branch',
-		twcId: (publicBranch.custom.twcId) ? publicBranch.custom.twcId : null, // TODO: not sure about null here
 		parentRefId: (publicBranch.source) ? publicBranch.source : 'master',
 		_modified: publicBranch.updatedOn,
 		_modifier: publicBranch.lastModifiedBy
 	};
+
+	if (publicBranch.custom.hasOwnProperty(namespace)) {
+		Object.keys(publicBranch.custom[namespace]).forEach((field) => {
+			branch[field] = publicBranch.custom[namespace][field];
+		});
+	}
+
+	return branch;
 }
 
 /**
@@ -96,37 +255,39 @@ function ref(branchObj) {
  *
  * @returns {object} An MMS3 formatted element.
  */
-function element(elemObj) {
+function mmsElement(reqUser, elemObj) {
+	// Get the public data of the element
+	const elemPublicData = getPublicData(reqUser, elemObj, 'element');
+
+	// TODO: use this or get rid of it
 	const knownFields = ['documentation', 'type', 'ownerID', 'name', '_projectId', '_refId',
 		'_creator', '_created', '_modifier', '_modified', '_editable'];
-	//TODO: const twcFields = [];
 
 	const elem = {
-		id: mcfUtils.parseID(elemObj._id).pop(),
-		documentation: elemObj.documentation,
-		type: elemObj.type,
-		ownerId: (elemObj.parent === null) ? null : mcfUtils.parseID(elemObj.parent).pop(),
-		name: elemObj.name,
-		_projectId: mcfUtils.parseID(elemObj.project).pop(),
-		_refId: mcfUtils.parseID(elemObj.branch).pop(),
-		_creator: elemObj.createdBy,
-		_created: elemObj.createdOn,
-		_modifier: elemObj.lastModifiedBy,
-		_modified: elemObj.updatedOn,
+		id: elemPublicData.id,
+		documentation: elemPublicData.documentation,
+		type: elemPublicData.type,
+		ownerId: (elemPublicData.parent === null) ? null : mcfUtils.parseID(elemPublicData.parent).pop(),
+		name: elemPublicData.name,
+		_projectId: mcfUtils.parseID(elemPublicData.project).pop(),
+		_refId: mcfUtils.parseID(elemPublicData.branch).pop(),
+		_creator: elemPublicData.createdBy,
+		_created: elemPublicData.createdOn,
+		_modifier: elemPublicData.lastModifiedBy,
+		_modified: elemPublicData.updatedOn,
 		_editable: true
 	};
 
-	// handle custom
-	Object.keys(elemObj.custom).forEach((field) => {
-		//TODO: if (twcFields.includes(field)) {
-		elem[field] = elemObj.custom[field];
+	// Handle custom
+	Object.keys(elemObj.custom[namespace]).forEach((field) => {
+		elem[field] = elemObj.custom[namespace][field];
 	});
 
-	// remove the name if it was set to null
+	// Remove the name if it was set to null
 	if (elem.name === null) {
 		delete elem.name;
 	}
-	// remove the documentation if it was set to null
+	// Remove the documentation if it was set to null
 	if (elem.documentation === null) {
 		delete elem.documentation;
 	}

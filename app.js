@@ -418,7 +418,7 @@ router.route('/orgs/:orgid')
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	APIController.getOrgs,
+	APIController.getOrg,
 	logResponse,
 	respond
 )

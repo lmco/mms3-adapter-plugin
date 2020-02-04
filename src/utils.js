@@ -95,10 +95,13 @@ function formatTicketRequest(req, res, next) {
 	next();
 }
 
+const customDataNamespace = 'CameoMDK';
+
 // Export the module
 module.exports = {
 	getOrgId,
 	addHeaders,
 	handleTicket,
-	formatTicketRequest
+	formatTicketRequest,
+	customDataNamespace
 };
