@@ -861,6 +861,22 @@ router.route('/projects/:projectid/refs/:refid/elements/:elementid')
 	respond
 );
 
+/**
+ * TODO
+ * /projects/{projectid}/refs/{refid}/elements/{elementid}/cfids:
+ * TODO
+ */
+router.route('/projects/:projectid/refs/:refid/elements/:elementid/cfids')
+.get(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.getElementCfids,
+	logResponse,
+	respond
+);
+
 
 // TODO: Document this route and eventually find a solution for documents
 router.route('/projects/:projectid/refs/:refid/documents')

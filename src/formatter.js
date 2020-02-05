@@ -199,7 +199,7 @@ function mmsProject(reqUser, projObj) {
 
 	// TODO: convert custom[namespace] into fields
 
-	return {
+	const project = {
 		type: 'Project',
 		name: proj.name,
 		id: proj.id,
@@ -210,7 +210,22 @@ function mmsProject(reqUser, projObj) {
 		_projectId: proj.id,
 		_refId: 'master',
 		orgId: proj.org
+	};
+
+	// TODO: find out if these fields are added in through the custom data upon initialization of the project
+	//  / reevaluate this
+	project.categoryId = null;
+	project._mounts = [];
+	project._editable = true;
+
+
+	if (proj.custom.hasOwnProperty(namespace)) {
+		Object.keys(proj.custom[namespace]).forEach((field) => {
+			project[field] = proj.custom[namespace][field];
+		});
 	}
+
+	return project;
 }
 
 /**
@@ -222,10 +237,7 @@ function mmsProject(reqUser, projObj) {
  */
 function mmsRef(reqUser, branchObj) {
 	// Get the public data of the branch
-	console.log('-------')
-	console.log(branchObj)
 	const publicBranch = getPublicData(reqUser, branchObj, 'branch');
-	console.log(publicBranch)
 	// Note: _elasticId is MMS-only
 
 	// TODO: convert custom[namespace] into fields

@@ -450,8 +450,7 @@ async function getMounts(req, res, next) {
     // First, get the owning project
     const projects = await ProjectController.find(req.user, req.params.orgid, req.params.projectid);
 
-    // Get every element on that project
-    // TODO: does this api route include a branchid?  I hope so
+    // Get every element on the branch
     /*const elements = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
       req.params.refid);
 
@@ -474,25 +473,7 @@ async function getMounts(req, res, next) {
 
     // TODO: Does this need to be recursive to find projects that the referenced projects reference?
 
-    const mounts = projects.map((p) => {
-      let project = getPublicData(p, 'project');
-      return {
-        type: 'Project',
-        name: project.name,
-        id: project.id,
-        twcId: project.custom.twcId,
-        categoryId: null,
-        _creator: project.createdBy,
-        _created: project.createdOn,
-        _modifier: project.lastModifiedBy,
-        _modified: project.updatedOn,
-        _projectId: project.id,
-        _refId: "master",
-        orgId: project.org,
-        _mounts: [],
-        _editable: true
-      };
-    });
+    const mounts = projects.map((p) => format.mmsProject(req.user, p));
 
     // Set the status code and response message
     res.locals.statusCode = 200;
@@ -521,7 +502,7 @@ async function getGroups(req, res, next) {
     // Find all elements on the branch with the _isGroup field
     const groupQuery = { "custom._isGroup": "true" };
     const foundGroups = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
-      req.params.refid, null, groupQuery);
+      req.params.refid, groupQuery);
 
     // Return the public data of the group elements in MMS format
     const data = foundGroups.map((e) => format.mmsElement(req.user, e));
@@ -758,6 +739,11 @@ async function getElement(req, res, next) {
   next();
 }
 
+// TODO
+async function getElementCfids(req, res, next) {
+  return res.status(501).send('Not Implemented');
+}
+
 /**
  * @description Returns all documents on a specified branch. This function still
  * needs to be implemented.
@@ -845,6 +831,7 @@ module.exports = {
   putElements,
   deleteElements,
   getElement,
+  getElementCfids,
   getDocuments,
   getCommits
 };
