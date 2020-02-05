@@ -53,7 +53,7 @@ function mcfOrg(org) {
 	// Add extra keys to custom data
 	Object.keys(org).forEach((k) => {
 		if (!knownKeys.includes(k)) {
-			proj.custom[namespace][k] = org[k];
+			org.custom[namespace][k] = org[k];
 			delete org[k];
 		}
 	});

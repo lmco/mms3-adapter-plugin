@@ -24,6 +24,7 @@ const ElementController = M.require('controllers.element-controller');
 const { getStatusCode } = M.require('lib.errors');
 const mcfJMI = M.require('lib.jmi-conversions');
 const mcfUtils = M.require('lib.utils');
+const errors = M.require('lib.errors');
 
 // Adapter modules
 const format = require('./formatter.js');
@@ -31,7 +32,8 @@ const utils = require('./utils.js');
 
 
 /**
- * @description
+ * @description Formats the session token so that it can be cleanly represented in URIS.
+ * Returns the token nested in an object: { data: { ticket: token } }
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
@@ -47,7 +49,8 @@ function postLogin(req, res, next) {
 }
 
 /**
- * @description
+ * @description Responds with a 200 status code, used for OPTIONS requests to login endpoints.
+ * Not sure we need both optionsLogin and optionsDefault.
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
@@ -59,7 +62,8 @@ function optionsLogin(req, res, next) {
 }
 
 /**
- * @description
+ * @description Responds with a 200 status code, used for OPTIONS requests. Not sure we need both
+ * optionsLogin and optionsDefault.
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
@@ -71,7 +75,8 @@ function optionsDefault(req, res, next) {
 }
 
 /**
- * @description
+ * @description Returns the id of the user based on authentication of the session token calculated
+ * in previous middleware in the format: { username: userID }
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
@@ -84,9 +89,8 @@ function getTicket(req, res, next) {
 }
 
 /**
- * @description Gets a single organization by id which a requesting user has
- * access to. Returns an array containing the single organization, properly
- * formatted for the MMS3 API.
+ * @description Gets a single organization by id which a requesting user has access to. Returns
+ * the org formatted as an MMS3 org in the MMS3 API style: { orgs: [foundOrg] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -114,8 +118,8 @@ async function getOrg(req, res, next) {
 }
 
 /**
- * @description Gets all organizations a requesting user has access to. Returns
- * an array of organizations, properly formatted for the MMS3 API.
+ * @description Gets all organizations a requesting user has access to. Returns the orgs formatted
+ * as MMS3 orgs in the MMS3 API style: { orgs: [...foundOrgs] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -143,7 +147,8 @@ async function getOrgs(req, res, next) {
 }
 
 /**
- * @description Creates multiple organizations.
+ * @description Creates multiple organizations and returns them formatted as MMS3 orgs in the
+ * in the MMS3 API style: { orgs: [...createdOrgs] }.
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
@@ -152,7 +157,6 @@ async function getOrgs(req, res, next) {
 async function postOrgs(req, res, next) {
   try {
     // Format the org data for MCF
-    // TODO: flesh out this function
     const orgData = req.body.orgs.map((org) => format.mcfOrg(org));
 
     // Create the orgs
@@ -175,7 +179,8 @@ async function postOrgs(req, res, next) {
 
 /**
  * @description Gets all projects on a specific org which a requesting user has
- * access to. Returns an array of projects, properly formatted for the MMS3 API.
+ * access to. Returns the projects formatted as MMS3 projects in the MMS3 API style:
+ * { projects: [...foundProjects] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -203,7 +208,8 @@ async function getProjects(req, res, next) {
 }
 
 /**
- * @description Creates multiple projects under a specified organization.
+ * @description Creates multiple projects under a specified organization and returns the created
+ * projects formatted as MMS3 projects in the MMS3 API style: { projects: [...createdProjects] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -212,7 +218,7 @@ async function getProjects(req, res, next) {
  */
 async function postProjects(req, res, next) {
   try {
-    // TODO: validate that req.body.projects is an array
+    // TODO: validate req.body.projects
 
     // Format the project data for MCF
     const projData = req.body.projects.map((project) => format.mcfProject(project));
@@ -236,8 +242,8 @@ async function postProjects(req, res, next) {
 }
 
 /**
- * @description Gets all projects a requesting user has access to. Returns an array
- * of projects, properly formatted for the MMS3 API.
+ * @description Gets all projects a requesting user has access to. Returns the projects formatted
+ * as MMS3 projects in the MMS3 API style: { projects: [...foundProjects] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -251,9 +257,8 @@ async function getAllProjects(req, res, next) {
 }
 
 /**
- * @description Gets a single project on a specific org which a requesting user
- * has access to. Returns a single found project, properly formatted for the
- * MMS3 API.
+ * @description Gets a single project on a specific org which a requesting user has access to.
+ * Returns the project formatted as MMS3 project in the MMS3 API style: { projects: [foundProject] }
  * @async
  *
  * @param {object} req - Request express object.
@@ -287,9 +292,9 @@ async function getProject(req, res, next) {
 }
 
 /**
- * @description Gets all branches on a specific project which a requesting user
- * has access to. Returns an array of branches, properly formatted for the MMS3
- * API.
+ * @description Gets all MCF branches (MMS3 refs) on a specific project which a requesting user
+ * has access to. Returns the branches formatted as MMS3 refs in the MMS3 API style:
+ * { refs: [...foundBranches] }
  * @async
  *
  * @param {object} req - Request express object.
@@ -320,7 +325,8 @@ async function getRefs(req, res, next) {
 }
 
 /**
- * @description Creates multiple refs (branches) under a specified project.
+ * @description Creates multiple MCF branches (MMS3 refs) under a specified project. Returns the
+ * branches formatted as MMS3 refs in the MMS3 API style: { refs: [...createdBranches] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -331,6 +337,8 @@ async function postRefs(req, res, next) {
   try {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
+
+    // TODO: validate req.body.refs
 
     // Format the branch data for MCF
     const branches = req.body.refs.map((branch) => format.mcfBranch(branch));
@@ -384,8 +392,8 @@ async function postRefs(req, res, next) {
 }
 
 /**
- * @description Gets a specific branch by ID. Returns the single branch in an
- * array, properly formatted for the MMS3 API.
+ * @description Gets a specific MCF branch (MMS3 ref) by ID. Returns the branch formatted as an MMS3 ref
+ * in the MMS3 API style: { refs: [foundBranch] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -417,9 +425,8 @@ async function getRef(req, res, next) {
 }
 
 /**
- * @description Gets all mounts (referenced projects) and returns the requested
- * project, containing an array of the mounts (referenced projects). Returns
- * the project formatted properly for the MMS3 API.
+ * @description Gets all mounts (referenced projects) of the specified project. Returns the found
+ * projects formatted as MMS3 projects in the MMS3 API style: { projects: [...foundProjects] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -500,7 +507,7 @@ async function getMounts(req, res, next) {
 }
 
 /**
- * @description
+ * @description TODO
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
@@ -534,7 +541,8 @@ async function getGroups(req, res, next) {
 }
 
 /**
- * @description Creates or replaces elements on the MCF.
+ * @description Creates or replaces elements on the MCF. Returns the created elements formatted
+ * as MMS3 elements in the MMS3 API style: { elements: [createdElements] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -546,11 +554,13 @@ async function postElements(req, res, next) {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
 
+    // TODO: validate req.body.elements
+
     console.log(`There were ${req.body.elements.length} elements posted from MDK`);
 
     // Format the elements for MCF
     const elements = req.body.elements;
-    await format.mcfElements(req, elements, promises);
+    await format.mcfElements(req, elements);
 
     const results = await ElementController.createOrReplace(req.user, req.params.orgid, req.params.projectid,
       req.params.refid, elements);
@@ -574,7 +584,8 @@ async function postElements(req, res, next) {
  * @description This API endpoint does not actually function as you would expect PUT
  * to function. Instead of a create or replace request, MDK is actually requesting a
  * find operation by providing element ids. This function attempts to find elements
- * using the IDs passed in through the body of the request and returns all found elements.
+ * using the IDs passed in through the body of the request and returns all found elements
+ * in the MMS3 api format: { elements: [...foundElements] }
  * @async
  *
  * @param {object} req - Request express object.
@@ -587,17 +598,8 @@ async function putElements(req, res, next) {
     await utils.getOrgId(req);
 
     // Define options and ids
-    // Note: Undefined if not set
     let options;
-    let minified = false;
-    const results = [];
 
-    // TODO: validation on req.body.elements
-
-    const elements = req.body.elements;
-    const elemIDs = elements.map((e) => e.id);
-
-    console.log(`There were ${elements.length} elements requested via PUT`);
     // Define valid option and its parsed type
     const validOptions = {
       //MMS3 Compatible options
@@ -626,7 +628,7 @@ async function putElements(req, res, next) {
       artifact: 'string'
     };
 
-    // Loop through req.query
+    // Add custom.* query options
     if (req.query) {
       Object.keys(req.query).forEach((k) => {
         // If the key starts with custom., add it to the validOptions object
@@ -635,9 +637,6 @@ async function putElements(req, res, next) {
         }
       });
     }
-
-    // Sanity Check: there should always be a user in the request
-    if (!req.user) return noUserError(req, res, next);
 
     // Attempt to parse query options
     try {
@@ -663,35 +662,20 @@ async function putElements(req, res, next) {
     //  delete options.ids;
     //}
 
-    // console.log('MDK JSON for PUT Elements')
-    // console.log(elements)
+    // TODO: validation on req.body.elements
+
+    const elements = req.body.elements;
+    const elemIDs = elements.map((e) => e.id);
+    console.log(`There were ${elements.length} elements requested via PUT`);
 
     // Search for the elements
     const foundElements = await ElementController.find(req.user, req.params.orgid,
       req.params.projectid, req.params.refid, elemIDs, options);
 
-    foundElements.forEach((e) => e._id = mcfUtils.parseID(e._id).pop());
-    const foundElementIDs = foundElements.map((e) => e._id);
-    const foundElementsJMI = mcfJMI.convertJMI(1, 2, foundElements);
-
-    // Add subtree elements to request array
-    if (options.subtree) {
-      foundElementIDs.forEach((foundID) => {
-        if (!elemIDs.includes(foundID)) elemIDs.push(foundID);
-      });
-    }
-
-    elemIDs.forEach((elemID) => {
-      if (foundElementIDs.includes(elemID)) {
-        // Return the element that already exists
-        results.push(foundElementsJMI[elemID]);
-      }
-    });
-
-    console.log(`There were ${results.length} elements returned for PUT`);
+    console.log(`There were ${foundElements.length} elements returned for PUT`);
 
     // Return the public data of the elements in MMS format
-    const data = results.map((e) => format.mmsElement(req.user, e));
+    const data = foundElements.map((e) => format.mmsElement(req.user, e));
 
     // Set the status code and response message
     res.locals.statusCode = 200;
@@ -706,7 +690,8 @@ async function putElements(req, res, next) {
 }
 
 /**
- * @description Deletes elements by ID.
+ * @description Deletes elements by ID and returns the IDs of the successfully
+ * deleted elements in the MMS3 API format: { elements: [...deletedIDs] }
  * @async
  *
  * @param {object} req - Request express object.
@@ -738,8 +723,7 @@ async function deleteElements(req, res, next) {
 }
 
 /**
- * @description Gets a single element by ID and returns it, properly formatted
- * for the MMS3 API.
+ * @description Gets a single element by ID and returns it in the MMS3 API format.
  * @async
  *
  * @param {object} req - Request express object.
