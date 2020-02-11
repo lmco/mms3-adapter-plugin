@@ -418,7 +418,7 @@ router.route('/orgs/:orgid')
 	authenticate,
 	logRoute,
 	utils.addHeaders,
-	APIController.getOrgs,
+	APIController.getOrg,
 	logResponse,
 	respond
 )
@@ -857,6 +857,22 @@ router.route('/projects/:projectid/refs/:refid/elements/:elementid')
 	logRoute,
 	utils.addHeaders,
 	APIController.optionsDefault,
+	logResponse,
+	respond
+);
+
+/**
+ * TODO
+ * /projects/{projectid}/refs/{refid}/elements/{elementid}/cfids:
+ * TODO
+ */
+router.route('/projects/:projectid/refs/:refid/elements/:elementid/cfids')
+.get(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.getElementCfids,
 	logResponse,
 	respond
 );
