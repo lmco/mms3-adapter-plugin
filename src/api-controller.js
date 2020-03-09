@@ -236,7 +236,7 @@ async function postProjects(req, res, next) {
     await utils.asyncForEach(projects, async (project) => {
       const projectID = mcfUtils.parseID(project._id).pop();
       const elem = {
-        id: `view_instances_bin${projectID}`,
+        id: `view_instances_bin_${projectID}`,
         name: 'View Instances Bin',
         parent: 'model'
       };
