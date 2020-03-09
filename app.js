@@ -328,8 +328,6 @@ router.route('/connection/jms')
 .get(
 	utils.addHeaders,
 	(req, res, next) => {
-		res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, authorization');
-		res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
 		res.status(200).send();
 	}
 )
@@ -801,6 +799,47 @@ router.route('/projects/:projectid/refs/:refid/elements')
 );
 
 /**
+ * /projects/{projectid}/refs/{refid}/search:
+ * TODO: documentation
+ *
+ */
+router.route('/projects/:projectid/refs/:refid/search')
+.get(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.getElementSearch,
+	logResponse,
+	respond
+)
+.post(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.postElementSearch,
+	logResponse,
+	respond
+)
+.put(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.putElementSearch,
+	logResponse,
+	respond
+)
+.options(
+	logRoute,
+	utils.addHeaders,
+	APIController.optionsDefault,
+	logResponse,
+	respond
+);
+
+/**
  * @swagger
  * /projects/{projectid}/refs/{refid}/elements/{elementid}:
  *   get:
@@ -898,6 +937,27 @@ router.route('/projects/:projectid/refs/:refid/commits')
 	logRoute,
 	utils.addHeaders,
 	APIController.getCommits,
+	logResponse,
+	respond
+);
+
+// TODO: document
+router.route('/projects/:projectid/refs/:refid/artifacts')
+.post(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.postArtifacts,
+	logResponse,
+	respond
+)
+.put(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.putArtifacts,
 	logResponse,
 	respond
 );

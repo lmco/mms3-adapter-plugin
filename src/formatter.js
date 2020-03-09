@@ -197,8 +197,6 @@ function mmsProject(reqUser, projObj) {
 
 	// TODO: Handle categoryId, _elasticId
 
-	// TODO: convert custom[namespace] into fields
-
 	const project = {
 		type: 'Project',
 		name: proj.name,
@@ -209,7 +207,7 @@ function mmsProject(reqUser, projObj) {
 		_modified: proj.updatedOn,
 		_projectId: proj.id,
 		_refId: 'master',
-		orgId: proj.org
+		orgId: projObj.org
 	};
 
 	// TODO: find out if these fields are added in through the custom data upon initialization of the project

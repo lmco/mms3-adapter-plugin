@@ -15,12 +15,17 @@
  */
 
 
+// NPM modules
+const multer = require('multer');
+const upload = multer().single('file');
+
 // MBEE modules
 const OrgController = M.require('controllers.organization-controller');
 const ProjectController = M.require('controllers.project-controller');
 const BranchController = M.require('controllers.branch-controller');
 const Branch = M.require('models.branch');
 const ElementController = M.require('controllers.element-controller');
+const ArtifactController = M.require('controllers.artifact-controller');
 const { getStatusCode } = M.require('lib.errors');
 const mcfJMI = M.require('lib.jmi-conversions');
 const mcfUtils = M.require('lib.utils');
@@ -29,6 +34,7 @@ const errors = M.require('lib.errors');
 // Adapter modules
 const format = require('./formatter.js');
 const utils = require('./utils.js');
+const namespace = utils.customDataNamespace;
 
 
 /**
@@ -225,6 +231,18 @@ async function postProjects(req, res, next) {
 
     // Create the projects
     const projects = await ProjectController.create(req.user, req.params.orgid, projData);
+
+    // Give each project a view_instances_bin
+    await utils.asyncForEach(projects, async (project) => {
+      const projectID = mcfUtils.parseID(project._id).pop();
+      const elem = {
+        id: `view_instances_bin${projectid}`,
+        name: 'View Instances Bin',
+        parent: 'model'
+      };
+      // Create the view_instances_bin
+      await ElementController.create(req.user, req.params.orgid, projectID, 'master', elem)
+    });
 
     // Return the public data of the newly created projects in MMS format
     const data = projects.map((project) => format.mmsProject(req.user, project));
@@ -438,46 +456,51 @@ async function getMounts(req, res, next) {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
 
-    // TODO: Eventually add in the ability to look at the project
-    //  references that the elements reference that are not the current
-    //  project and push those projects to array for mounts
-    //  HOWTO: Any elements whose source or target does not start with org:project
-    //  4 pieces: check source field regex for
+    // Project mounts are specified by elements of type "Mount" at the very top of the model
+    // Example Element:
+    //    Name:
+    //    id:	            PROJECT-595f5a46-4bbd-4126-86a6-ec01f155cb67_18_0beta_903028d_1388650199492_420515_174142
+    //    Parent:	        model
+    //    Type:	          Mount
+    //    Documentation:
+    //    Org ID:	        default
+    //    Project ID:	    PROJECT-7ef5ab30-597f-4564-b455-b3c1c3a14439
+    //
+    //    mountedElementId :        PROJECT-595f5a46-4bbd-4126-86a6-ec01f155cb67_pm
+    //    mountedElementProjectId : PROJECT-595f5a46-4bbd-4126-86a6-ec01f155cb67
+    //    mountedRefId :            master
+    //    twcVersion :
+    //    ownerId :                 PROJECT-7ef5ab30-597f-4564-b455-b3c1c3a14439
+    //    name :                    null
+    //    documentation :           null
 
-    // TODO also: It would be really nice if the MCF did this for us and stored the mounts in a field
-    //  in the project model
+    // First get the owning project
+    const mounts = await ProjectController.find(req.user, req.params.orgid, req.params.projectid)
 
-    // First, get the owning project
-    const projects = await ProjectController.find(req.user, req.params.orgid, req.params.projectid);
+    // Get all "Mount" elements
+    const options = { type: "Mount" };
+    const mountElements = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
+      req.params.refid, options);
 
-    // Get every element on the branch
-    /*const elements = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
-      req.params.refid);
+    // Find the mounted projects
+    const mountedProjectsToFind = mountElements.map((e) => e.custom[namespace].mountedElementProjectId)
+      .filter((id) => id );
 
-    const projectsToFind = [];
+    let mountedProjects;
+    try {
+      mountedProjects = await ProjectController.find(req.user, req.params.orgid, mountedProjectsToFind);
+    }
+    catch (error) {
+      M.log.info('No mounted projects found');
+    }
 
-    // Check the source/target of every element on that project for references to other projects
-    elements.forEach((e) => {
-      if (e.source) {
-        const parts = e.source.split(mcfUtils.ID_DELIMITER);
-        if (parts[1] !== req.params.projectid) projectsToFind.push(parts[1]);
-      }
-      if (e.target) {
-        const parts = e.target.split(mcfUtils.ID_DELIMITER);
-        if (parts[1] !== req.params.projectid) projectsToFind.push(parts[1]);
-      }
-    });
+    if (mountedProjects) mounts.push(...mountedProjects);
 
-    const referencedProjects = await ProjectController.find(req.user, req.params.orgid, projectsToFind);
-    projects.concat(referencedProjects);*/
-
-    // TODO: Does this need to be recursive to find projects that the referenced projects reference?
-
-    const mounts = projects.map((p) => format.mmsProject(req.user, p));
+    const formattedMounts = mounts.map((p) => format.mmsProject(req.user, p));
 
     // Set the status code and response message
     res.locals.statusCode = 200;
-    res.locals.message = { projects: mounts};
+    res.locals.message = { projects: formattedMounts};
   }
   catch (error) {
     M.log.warn(error.message);
@@ -500,7 +523,7 @@ async function getGroups(req, res, next) {
     await utils.getOrgId(req);
 
     // Find all elements on the branch with the _isGroup field
-    const groupQuery = { "custom._isGroup": "true" };
+    const groupQuery = { [`custom.${namespace}._isGroup`] : 'true' };
     const foundGroups = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
       req.params.refid, groupQuery);
 
@@ -630,7 +653,6 @@ async function putElements(req, res, next) {
       if (options.depth !== 0) {
         options.subtree = true;
       }
-      delete options.depth;
     }
     catch (error) {
       // Error occurred with options, report it
@@ -704,6 +726,100 @@ async function deleteElements(req, res, next) {
 }
 
 /**
+ * @description Deletes elements by ID and returns the IDs of the successfully
+ * deleted elements in the MMS3 API format: { elements: [...deletedIDs] }
+ * @async
+ *
+ * @param {object} req - Request express object.
+ * @param {object} res - Response express object.
+ * @param {Function} next - Middleware callback to trigger the next function
+ */
+async function getElementSearch(req, res, next) {
+  try {
+    // Grabs the org id from the session user
+    await utils.getOrgId(req);
+
+    console.log('--------GET element search-------')
+    console.log(req.query);
+    console.log(req.body)
+    console.log('---------------------------------')
+
+    // Set the status code and response message
+    res.locals.statusCode = 200;
+    res.locals.message = { elements: [] };
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
+/**
+ * @description TODO
+ * @async
+ *
+ * @param {object} req - Request express object.
+ * @param {object} res - Response express object.
+ * @param {Function} next - Middleware callback to trigger the next function
+ */
+async function postElementSearch(req, res, next) {
+  try {
+    // Grabs the org id from the session user
+    await utils.getOrgId(req);
+
+    console.log('--------POST element search-------')
+    console.log(req.query);
+    console.log(req.body)
+    console.log('----------------------------------')
+
+    // Set the status code and response message
+    res.locals.statusCode = 200;
+    res.locals.message = { elements: [] };
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
+/**
+ * @description TODO
+ * @async
+ *
+ * @param {object} req - Request express object.
+ * @param {object} res - Response express object.
+ * @param {Function} next - Middleware callback to trigger the next function
+ */
+async function putElementSearch(req, res, next) {
+  try {
+    // Grabs the org id from the session user
+    await utils.getOrgId(req);
+
+    const elemID = req.body.query.bool.filter[0].term.id;
+    const projID = req.body.query.bool.filter[1].term._projectId;
+
+    const elements = await ElementController.find(req.user, req.params.orgid, projID, req.params.refid, elemID);
+
+    // Return the public data of the elements in MMS format
+    const data = elements.map((e) => format.mmsElement(req.user, e));
+
+    // Set the status code and response message
+    res.locals.statusCode = 200;
+    res.locals.message = { elements: data };
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
+/**
  * @description Gets a single element by ID and returns it in the MMS3 API format.
  * @async
  *
@@ -716,17 +832,90 @@ async function getElement(req, res, next) {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
 
-    // TODO: Handle the extended query parameter
+    // // Define options and ids
+    // let options;
+    //
+    // // Define valid option and its parsed type
+    // const validOptions = {
+    //   //MMS3 Compatible options
+    //   alf_ticket: 'string',
+    //   depth: 'number',
+    //   extended: 'boolean',
+    // };
+    //
+    // // Add custom.* query options
+    // if (req.query) {
+    //   Object.keys(req.query).forEach((k) => {
+    //     // If the key starts with custom., add it to the validOptions object
+    //     if (k.startsWith('custom.')) {
+    //       validOptions[k] = 'string';
+    //     }
+    //   });
+    // }
+    //
+    // // Attempt to parse query options
+    // try {
+    //   // Extract options from request query
+    //   options = mcfUtils.parseOptions(req.query, validOptions);
+    //   // Remove MMS3 ticket from find
+    //   delete options.alf_ticket;
+    //   // Convert MMS3 depth to MCF
+    //   if (options.extended) {
+    //     options.subtree = true;
+    //   }
+    // }
+    // catch (error) {
+    //   // Error occurred with options, report it
+    //   return mcfUtils.formatResponse(req, res, error.message, errors.getStatusCode(error), next);
+    // }
+
+    // TODO: Handle the 'extended' query parameter
+
+    // This is code for View Editor
+    // JPL decided to query for elements on different projects by providing the CURRENT project in the parameters.
+    // There seems to be no indication that the element is expected to be found on a separate project, but it is.
+    // So now I have to loop through all the mounts and look for the element everywhere
+
+    let elements = [];
+
+    // If the element is found on the current project, great
     // Grabs an element from controller
-    const elements = await ElementController.find(req.user, req.params.orgid, req.params.projectid, req.params.refid, req.params.elementid);
+    elements = await ElementController.find(req.user, req.params.orgid, req.params.projectid, req.params.refid, req.params.elementid);
+
+    // If the element isn't found, look for it on the mounts
+    if (elements.length === 0) {
+      // Get all the mounts
+      const mounts = await ElementController.find(req.user, req.params.orgid, req.params.projectid, req.params.refid,
+        {type: 'Mount'});
+      if (mounts.length !== 0) {
+        // Now loop through the mounts and try to find the original element
+        await utils.asyncForEach(mounts, async (mount) => {
+          const projID = mount.custom[namespace].mountedElementProjectId;
+          const refID = mount.custom[namespace].mountedRefId;
+
+          // Check that the project and branch exist first
+          const foundProject = await ProjectController.find(req.user, req.params.orgid, projID);
+          if (foundProject.length === 0) return;
+          const foundBranch = await BranchController.find(req.user, req.params.orgid, projID, refID);
+          if (foundBranch.length === 0) return;
+
+          // Look for the element
+          const foundElements = await ElementController.find(req.user, req.params.orgid, projID, refID, req.params.elementid);
+          if (foundElements.length !== 0) {
+            console.log('it has been found');
+            elements.push(foundElements[0]);
+          }
+        });
+      }
+    }
 
     // If no elements are found, throw an error
     if (elements.length === 0)  {
       throw new M.NotFoundError(`Element ${req.params.elementid} not found.`, 'warn');
     }
 
-    // Format the element object
-    const data = format.mmsElement(req.user, elements[0]);
+    // Format the element object, return it inside an array
+    const data = [format.mmsElement(req.user, elements[0])];
 
     res.locals.statusCode = 200;
     res.locals.message = { elements: data };
@@ -758,11 +947,18 @@ async function getDocuments(req, res, next) {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
 
-    // TODO: figure out what documents are
-    const data = [];
+    // JPL hard-coded in the ids for document stereotypes
+    // ... this is the only way to find documents
+    const documentStereotypeID = '_17_0_2_3_87b0275_1371477871400_792964_43374';
+    const documentQuery = { [`custom.${namespace}._appliedStereotypeIds`]: documentStereotypeID };
+    const documentElements = await ElementController.find(req.user, req.params.orgid,
+      req.params.projectid, req.params.refid, documentQuery);
+
+    // Convert elements into MMS3 format
+    const formattedDocs = documentElements.map((e) => format.mmsElement(req.user, e));
 
     res.locals.statusCode = 200;
-    res.locals.message = { documents: data };
+    res.locals.message = { documents: formattedDocs };
   }
   catch (error) {
     M.log.warn(error.message);
@@ -809,6 +1005,81 @@ async function getCommits(req, res, next) {
   next();
 }
 
+// TODO: document
+async function postArtifacts(req, res, next) {
+
+  // Grabs the org id from the session user
+  await utils.getOrgId(req);
+
+  await upload(req, res, async function(err) {
+
+    const artifactMetadata = {
+      id: req.body.id,
+      location: namespace,
+      filename: `${req.body.id}.png`,
+      custom: {
+        [namespace]: req.body
+      }
+    };
+
+    if (err instanceof multer.MulterError) {
+      // A Multer error occurred when uploading.
+      M.log.error(err);
+      const error = new M.ServerError('Artifact upload failed.', 'warn');
+      return mcfUtils.formatResponse(req, res, error.message, errors.getStatusCode(error), next);
+    }
+
+    // Sanity Check: file is required
+    if (!req.file) {
+      const error = new M.DataFormatError('Artifact Blob file must be defined.', 'warn');
+      return mcfUtils.formatResponse(req, res, error.message, getStatusCode(error), next);
+    }
+
+    try {
+      const artifact = await ArtifactController.create(req.user, req.params.orgid,
+        req.params.projectid, req.params.refid, artifactMetadata);
+      const blobResult = await ArtifactController.postBlob(req.user, req.params.orgid,
+        req.params.projectid, artifactMetadata, req.file.buffer);
+
+      // Sets the message to the blob data and the status code to 200
+      res.locals = {
+        message: blobResult,
+        statusCode: 200
+      };
+    }
+    catch (error) {
+      M.log.warn(error.message);
+      res.locals.statusCode = getStatusCode(error);
+      res.locals.message = error.message;
+    }
+  });
+  next();
+}
+
+// TODO: document
+async function putArtifacts(req, res, next) {
+  try {
+    // Grabs the org id from the session user
+    await utils.getOrgId(req);
+
+    console.log('PUT artifacts')
+    console.log(req.body.artifacts)
+
+    const artIDs = req.body.artifacts;
+
+    const artifacts = await ArtifactController.find(req.user, req.params.orgid,
+      req.params.projectid, req.params.refid, artIDs);
+
+    res.locals.statusCode = 200;
+    res.locals.message = { artifacts: [] };
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
 
 module.exports = {
   postLogin,
@@ -830,8 +1101,13 @@ module.exports = {
   postElements,
   putElements,
   deleteElements,
+  getElementSearch,
+  postElementSearch,
+  putElementSearch,
   getElement,
   getElementCfids,
   getDocuments,
-  getCommits
+  getCommits,
+  postArtifacts,
+  putArtifacts
 };

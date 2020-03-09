@@ -64,7 +64,8 @@ async function getOrgId(req) {
 function addHeaders(req, res, next) {
 	res.header('Access-Control-Allow-Origin', req.headers.origin);
 	res.header('Access-Control-Allow-Credentials', 'true');
-	res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+	res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+	res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
 	next();
 }
 
@@ -95,6 +96,13 @@ function formatTicketRequest(req, res, next) {
 	next();
 }
 
+async function asyncForEach(array, callback) {
+	for (let index = 0; index < array.length; index++) {
+		// eslint-disable-next-line no-await-in-loop
+		await callback(array[index], index, array);
+	}
+};
+
 const customDataNamespace = 'CameoMDK';
 
 // Export the module
@@ -103,5 +111,6 @@ module.exports = {
 	addHeaders,
 	handleTicket,
 	formatTicketRequest,
+	asyncForEach,
 	customDataNamespace
 };
