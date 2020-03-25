@@ -611,6 +611,7 @@ async function putElements(req, res, next) {
       if (options.depth !== 0) {
         options.subtree = true;
       }
+      delete options.depth;
     }
     catch (error) {
       // Error occurred with options, report it
@@ -628,8 +629,6 @@ async function putElements(req, res, next) {
     const elements = req.body.elements;
     // .filter because sometimes VE sends { id: null } and this will cause an error
     const elemIDs = elements.map((e) => e.id).filter((id) => id);
-
-    console.log(`There were ${elements.length} elements requested via PUT`);
 
     // Search for the elements
     const foundElements = await ElementController.find(req.user, req.params.orgid,
