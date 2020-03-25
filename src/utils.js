@@ -16,9 +16,15 @@
  * plugin.
  */
 
+const process = require('process');
+
 // MBEE modules
 const Project = M.require('models.project');
+const Element = M.require('models.element');
 const mcfUtils = M.require('lib.utils');
+
+// variable to be exported
+const customDataNamespace = 'CameoMDK';
 
 /**
  * @description Retrieves an AdapterSession object from the database, based on
@@ -64,7 +70,8 @@ async function getOrgId(req) {
 function addHeaders(req, res, next) {
 	res.header('Access-Control-Allow-Origin', req.headers.origin);
 	res.header('Access-Control-Allow-Credentials', 'true');
-	res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+	res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+	res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
 	next();
 }
 
@@ -87,6 +94,13 @@ function handleTicket(req, res, next) {
 	next();
 }
 
+/**
+ * @description TODO
+ *
+ * @param req
+ * @param res
+ * @param next
+ */
 function formatTicketRequest(req, res, next) {
 	// Parse token from URI encoding
 	const token = decodeURIComponent(req.params[0]);
@@ -95,7 +109,83 @@ function formatTicketRequest(req, res, next) {
 	next();
 }
 
-const customDataNamespace = 'CameoMDK';
+/**
+ * @description TODO
+ *
+ * @param array
+ * @param callback
+ * @returns {Promise<void>}
+ */
+async function asyncForEach(array, callback) {
+	for (let index = 0; index < array.length; index++) {
+		// eslint-disable-next-line no-await-in-loop
+		await callback(array[index], index, array);
+	}
+}
+
+
+/**
+ * @description TODO
+ *
+ * @param reqUser
+ * @param orgID
+ * @param projID
+ * @param branchID
+ * @param elements
+ * @returns {Promise<void>}
+ */
+async function generateChildViews(reqUser, orgID, projID, branchID, elements) {
+	const viewStereotype = '_18_0beta_9150291_1392290067481_33752_4359';
+	const docStereotype = '_17_0_2_3_87b0275_1371477871400_792964_43374';
+
+	let ownedAttributesToFind = [];
+
+	// Make list of ids to find
+	elements.forEach((elem) => {
+		// If element has an applied stereotype of View or Document
+		if (elem.custom[customDataNamespace] && elem.custom[customDataNamespace]._appliedStereotypeIds
+			&& (elem.custom[customDataNamespace]._appliedStereotypeIds.includes(viewStereotype)
+				|| elem.custom[customDataNamespace]._appliedStereotypeIds.includes(docStereotype))
+			&& elem.custom[customDataNamespace].hasOwnProperty('ownedAttributeIds')) {
+			// Initialize childViews on the element
+			elem.custom[customDataNamespace]._childViews = [];
+
+			// Add ownedAttributeIDs to find (generate the full _id from the id in the same step)
+			ownedAttributesToFind.push(...elem.custom[customDataNamespace].ownedAttributeIds.map((id) => {
+				return mcfUtils.createID(orgID, projID, branchID, id)
+			}));
+		}
+	});
+
+	// Find the ownedAttribute elements in a single batch request
+	const oaElems = await Element.find({ _id: { $in: ownedAttributesToFind } });
+
+	// Create the child views
+	const childViews = {};
+	oaElems.forEach((e) => {
+		const id = mcfUtils.parseID(e._id).pop();
+		if (!childViews.hasOwnProperty(id)) {
+			childViews[id] = {
+				id: e.custom[customDataNamespace].typeId,
+				aggregation: e.custom[customDataNamespace].aggregation,
+				propertyId: id
+			}
+		}
+	});
+
+	// Add the child views to their respective elements
+	elements.forEach((elem) => {
+		if (elem.custom[customDataNamespace] && elem.custom[customDataNamespace].hasOwnProperty('_childViews')) {
+			elem.custom[customDataNamespace].ownedAttributeIds.forEach((id) => {
+				if (childViews.hasOwnProperty(id)) {
+					elem.custom[customDataNamespace]._childViews.push(childViews[id]);
+				}
+			})
+		}
+	});
+}
+
+
 
 // Export the module
 module.exports = {
@@ -103,5 +193,8 @@ module.exports = {
 	addHeaders,
 	handleTicket,
 	formatTicketRequest,
+	asyncForEach,
+	generateChildViews,
+	generateChildViews2,
 	customDataNamespace
 };

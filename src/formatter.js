@@ -23,7 +23,8 @@ const mcfUtils = M.require('lib.utils');
 const { getPublicData } = M.require('lib.get-public-data');
 
 // Adapter modules
-const namespace = require('./utils').customDataNamespace;
+const utils = require('./utils');
+const namespace = utils.customDataNamespace;
 
 module.exports = {
 	mcfOrg,
@@ -33,7 +34,8 @@ module.exports = {
 	mmsOrg,
 	mmsProject,
 	mmsRef,
-	mmsElement
+	mmsElement,
+	mmsArtifact
 };
 
 /**
@@ -197,8 +199,6 @@ function mmsProject(reqUser, projObj) {
 
 	// TODO: Handle categoryId, _elasticId
 
-	// TODO: convert custom[namespace] into fields
-
 	const project = {
 		type: 'Project',
 		name: proj.name,
@@ -209,7 +209,7 @@ function mmsProject(reqUser, projObj) {
 		_modified: proj.updatedOn,
 		_projectId: proj.id,
 		_refId: 'master',
-		orgId: proj.org
+		orgId: projObj.org
 	};
 
 	// TODO: find out if these fields are added in through the custom data upon initialization of the project
@@ -263,6 +263,7 @@ function mmsRef(reqUser, branchObj) {
 /**
  * @description Formats an MCF element into an MMS3 element.
  *
+ * @param {object} reqUser - The requesting user.
  * @param {object} elemObj - The MCF element to format.
  *
  * @returns {object} An MMS3 formatted element.
@@ -305,4 +306,33 @@ function mmsElement(reqUser, elemObj) {
 	}
 
 	return elem;
+}
+
+function mmsArtifact(reqUser, artifact) {
+	// Get the public data of the artifact
+	const artPublicData = getPublicData(reqUser, artifact, 'artifact');
+
+	const projID = mcfUtils.parseID(artPublicData.project).pop();
+	const refID = mcfUtils.parseID(artPublicData.branch).pop();
+
+	const returnObj = {
+		id: artPublicData.id,
+		location: artPublicData.location,
+		filename: artPublicData.filename,
+		artifactLocation: `/projects/${projID}/refs/${refID}/artifacts/blob/${artPublicData.id}`,
+		_projectId: projID,
+		_refId: refID,
+		_creator: artPublicData.createdBy,
+		_created: artPublicData.createdOn,
+		_modifier: artPublicData.lastModifiedBy,
+		_modified: artPublicData.updatedOn,
+		_editable: true
+	};
+
+	// Handle custom
+	Object.keys(artifact.custom[namespace]).forEach((field) => {
+		returnObj[field] = artifact.custom[namespace][field];
+	});
+
+	return returnObj;
 }
