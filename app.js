@@ -72,7 +72,7 @@ router.route('/api/login')
 .options(
 	logRoute,
 	utils.addHeaders,
-	APIController.optionsLogin,
+	APIController.optionsDefault,
 	logResponse,
 	respond
 );
@@ -116,7 +116,7 @@ router.route('/api/login/ticket')
 .options(
 	logRoute,
 	utils.addHeaders,
-	APIController.optionsLogin,
+	APIController.optionsDefault,
 	logResponse,
 	respond
 );
@@ -141,22 +141,22 @@ router.route('/api/login/ticket')
  *         description: Internal Server Error
  */
 router.route('/mms/login/ticket/*')
-	.get(
-		utils.formatTicketRequest,
-		authenticate,
-		logRoute,
-		utils.addHeaders,
-		APIController.getTicket,
-		logResponse,
-		respond
-	)
-	.options(
-		logRoute,
-		utils.addHeaders,
-		APIController.optionsDefault,
-		logResponse,
-		respond
-	);
+.get(
+	utils.formatTicketRequest,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.getTicket,
+	logResponse,
+	respond
+)
+.options(
+	logRoute,
+	utils.addHeaders,
+	APIController.optionsDefault,
+	logResponse,
+	respond
+);
 
 /**
  * @swagger
@@ -958,6 +958,32 @@ router.route('/projects/:projectid/refs/:refid/artifacts')
 	logRoute,
 	utils.addHeaders,
 	APIController.putArtifacts,
+	logResponse,
+	respond
+)
+.options(
+	logRoute,
+	utils.addHeaders,
+	APIController.optionsDefault,
+	logResponse,
+	respond
+);
+
+// TODO: document
+router.route('/alfresco/projects/:projectid/refs/:refid/artifacts/blob/:blobid')
+.get(
+	utils.handleTicket,
+	authenticate,
+	logRoute,
+	utils.addHeaders,
+	APIController.getBlob,
+	logResponse,
+	respond
+)
+.options(
+	logRoute,
+	utils.addHeaders,
+	APIController.optionsDefault,
 	logResponse,
 	respond
 );

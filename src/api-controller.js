@@ -27,7 +27,6 @@ const Branch = M.require('models.branch');
 const ElementController = M.require('controllers.element-controller');
 const ArtifactController = M.require('controllers.artifact-controller');
 const { getStatusCode } = M.require('lib.errors');
-const mcfJMI = M.require('lib.jmi-conversions');
 const mcfUtils = M.require('lib.utils');
 const errors = M.require('lib.errors');
 
@@ -55,21 +54,7 @@ function postLogin(req, res, next) {
 }
 
 /**
- * @description Responds with a 200 status code, used for OPTIONS requests to login endpoints.
- * Not sure we need both optionsLogin and optionsDefault.
- *
- * @param {object} req - Request express object.
- * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
- */
-function optionsLogin(req, res, next) {
-  res.locals.statusCode = 200;
-  next();
-}
-
-/**
- * @description Responds with a 200 status code, used for OPTIONS requests. Not sure we need both
- * optionsLogin and optionsDefault.
+ * @description Responds with a 200 status code, used for OPTIONS requests.
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
@@ -224,8 +209,6 @@ async function getProjects(req, res, next) {
  */
 async function postProjects(req, res, next) {
   try {
-    // TODO: validate req.body.projects
-
     // Format the project data for MCF
     const projData = req.body.projects.map((project) => format.mcfProject(project));
 
@@ -356,8 +339,6 @@ async function postRefs(req, res, next) {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
 
-    // TODO: validate req.body.refs
-
     // Format the branch data for MCF
     const branches = req.body.refs.map((branch) => format.mcfBranch(branch));
 
@@ -456,24 +437,6 @@ async function getMounts(req, res, next) {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
 
-    // Project mounts are specified by elements of type "Mount" at the very top of the model
-    // Example Element:
-    //    Name:
-    //    id:	            PROJECT-595f5a46-4bbd-4126-86a6-ec01f155cb67_18_0beta_903028d_1388650199492_420515_174142
-    //    Parent:	        model
-    //    Type:	          Mount
-    //    Documentation:
-    //    Org ID:	        default
-    //    Project ID:	    PROJECT-7ef5ab30-597f-4564-b455-b3c1c3a14439
-    //
-    //    mountedElementId :        PROJECT-595f5a46-4bbd-4126-86a6-ec01f155cb67_pm
-    //    mountedElementProjectId : PROJECT-595f5a46-4bbd-4126-86a6-ec01f155cb67
-    //    mountedRefId :            master
-    //    twcVersion :
-    //    ownerId :                 PROJECT-7ef5ab30-597f-4564-b455-b3c1c3a14439
-    //    name :                    null
-    //    documentation :           null
-
     // First get the owning project
     const mounts = await ProjectController.find(req.user, req.params.orgid, req.params.projectid)
 
@@ -530,8 +493,6 @@ async function getGroups(req, res, next) {
     // Return the public data of the group elements in MMS format
     const data = foundGroups.map((e) => format.mmsElement(req.user, e));
 
-    console.log(`There were ${foundGroups.length} groups returned for GET /groups`);
-
     // Set the status code and response message
     res.locals.statusCode = 200;
     res.locals.message = { groups: data };
@@ -560,8 +521,6 @@ async function postElements(req, res, next) {
 
     // TODO: validate req.body.elements
 
-    console.log(`There were ${req.body.elements.length} elements posted from MDK`);
-
     // Format the elements for MCF
     const elements = req.body.elements;
     await format.mcfElements(req, elements);
@@ -569,7 +528,6 @@ async function postElements(req, res, next) {
     const results = await ElementController.createOrReplace(req.user, req.params.orgid, req.params.projectid,
       req.params.refid, elements);
 
-    console.log(`There were ${results.length} elements created/replaced`);
     const data = results.map((e) => format.mmsElement(req.user, e));
 
     // Set the status code and response message
@@ -668,14 +626,17 @@ async function putElements(req, res, next) {
     // TODO: validation on req.body.elements
 
     const elements = req.body.elements;
-    const elemIDs = elements.map((e) => e.id);
+    // .filter because sometimes VE sends { id: null } and this will cause an error
+    const elemIDs = elements.map((e) => e.id).filter((id) => id);
+
     console.log(`There were ${elements.length} elements requested via PUT`);
 
     // Search for the elements
     const foundElements = await ElementController.find(req.user, req.params.orgid,
       req.params.projectid, req.params.refid, elemIDs, options);
 
-    console.log(`There were ${foundElements.length} elements returned for PUT`);
+    // Generate the child views of the element if there are any
+      await utils.generateChildViews2(req.user, req.params.orgid, req.params.projectid, req.params.refid, foundElements);
 
     // Return the public data of the elements in MMS format
     const data = foundElements.map((e) => format.mmsElement(req.user, e));
@@ -739,13 +700,8 @@ async function getElementSearch(req, res, next) {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
 
-    console.log('--------GET element search-------')
-    console.log(req.query);
-    console.log(req.body)
-    console.log('---------------------------------')
-
     // Set the status code and response message
-    res.locals.statusCode = 200;
+    res.locals.statusCode = 404;
     res.locals.message = { elements: [] };
   }
   catch (error) {
@@ -769,13 +725,8 @@ async function postElementSearch(req, res, next) {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
 
-    console.log('--------POST element search-------')
-    console.log(req.query);
-    console.log(req.body)
-    console.log('----------------------------------')
-
     // Set the status code and response message
-    res.locals.statusCode = 200;
+    res.locals.statusCode = 404;
     res.locals.message = { elements: [] };
   }
   catch (error) {
@@ -804,6 +755,16 @@ async function putElementSearch(req, res, next) {
 
     const elements = await ElementController.find(req.user, req.params.orgid, projID, req.params.refid, elemID);
 
+    // Generate the child views of the element if there are any
+    // await utils.asyncForEach(elements, async (element) => {
+    //   await utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, element);
+    // });
+    let promises = [];
+    elements.forEach((element) => {
+      promises.push(utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, element));
+    });
+    await Promise.all(promises);
+
     // Return the public data of the elements in MMS format
     const data = elements.map((e) => format.mmsElement(req.user, e));
 
@@ -813,8 +774,22 @@ async function putElementSearch(req, res, next) {
   }
   catch (error) {
     M.log.warn(error.message);
-    res.locals.statusCode = getStatusCode(error);
-    res.locals.message = error.message;
+    const statusCode = getStatusCode(error);
+    if (statusCode === 404) {
+      res.locals.statusCode = 200;
+      res.locals.message = {
+        elements: [],
+        messages: {
+          code: 404,
+          id: req.params.elementid,
+          message: error.message
+        }
+      }
+    }
+    else {
+      res.locals.statusCode = statusCode;
+      res.locals.message = error.message;
+    }
   }
   next();
 }
@@ -874,7 +849,7 @@ async function getElement(req, res, next) {
     // This is code for View Editor
     // JPL decided to query for elements on different projects by providing the CURRENT project in the parameters.
     // There seems to be no indication that the element is expected to be found on a separate project, but it is.
-    // So now I have to loop through all the mounts and look for the element everywhere
+    // So now we have to loop through all the mounts and look for the element everywhere
 
     let elements = [];
 
@@ -914,6 +889,18 @@ async function getElement(req, res, next) {
       throw new M.NotFoundError(`Element ${req.params.elementid} not found.`, 'warn');
     }
 
+    // Generate the child views of the element if there are any
+    // await utils.asyncForEach(foundElements, async (element) => {
+    //   await utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, element);
+    // });
+    let promises = [];
+    elements.forEach((element) => {
+      promises.push(utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, element));
+    });
+    console.log('before promise resolve in getElement');
+    await Promise.all(promises);
+    console.log('after promise resolve in getElement');
+
     // Format the element object, return it inside an array
     const data = [format.mmsElement(req.user, elements[0])];
 
@@ -922,15 +909,33 @@ async function getElement(req, res, next) {
   }
   catch (error) {
     M.log.warn(error.message);
-    res.locals.statusCode = getStatusCode(error);
-    res.locals.message = error.message;
+    const statusCode = getStatusCode(error);
+    if (statusCode === 404) {
+      res.locals.statusCode = 200;
+      res.locals.message = {
+        elements: [],
+        messages: {
+          code: 404,
+          id: req.params.elementid,
+          message: error.message
+        }
+      }
+    }
+    else {
+      res.locals.statusCode = statusCode;
+      res.locals.message = error.message;
+    }
   }
   next();
 }
 
 // TODO
 async function getElementCfids(req, res, next) {
-  return res.status(501).send('Not Implemented');
+
+  // TODO
+
+  return res.status(200).send({ elementIds: [] });
+  //return res.status(501).send('Not Implemented');
 }
 
 /**
@@ -947,12 +952,24 @@ async function getDocuments(req, res, next) {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
 
-    // JPL hard-coded in the ids for document stereotypes
-    // ... this is the only way to find documents
+    // The only way to find documents is to use this hard-coded ID created by the SysML community
+    // several years ago and set to be replaced in the next year or so.
     const documentStereotypeID = '_17_0_2_3_87b0275_1371477871400_792964_43374';
     const documentQuery = { [`custom.${namespace}._appliedStereotypeIds`]: documentStereotypeID };
     const documentElements = await ElementController.find(req.user, req.params.orgid,
       req.params.projectid, req.params.refid, documentQuery);
+
+    // Generate the child views of the element if there are any
+    // await utils.asyncForEach(documentElements, async (element) => {
+    //   await utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, element);
+    // });
+    let promises = [];
+    documentElements.forEach((element) => {
+      promises.push(utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, element));
+    });
+    console.log('before promise resolve in getDocuments');
+    await Promise.all(promises);
+    console.log('after promise resolve in getDocuments');
 
     // Convert elements into MMS3 format
     const formattedDocs = documentElements.map((e) => format.mmsElement(req.user, e));
@@ -1005,7 +1022,15 @@ async function getCommits(req, res, next) {
   next();
 }
 
-// TODO: document
+/**
+ * @description TODO
+ *
+ * @param {object} req - The Express request object.
+ * @param {object} res - The Express response object.
+ * @param {Function} next - Middleware callback to trigger the next function
+ *
+ * @returns {Promise}
+ */
 async function postArtifacts(req, res, next) {
 
   // Grabs the org id from the session user
@@ -1013,14 +1038,17 @@ async function postArtifacts(req, res, next) {
 
   await upload(req, res, async function(err) {
 
+    const fileType = req.file.mimetype === "image/png" ? 'png': 'svg';
+
     const artifactMetadata = {
       id: req.body.id,
-      location: namespace,
-      filename: `${req.body.id}.png`,
+      location: `${req.params.orgid}/${req.params.projectid}`,
+      filename: `${req.body.id}.${fileType}`,
       custom: {
         [namespace]: req.body
       }
     };
+    artifactMetadata.custom[namespace].contentType = req.file.mimetype;
 
     if (err instanceof multer.MulterError) {
       // A Multer error occurred when uploading.
@@ -1056,22 +1084,62 @@ async function postArtifacts(req, res, next) {
   next();
 }
 
-// TODO: document
+/**
+ * @description TODO
+ *
+ * @param {object} req - The Express request object.
+ * @param {object} res - The Express response object.
+ * @param {Function} next - Middleware callback to trigger the next function
+ *
+ * @returns {Promise}
+ */
 async function putArtifacts(req, res, next) {
   try {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
 
-    console.log('PUT artifacts')
-    console.log(req.body.artifacts)
-
-    const artIDs = req.body.artifacts;
+    const artIDs = req.body.artifacts.map((artifact) => artifact.id);
 
     const artifacts = await ArtifactController.find(req.user, req.params.orgid,
       req.params.projectid, req.params.refid, artIDs);
 
+    const data = artifacts.map((a) => format.mmsArtifact(req.user, a));
+
     res.locals.statusCode = 200;
-    res.locals.message = { artifacts: [] };
+    res.locals.message = { artifacts: data };
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
+/**
+ * @description TODO
+ *
+ * @param {object} req - The Express request object.
+ * @param {object} res - The Express response object.
+ * @param {Function} next - Middleware callback to trigger the next function
+ *
+ * @returns {Promise}
+ */
+async function getBlob(req, res, next) {
+  try {
+    // Grabs the org id from the session user
+    await utils.getOrgId(req);
+
+    const artifacts = await ArtifactController.find(req.user, req.params.orgid,
+      req.params.projectid, req.params.refid, req.params.blobid);
+    const artifact = artifacts[0];
+
+    const blob = await ArtifactController.getBlob(req.user, req.params.orgid,
+      req.params.projectid, artifact);
+
+    res.locals.statusCode = 200;
+    res.locals.message = blob;
+    res.locals.contentType = artifact.custom[namespace].contentType;
   }
   catch (error) {
     M.log.warn(error.message);
@@ -1083,7 +1151,6 @@ async function putArtifacts(req, res, next) {
 
 module.exports = {
   postLogin,
-  optionsLogin,
   optionsDefault,
   getTicket,
   getOrg,
@@ -1109,5 +1176,6 @@ module.exports = {
   getDocuments,
   getCommits,
   postArtifacts,
-  putArtifacts
+  putArtifacts,
+  getBlob
 };
