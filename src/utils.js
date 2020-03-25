@@ -186,7 +186,6 @@ async function generateChildViews(reqUser, orgID, projID, branchID, elements) {
 }
 
 
-
 // Export the module
 module.exports = {
 	getOrgId,
@@ -195,6 +194,5 @@ module.exports = {
 	formatTicketRequest,
 	asyncForEach,
 	generateChildViews,
-	generateChildViews2,
 	customDataNamespace
 };
