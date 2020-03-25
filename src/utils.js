@@ -94,6 +94,13 @@ function handleTicket(req, res, next) {
 	next();
 }
 
+/**
+ * @description TODO
+ *
+ * @param req
+ * @param res
+ * @param next
+ */
 function formatTicketRequest(req, res, next) {
 	// Parse token from URI encoding
 	const token = decodeURIComponent(req.params[0]);
@@ -102,6 +109,13 @@ function formatTicketRequest(req, res, next) {
 	next();
 }
 
+/**
+ * @description TODO
+ *
+ * @param array
+ * @param callback
+ * @returns {Promise<void>}
+ */
 async function asyncForEach(array, callback) {
 	for (let index = 0; index < array.length; index++) {
 		// eslint-disable-next-line no-await-in-loop
@@ -111,48 +125,16 @@ async function asyncForEach(array, callback) {
 
 
 /**
- * @description generates the _childViews field for a View or Document element
+ * @description TODO
  *
- * @returns
+ * @param reqUser
+ * @param orgID
+ * @param projID
+ * @param branchID
+ * @param elements
+ * @returns {Promise<void>}
  */
-async function generateChildViews(reqUser, orgID, projID, branchID, elem) {
-	const viewStereotype = '_18_0beta_9150291_1392290067481_33752_4359';
-	const docStereotype = '_17_0_2_3_87b0275_1371477871400_792964_43374';
-
-	// If element has an applied stereotype of View or Document
-	if (elem.custom[customDataNamespace] && elem.custom[customDataNamespace]._appliedStereotypeIds
-		&& (elem.custom[customDataNamespace]._appliedStereotypeIds.includes(viewStereotype)
-	  || elem.custom[customDataNamespace]._appliedStereotypeIds.includes(docStereotype))) {
-
-		// look for ownedAttributeIds
-		if (elem.custom[customDataNamespace].hasOwnProperty('ownedAttributeIds')) {
-			// Initialize childViews
-			elem.custom[customDataNamespace]._childViews = [];
-
-			// Create the full _id for each id
-			const oaIDs = elem.custom[customDataNamespace].ownedAttributeIds.map((id) => {
-				return mcfUtils.createID(orgID, projID, branchID, id)
-			});
-			await asyncForEach(oaIDs, async (id) => {
-				// Find the owned attribute element
-				const oaElem = await Element.findOne({ _id: id });
-
-
-				// If the owned attribute element is valid
-				if (oaElem.custom[customDataNamespace] && oaElem.custom[customDataNamespace].hasOwnProperty('typeId')) {
-					// Add a child view to the parent element
-					elem.custom[customDataNamespace]._childViews.push({
-						id: oaElem.custom[customDataNamespace].typeId,
-						aggregation: oaElem.custom[customDataNamespace].aggregation,
-						propertyId: mcfUtils.parseID(oaElem._id).pop()
-					})
-				}
-			});
-		}
-	}
-}
-
-async function generateChildViews2(reqUser, orgID, projID, branchID, elements) {
+async function generateChildViews(reqUser, orgID, projID, branchID, elements) {
 	const viewStereotype = '_18_0beta_9150291_1392290067481_33752_4359';
 	const docStereotype = '_17_0_2_3_87b0275_1371477871400_792964_43374';
 
