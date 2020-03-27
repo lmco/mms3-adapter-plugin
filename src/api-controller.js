@@ -755,7 +755,7 @@ async function putElementSearch(req, res, next) {
     const elements = await ElementController.find(req.user, req.params.orgid, projID, req.params.refid, elemID);
 
     // Generate the child views of the element if there are any
-    utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, elements);
+    await utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, elements);
 
     // Return the public data of the elements in MMS format
     const data = elements.map((e) => format.mmsElement(req.user, e));
@@ -869,7 +869,6 @@ async function getElement(req, res, next) {
           // Look for the element
           const foundElements = await ElementController.find(req.user, req.params.orgid, projID, refID, req.params.elementid);
           if (foundElements.length !== 0) {
-            console.log('it has been found');
             elements.push(foundElements[0]);
           }
         });
@@ -882,8 +881,7 @@ async function getElement(req, res, next) {
     }
 
     // Generate the child views of the element if there are any
-    utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, elements);
-
+    await utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, elements);
 
     // Format the element object, return it inside an array
     const data = [format.mmsElement(req.user, elements[0])];
@@ -944,7 +942,7 @@ async function getDocuments(req, res, next) {
       req.params.projectid, req.params.refid, documentQuery);
 
     // Generate the child views of the element if there are any
-    utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, documentElements);
+    await utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, documentElements);
 
     // Convert elements into MMS3 format
     const formattedDocs = documentElements.map((e) => format.mmsElement(req.user, e));
