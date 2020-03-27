@@ -635,7 +635,7 @@ async function putElements(req, res, next) {
       req.params.projectid, req.params.refid, elemIDs, options);
 
     // Generate the child views of the element if there are any
-      await utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, foundElements);
+    await utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, foundElements);
 
     // Return the public data of the elements in MMS format
     const data = foundElements.map((e) => format.mmsElement(req.user, e));
@@ -755,11 +755,7 @@ async function putElementSearch(req, res, next) {
     const elements = await ElementController.find(req.user, req.params.orgid, projID, req.params.refid, elemID);
 
     // Generate the child views of the element if there are any
-    let promises = [];
-    elements.forEach((element) => {
-      promises.push(utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, element));
-    });
-    await Promise.all(promises);
+    utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, elements);
 
     // Return the public data of the elements in MMS format
     const data = elements.map((e) => format.mmsElement(req.user, e));
@@ -886,11 +882,8 @@ async function getElement(req, res, next) {
     }
 
     // Generate the child views of the element if there are any
-    let promises = [];
-    elements.forEach((element) => {
-      promises.push(utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, element));
-    });
-    await Promise.all(promises);
+    utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, elements);
+
 
     // Format the element object, return it inside an array
     const data = [format.mmsElement(req.user, elements[0])];
@@ -951,13 +944,7 @@ async function getDocuments(req, res, next) {
       req.params.projectid, req.params.refid, documentQuery);
 
     // Generate the child views of the element if there are any
-    let promises = [];
-    documentElements.forEach((element) => {
-      promises.push(utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, element));
-    });
-    console.log('before promise resolve in getDocuments');
-    await Promise.all(promises);
-    console.log('after promise resolve in getDocuments');
+    utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, documentElements);
 
     // Convert elements into MMS3 format
     const formattedDocs = documentElements.map((e) => format.mmsElement(req.user, e));
