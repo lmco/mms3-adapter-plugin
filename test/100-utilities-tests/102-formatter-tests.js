@@ -30,7 +30,7 @@ const mcfUtils = M.require('lib.utils');
 
 // Plugin modules
 const utils = require('../../src/utils.js');
-const format = require('src/formatter.js');
+const format = require('../../src/formatter.js');
 
 // Global variables
 let adminUser;
@@ -96,34 +96,72 @@ async function mcfOrg() {
   const mdkOrg = {
     id: 'test-id',
     name: 'test-org',
-    property1: 'test',
-    property2: 'test',
-    property3: 'test'
+    property1: 'test1',
+    property2: 'test2',
+    property3: 'test3'
   };
 
   const org = format.mcfOrg(mdkOrg);
 
   chai.expect(org.id).to.equal('test-id');
+  chai.expect(org.name).to.equal('test-name');
+  chai.expect(org.custom[utils.customDataNamespace].property1).to.equal('test1');
+  chai.expect(org.custom[utils.customDataNamespace].property2).to.equal('test2');
+  chai.expect(org.custom[utils.customDataNamespace].property3).to.equal('test3');
 }
 
 /**
  * @description
  */
 async function mcfProject() {
+  const mdkProj = {
+    id: 'test-id',
+    name: 'test-proj',
+    property1: 'test1',
+    property2: 'test2',
+    property3: 'test3'
+  };
 
+  const proj = format.mcfProject(mdkProj);
+
+  chai.expect(proj.id).to.equal('test-id');
+  chai.expect(proj.name).to.equal('test-proj');
+  chai.expect(proj.custom[utils.customDataNamespace].property1).to.equal('test1');
+  chai.expect(proj.custom[utils.customDataNamespace].property2).to.equal('test2');
+  chai.expect(proj.custom[utils.customDataNamespace].property3).to.equal('test3');
 }
 
 /**
  * @description
  */
 async function mcfBranch() {
+  const mdkRef = {
+    id: 'test-id',
+    name: 'test-ref',
+    property1: 'test1',
+    property2: 'test2',
+    property3: 'test3'
+  };
 
+  const ref = format.mcfBranch(mdkRef);
+
+  chai.expect(ref.id).to.equal('test-id');
+  chai.expect(ref.name).to.equal('test-ref');
+  chai.expect(ref.custom[utils.customDataNamespace].property1).to.equal('test1');
+  chai.expect(ref.custom[utils.customDataNamespace].property2).to.equal('test2');
+  chai.expect(ref.custom[utils.customDataNamespace].property3).to.equal('test3');
 }
 
 /**
  * @description
  */
 async function mcfElements() {
+  const mdkElem = {
+    id: 'test-id',
+    name: 'test-elem',
+    ownerId: 'test-parent',
+
+  }
 
 }
 
