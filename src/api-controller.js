@@ -140,6 +140,7 @@ async function getOrgs(req, res, next) {
 /**
  * @description Creates multiple organizations and returns them formatted as MMS3 orgs in the
  * in the MMS3 API style: { orgs: [...createdOrgs] }.
+ * @async
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
@@ -438,7 +439,7 @@ async function getMounts(req, res, next) {
     await utils.getOrgId(req);
 
     // First get the owning project
-    const mounts = await ProjectController.find(req.user, req.params.orgid, req.params.projectid)
+    const mounts = await ProjectController.find(req.user, req.params.orgid, req.params.projectid);
 
     // Get all "Mount" elements
     const options = { type: "Mount" };
@@ -474,7 +475,8 @@ async function getMounts(req, res, next) {
 }
 
 /**
- * @description TODO
+ * @description Gets all elements that have a field "_isGroup" with a value of true.
+ * @async
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
@@ -518,8 +520,6 @@ async function postElements(req, res, next) {
   try {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
-
-    // TODO: validate req.body.elements
 
     // Format the elements for MCF
     const elements = req.body.elements;
@@ -624,8 +624,6 @@ async function putElements(req, res, next) {
     //  delete options.ids;
     //}
 
-    // TODO: validation on req.body.elements
-
     const elements = req.body.elements;
     // .filter because sometimes VE sends { id: null } and this will cause an error
     const elemIDs = elements.map((e) => e.id).filter((id) => id);
@@ -686,8 +684,7 @@ async function deleteElements(req, res, next) {
 }
 
 /**
- * @description Deletes elements by ID and returns the IDs of the successfully
- * deleted elements in the MMS3 API format: { elements: [...deletedIDs] }
+ * @description TODO: not sure if this endpoint is ever used.
  * @async
  *
  * @param {object} req - Request express object.
@@ -712,7 +709,7 @@ async function getElementSearch(req, res, next) {
 }
 
 /**
- * @description TODO
+ * @description TODO: not sure if this endpoint is ever used.
  * @async
  *
  * @param {object} req - Request express object.
@@ -737,7 +734,8 @@ async function postElementSearch(req, res, next) {
 }
 
 /**
- * @description TODO
+ * @description Searches for elements, similar to getElements.
+ * TODO: still need to determine the difference between this function and getElements.
  * @async
  *
  * @param {object} req - Request express object.
@@ -798,43 +796,6 @@ async function getElement(req, res, next) {
   try {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
-
-    // // Define options and ids
-    // let options;
-    //
-    // // Define valid option and its parsed type
-    // const validOptions = {
-    //   //MMS3 Compatible options
-    //   alf_ticket: 'string',
-    //   depth: 'number',
-    //   extended: 'boolean',
-    // };
-    //
-    // // Add custom.* query options
-    // if (req.query) {
-    //   Object.keys(req.query).forEach((k) => {
-    //     // If the key starts with custom., add it to the validOptions object
-    //     if (k.startsWith('custom.')) {
-    //       validOptions[k] = 'string';
-    //     }
-    //   });
-    // }
-    //
-    // // Attempt to parse query options
-    // try {
-    //   // Extract options from request query
-    //   options = mcfUtils.parseOptions(req.query, validOptions);
-    //   // Remove MMS3 ticket from find
-    //   delete options.alf_ticket;
-    //   // Convert MMS3 depth to MCF
-    //   if (options.extended) {
-    //     options.subtree = true;
-    //   }
-    // }
-    // catch (error) {
-    //   // Error occurred with options, report it
-    //   return mcfUtils.formatResponse(req, res, error.message, errors.getStatusCode(error), next);
-    // }
 
     // TODO: Handle the 'extended' query parameter
 
@@ -911,7 +872,14 @@ async function getElement(req, res, next) {
   next();
 }
 
-// TODO
+/**
+ * @description TODO
+ * @async
+ *
+ * @param {object} req - Request express object.
+ * @param {object} res - Response express object.
+ * @param {Function} next - Middleware callback to trigger the next function
+ */
 async function getElementCfids(req, res, next) {
 
   // TODO
@@ -921,8 +889,7 @@ async function getElementCfids(req, res, next) {
 }
 
 /**
- * @description Returns all documents on a specified branch. This function still
- * needs to be implemented.
+ * @description Returns all documents on a specified branch.
  * @async
  *
  * @param {object} req - Request express object.
@@ -963,6 +930,7 @@ async function getDocuments(req, res, next) {
  * has an id, a _creator, and a _created field.  Because commits are not yet implemented in MCF,
  * this function will query the latest commits object and return it to give the impression that
  * MCF is at the latest commit.
+ * @async
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
@@ -996,13 +964,13 @@ async function getCommits(req, res, next) {
 }
 
 /**
- * @description TODO
+ * @description Processes and stores an artifact blob while also creating an artifact
+ * document containing metadata on the blob. Intended to handle png and svg files.
+ * @async
  *
  * @param {object} req - The Express request object.
  * @param {object} res - The Express response object.
  * @param {Function} next - Middleware callback to trigger the next function
- *
- * @returns {Promise}
  */
 async function postArtifacts(req, res, next) {
 
@@ -1058,13 +1026,12 @@ async function postArtifacts(req, res, next) {
 }
 
 /**
- * @description TODO
+ * @description Searches for artifact metadata documents.
+ * @async
  *
  * @param {object} req - The Express request object.
  * @param {object} res - The Express response object.
  * @param {Function} next - Middleware callback to trigger the next function
- *
- * @returns {Promise}
  */
 async function putArtifacts(req, res, next) {
   try {
@@ -1090,13 +1057,12 @@ async function putArtifacts(req, res, next) {
 }
 
 /**
- * @description TODO
+ * @description Retrieves an artifact blob.
+ * @async
  *
  * @param {object} req - The Express request object.
  * @param {object} res - The Express response object.
  * @param {Function} next - Middleware callback to trigger the next function
- *
- * @returns {Promise}
  */
 async function getBlob(req, res, next) {
   try {
