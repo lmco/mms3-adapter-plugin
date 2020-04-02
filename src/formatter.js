@@ -247,8 +247,10 @@ function mmsRef(reqUser, branchObj) {
 		name: publicBranch.name,
 		type: (publicBranch.tag) ? 'tag' : 'Branch',
 		parentRefId: (publicBranch.source) ? publicBranch.source : 'master',
+		_creator: publicBranch.createdBy,
+		_created: publicBranch.createdOn,
 		_modified: publicBranch.updatedOn,
-		_modifier: publicBranch.lastModifiedBy
+		_modifier: publicBranch.lastModifiedBy,
 	};
 
 	if (publicBranch.custom.hasOwnProperty(namespace)) {

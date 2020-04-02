@@ -84,7 +84,7 @@ router.route('/api/login')
  *     tags:
  *       - general
  *     description: Authenticates a user using the MCF auth module and returns
- *        a response containing a barer token.
+ *        a response containing a bearer token.
  *     responses:
  *       200:
  *         description: OK
