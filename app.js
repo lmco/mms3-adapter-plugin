@@ -988,6 +988,29 @@ router.route('/alfresco/projects/:projectid/refs/:refid/artifacts/blob/:blobid')
 	respond
 );
 
+// TODO: document
+router.route('/projects/:projectid/refs/:refid/convert')
+	.post(
+		utils.handleTicket,
+		authenticate,
+		logRoute,
+		utils.addHeaders,
+		(req, res, next) => {
+			// TODO: handle pdf converter
+			next();
+		},
+		logResponse,
+		respond
+	)
+	.options(
+		logRoute,
+		utils.addHeaders,
+		APIController.optionsDefault,
+		logResponse,
+		respond
+	);
+
+
 // This is all the other routes that get hit
 // Throwing an error saying no
 app.use('*', (req, res, next) => {

@@ -525,8 +525,28 @@ async function postElements(req, res, next) {
     const elements = req.body.elements;
     await format.mcfElements(req, elements);
 
-    const results = await ElementController.createOrReplace(req.user, req.params.orgid, req.params.projectid,
-      req.params.refid, elements);
+    const elemIDs = elements.map((e) => e.id);
+
+    const foundElements = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
+      req.params.refid, elemIDs);
+    const foundIDs = foundElements.map((e) => mcfUtils.parseID(e._id).pop());
+
+    const createElements = elements.filter((e) => !foundIDs.includes(e.id));
+    const updateElements = elements.filter((e) => foundIDs.includes(e.id));
+
+    let createdElements = [];
+    let updatedElements = [];
+
+    if (createElements.length !== 0) {
+      createdElements = await ElementController.create(req.user, req.params.orgid, req.params.projectid,
+        req.params.refid, createElements);
+    }
+    if (updateElements.length !== 0) {
+      updatedElements = await ElementController.update(req.user, req.params.orgid, req.params.projectid,
+        req.params.refid, updateElements);
+    }
+
+    const results = createdElements.concat(updatedElements);
 
     const data = results.map((e) => format.mmsElement(req.user, e));
 
@@ -748,14 +768,23 @@ async function putElementSearch(req, res, next) {
   try {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
+    let projID = req.params.projectid;
+    let branchID = req.params.refid;
+    let elemID;
 
-    const elemID = req.body.query.bool.filter[0].term.id;
-    const projID = req.body.query.bool.filter[1].term._projectId;
+    if (req.body.aggs) {
+      // TODO
+    }
 
-    const elements = await ElementController.find(req.user, req.params.orgid, projID, req.params.refid, elemID);
+    if (req.body.query) {
+      elemID = req.body.query.bool.filter[0].term.id;
+      projID = req.body.query.bool.filter[1].term._projectId;
+    }
+
+    const elements = await ElementController.find(req.user, req.params.orgid, projID, branchID, elemID);
 
     // Generate the child views of the element if there are any
-    await utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, elements);
+    await utils.generateChildViews(req.user, req.params.orgid, projID, branchID, elements);
 
     // Return the public data of the elements in MMS format
     const data = elements.map((e) => format.mmsElement(req.user, e));

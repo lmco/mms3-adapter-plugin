@@ -292,9 +292,11 @@ function mmsElement(reqUser, elemObj) {
 	};
 
 	// Handle custom
-	Object.keys(elemObj.custom[namespace]).forEach((field) => {
-		elem[field] = elemObj.custom[namespace][field];
-	});
+	if (typeof elemObj.custom[namespace] === 'object') {
+		Object.keys(elemObj.custom[namespace]).forEach((field) => {
+			elem[field] = elemObj.custom[namespace][field];
+		});
+	}
 
 	// Remove the name if it was set to null
 	if (elem.name === null) {
