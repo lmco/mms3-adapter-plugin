@@ -28,6 +28,7 @@ const ElementController = M.require('controllers.element-controller');
 const ArtifactController = M.require('controllers.artifact-controller');
 const { getStatusCode } = M.require('lib.errors');
 const mcfUtils = M.require('lib.utils');
+const jmi = M.require('lib.jmi-conversions');
 const errors = M.require('lib.errors');
 
 // Adapter modules
@@ -506,7 +507,7 @@ async function getGroups(req, res, next) {
 }
 
 /**
- * @description Creates or replaces elements on the MCF. Returns the created elements formatted
+ * @description Creates or updates elements on the MCF. Returns the created elements formatted
  * as MMS3 elements in the MMS3 API style: { elements: [createdElements] }.
  * @async
  *
@@ -519,31 +520,72 @@ async function postElements(req, res, next) {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
 
-    // TODO: validate req.body.elements
-
     // Format the elements for MCF
     const elements = req.body.elements;
     await format.mcfElements(req, elements);
 
     const elemIDs = elements.map((e) => e.id);
 
+    // Check to see if any of the elements exist already
     const foundElements = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
       req.params.refid, elemIDs);
-    const foundIDs = foundElements.map((e) => mcfUtils.parseID(e._id).pop());
+    const foundIDs = foundElements.map((e) => {
+      e._id = mcfUtils.parseID(e._id).pop();
+      return e._id;
+    });
+    const foundJMI = jmi.convertJMI(1, 2, foundElements);
 
+    // Divide the incoming elements into elements that need to be created and elements that need to be updated
     const createElements = elements.filter((e) => !foundIDs.includes(e.id));
-    const updateElements = elements.filter((e) => foundIDs.includes(e.id));
+    let updateElements = elements.filter((e) => foundIDs.includes(e.id));
 
     let createdElements = [];
     let updatedElements = [];
+    let individualUpdates = [];
 
     if (createElements.length !== 0) {
       createdElements = await ElementController.create(req.user, req.params.orgid, req.params.projectid,
         req.params.refid, createElements);
     }
+
     if (updateElements.length !== 0) {
-      updatedElements = await ElementController.update(req.user, req.params.orgid, req.params.projectid,
-        req.params.refid, updateElements);
+      // Special logic for update elements: custom data is normally replaced in an update operation.  Here, however,
+      // we want to keep the data that's already there and only add new fields.  TBD: deleting fields.
+      updateElements.forEach((elem) => {
+        const existing = foundJMI[elem.id];
+        if (existing.custom && existing.custom[namespace]) {
+          Object.keys(existing.custom[namespace]).forEach((key) => {
+            if (!Object.keys(elem.custom[namespace]).includes(key)) {
+              elem.custom[namespace][key] = existing.custom[namespace][key];
+            }
+          });
+        }
+
+        // Updates to elements' parents cannot be made in bulk
+        if (elem.hasOwnProperty('parent')) {
+          individualUpdates.push(elem);
+        }
+      });
+
+      // If there are elements that need to be updated individually, remove them from the bulk list
+      // and run individual updates
+      if (individualUpdates.length !== 0) {
+        const individualIDs = individualUpdates.map((e) => e.id);
+        updateElements = updateElements.filter((e) => !individualIDs.includes(e.id));
+
+        await utils.asyncForEach(individualUpdates, async (individualUpdate) => {
+          const updatedElement = await ElementController.update(req.user, req.params.orgid, req.params.projectid,
+            req.params.refid, individualUpdate);
+          updatedElements = updatedElements.concat(updatedElement);
+        });
+      }
+
+      // Update elements in bulk
+      if (updateElements.length !== 0) {
+        const bulkUpdatedElements = await ElementController.update(req.user, req.params.orgid, req.params.projectid,
+          req.params.refid, updateElements);
+        updatedElements = updatedElements.concat(bulkUpdatedElements);
+      }
     }
 
     const results = createdElements.concat(updatedElements);
