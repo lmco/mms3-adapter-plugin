@@ -16,7 +16,9 @@
  * plugin.
  */
 
-const process = require('process');
+// NPM modules
+const nodemailer = require("nodemailer");
+const { execSync } = require('child_process');
 
 // MBEE modules
 const Project = M.require('models.project');
@@ -185,6 +187,86 @@ async function generateChildViews(reqUser, orgID, projID, branchID, elements) {
 	});
 }
 
+/**
+ * @description Prunes and extracts the HTML section from mms's export HTML request.
+ *
+ * @param rawHTMLString - String that includes the html body and css style.
+ *
+ * @returns prunedHtml - The pruned HTML body.
+ */
+function pruneHtml(rawHTMLString) {
+	
+  // Transform javascript code string to json
+  //let jsonString= JSON.stringify(eval("(" + rawHTMLString.body + ")"));
+  
+  // Extract HTML from body
+  let jsonHtml = rawHTMLString.body;
+  
+  // Remove HTML comments tags
+  let pruneHtml = jsonHtml.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '');
+
+  // Return the pruned html
+  return pruneHtml;
+}
+
+/**
+ * @description Gßenerate PDF file based on HTML file.
+ *
+ * @param fullHtmlFilePath - String path of the html file.
+ * @param fullPdfFilePath - String path of the generated pdf file.
+ */
+async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath) {
+	// Use admin to run PDF convertion
+  const userAuth = `--auth-user=${M.config.server.defaultAdminUsername}`;
+  const passAuth = `--auth-password=${M.config.server.defaultAdminPassword}`;
+  const config =  M.config.server.plugins.plugins['mms3-adapter'];
+  const exec =config.pdf.exec;
+  
+  //const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure ${userAuth} ${passAuth}`;
+  const command = `cp ${fullHtmlFilePath} ${fullPdfFilePath}`;
+  const stdout = execSync(command);
+  M.log.info(`Executing... ${command}  \n ${stdout.toString()}`);
+}
+
+/**
+ * @description Emails user the artifact blob url link.
+ *
+ * @param string - String that includes the html body and css style.
+ */
+async function emailBlobLink(userEmail, link) {
+	try {
+    // Get adapter configuration
+    const config =  M.config.server.plugins.plugins['mms3-adapter'];
+
+    // Create mail transporter
+    let transporter = nodemailer.createTransport({
+      host: config.emailServerUrl,
+      port: config.emailServerPort,
+      secure: false,
+      tls: {
+        rejectUnauthorized: false
+      }
+    });
+    
+    // Hard code user message
+    const message = 'HTML to .PDF generation succeeded.\n\n' +
+      `You can access the .PDF file at: ${link}`;
+    
+    await transporter.sendMail({
+      from: '"mbee support" <mbee-support.fc-space@lmco.com>', // sender address
+      to: userEmail,
+      subject: "HTML to .pdf generation completed.",           // Subject line
+      text: message                                            // plain text body
+    });
+    
+    M.log.info(`Emailing user: ${userEmail}.`);
+    
+  }
+	catch (error) {
+    M.log.warn(error);
+    throw new M.ServerError('Failed to sent user email.', 'error');
+	}
+}
 
 // Export the module
 module.exports = {
@@ -194,5 +276,8 @@ module.exports = {
 	formatTicketRequest,
 	asyncForEach,
 	generateChildViews,
-	customDataNamespace
+	customDataNamespace,
+  pruneHtml,
+  convertHtml2Pdf,
+  emailBlobLink
 };

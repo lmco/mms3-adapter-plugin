@@ -14,6 +14,9 @@
  * @description Handles API functions.
  */
 
+// Node modules
+const fs = require('fs');
+const path = require('path');
 
 // NPM modules
 const multer = require('multer');
@@ -1122,6 +1125,81 @@ async function getBlob(req, res, next) {
   next();
 }
 
+/**
+ * @description This function converts a html document into a PDF.
+ *
+ * @param {object} req - The Express request object.
+ * @param {object} res - The Express response object.
+ * @param {Function} next - Middleware callback to trigger the next function
+ *
+ * @returns {Promise}
+ */
+async function postHtml2Pdf(req, res, next) {
+  try {
+    // Grabs the org id from the session user
+    await utils.getOrgId(req);
+    
+    // Get plugin configuration
+    const pluginCfg =  M.config.server.plugins.plugins['mms3-adapter'];
+    const filename = pluginCfg.pdf.filename;
+    const directory = pluginCfg.pdf.directory;
+    
+    // Extract request body
+    const rawString = req.body;
+    // Filter and prune HTML
+    let prunedHtml = utils.pruneHtml(rawString);
+    
+    // Define HTML/PDF file paths
+    const tempHtmlFileName = `${filename}_${Date.now()}.html`;
+    const tempPdfFileName = `${filename}_${Date.now()}.pdf`;
+    const fullHtmlFilePath = path.join(directory, tempHtmlFileName);
+    const fullPdfFilePath = path.join(directory, tempPdfFileName);
+  
+    // Write the HTML file to storage
+    fs.writeFile(fullHtmlFilePath, prunedHtml, async(err) => {
+      // Check for error
+      if (err) throw new M.OperationError(`Could not export PDF: ${err} `, 'warn');
+      
+      // Convert HTML to PDF
+      await utils.convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath);
+      
+      // Read the generated pdf file
+      const pdfBlob = fs.readFileSync(fullPdfFilePath);
+  
+      // Define artifact blob meta data
+      const artifactMetadata = {
+        id: req.body.id,
+        location: `${req.params.orgid}/${req.params.projectid}`,
+        filename: tempPdfFileName
+      };
+      
+      // Store the artifact blob
+      await ArtifactController.postBlob(req.user, req.params.orgid,
+          req.params.projectid, artifactMetadata, pdfBlob);
+  
+      // Get server url
+      let serverUrl = req.headers.host;
+      
+      // Create artifact link
+      let link = `http://${serverUrl}/api/orgs/${req.params.orgid}/projects/${req.params.projectid}/artifacts/blob` +
+                  `?location=${artifactMetadata.location}&filename=${artifactMetadata.filename}`;
+      const userEmail = req.user.email;
+      // Email user
+      await utils.emailBlobLink('phillip.lee@lmco.com',link);
+      
+    });
+    
+    res.locals.statusCode = 200;
+  }
+  catch (error) {
+    console.log(error)
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
 module.exports = {
   postLogin,
   optionsDefault,
@@ -1150,5 +1228,6 @@ module.exports = {
   getCommits,
   postArtifacts,
   putArtifacts,
-  getBlob
+  getBlob,
+  postHtml2Pdf
 };

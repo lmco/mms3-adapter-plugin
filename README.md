@@ -14,7 +14,12 @@ to the **plugins.plugins** section of the running configuration, ensure
 "mms3-adapter": {
   "source": "https://gitlab.us.lmco.com/mbx/mbee/plugins/mms3-adapter.git",
   "title": "MMS3 Adapter",
-  "name": "mms3-adapter"
+  "name": "mms3-adapter",
+  "pdf": {
+    "directory": "/tmp",
+    "filename": "tmp.output",
+    "exec": "/usr/local/bin/prince"
+  }
 }
 ```
 

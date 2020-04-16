@@ -8,6 +8,7 @@
   "private": true,
   "dependencies": {
     "express": "^4.17.1",
-    "multer": "^1.4.2"
+    "multer": "^1.4.2",
+    "nodemailer": "^6.4.6"
   }
 }
