@@ -31,6 +31,7 @@ const ElementController = M.require('controllers.element-controller');
 const ArtifactController = M.require('controllers.artifact-controller');
 const { getStatusCode } = M.require('lib.errors');
 const mcfUtils = M.require('lib.utils');
+const jmi = M.require('lib.jmi-conversions');
 const errors = M.require('lib.errors');
 
 // Adapter modules
@@ -509,7 +510,7 @@ async function getGroups(req, res, next) {
 }
 
 /**
- * @description Creates or replaces elements on the MCF. Returns the created elements formatted
+ * @description Creates or updates elements on the MCF. Returns the created elements formatted
  * as MMS3 elements in the MMS3 API style: { elements: [createdElements] }.
  * @async
  *
@@ -522,14 +523,151 @@ async function postElements(req, res, next) {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
 
-    // TODO: validate req.body.elements
-
     // Format the elements for MCF
     const elements = req.body.elements;
     await format.mcfElements(req, elements);
 
-    const results = await ElementController.createOrReplace(req.user, req.params.orgid, req.params.projectid,
-      req.params.refid, elements);
+    const elemIDs = elements.map((e) => e.id);
+
+    // Check to see if any of the elements exist already
+    const foundElements = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
+      req.params.refid, elemIDs);
+    const foundIDs = foundElements.map((e) => {
+      e._id = mcfUtils.parseID(e._id).pop();
+      return e._id;
+    });
+    const foundJMI = jmi.convertJMI(1, 2, foundElements);
+
+    // Divide the incoming elements into elements that need to be created and elements that need to be updated
+    const createElements = elements.filter((e) => !foundIDs.includes(e.id));
+    let updateElements = elements.filter((e) => foundIDs.includes(e.id));
+
+    let createdElements = [];
+    let updatedElements = [];
+    let individualUpdates = [];
+    let deletedViews = {};
+    let addedViews = [];
+
+    // Create elements if there are any elements to be created
+    if (createElements.length !== 0) {
+      createdElements = await ElementController.create(req.user, req.params.orgid, req.params.projectid,
+        req.params.refid, createElements);
+    }
+
+    if (updateElements.length !== 0) {
+      updateElements.forEach((update) => {
+        const existing = foundJMI[update.id];
+
+        // Additional processing for updates to child views
+        if (update.custom[namespace].hasOwnProperty('_childViews')) {
+          const cvUpdate = update.custom[namespace]._childViews;
+
+          // Verify that the _childViews update is valid
+          if (Array.isArray(cvUpdate) && cvUpdate.every((v) => {
+            return (typeof v.id === 'string' && typeof v.aggregation === 'string' && typeof v.propertyId === 'string');
+          })) {
+            // Initialize the ownedAttributeIds field on the update
+            update.custom[namespace].ownedAttributeIds = [];
+            // Add ownedAttributeIds to the update in order corresponding to the _childViews update
+            for (let i = 0; i < cvUpdate.length; i++) {
+              update.custom[namespace].ownedAttributeIds.push(cvUpdate[i].propertyId)
+            }
+          }
+          else {
+            throw new M.DataFormatError('Invalid update to _childViews field.', 'warn')
+          }
+          // Check if a child view is being added or removed by comparing existing and updated ownedAttributeIds
+          if (existing.custom[namespace] && existing.custom[namespace].ownedAttributeIds) {
+            const oldIDs = existing.custom[namespace].ownedAttributeIds;
+            const newIDs = update.custom[namespace].ownedAttributeIds;
+
+            // If not every new id is in the list of old ids, an old id has been deleted
+            if (!newIDs.every((id) => oldIDs.includes(id))) {
+              const deletedIDs = oldIDs.filter((id) => !newIDs.includes(id));
+              deletedIDs.forEach((id) => {
+                deletedViews[id] = existing.custom[namespace].associationID;
+              });
+
+            }
+            // If not every old id is in the list of new ids, a new id has been added
+            if (!oldIDs.every((id) => newIDs.includes(id))) {
+              const addedIDs = newIDs.filter((id) => !oldIDs.includes(id));
+              addedViews.push(...addedIDs);
+            }
+          }
+        }
+
+        // Special logic for update elements: custom data is normally replaced in an update operation.  Here, however,
+        // we want to keep the data that's already there and only add new fields.  TBD: deleting fields.
+        if (existing.custom && existing.custom[namespace]) {
+          Object.keys(existing.custom[namespace]).forEach((key) => {
+            if (!Object.keys(update.custom[namespace]).includes(key)) {
+              update.custom[namespace][key] = existing.custom[namespace][key];
+            }
+          });
+        }
+
+        // Updates to elements' parents cannot be made in bulk
+        if (update.hasOwnProperty('parent')) {
+          individualUpdates.push(update);
+        }
+      });
+
+      // When a view has been moved, i.e. deleted from one element and added to another element, we must also make
+      // updates to a special relationship element that is linked to the view.
+      if (Object.keys(addedViews).length > 0) {
+        await utils.asyncForEach(Object.keys(addedViews), async(key) => {
+          // If a view was added that was also deleted, additional updates must be made
+          if (Object.keys(deletedViews).includes(key)) {
+            // First find the association element
+            const association = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
+              req.params.refid, deletedViews[key]);
+            // Then find the element referenced by the assoiation element's ownedEndId
+            const ownedEnd = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
+              req.params.refid, association[0].custom[namespace].ownedEndId);
+            // Initialize the update to the ownedEnd element
+            const update = {
+              id: mcfUtils.parseID(ownedEnd[0]._id).pop(),
+              custom: {
+                [namespace]: {
+                  typeId: addedViews[key]
+                }
+              }
+            };
+            // Make sure to save the custom data of the element
+            Object.keys(existing.custom[namespace]).forEach((key) => {
+              if (!Object.keys(update.custom[namespace]).includes(key)) {
+                update.custom[namespace][key] = existing.custom[namespace][key];
+              }
+            });
+            // Add the update to a list of updates to be made
+            individualUpdates.push(update)
+          }
+        })
+      }
+
+      // If there are elements that need to be updated individually, remove them from the bulk list
+      // and run individual updates
+      if (individualUpdates.length !== 0) {
+        const individualIDs = individualUpdates.map((e) => e.id);
+        updateElements = updateElements.filter((e) => !individualIDs.includes(e.id));
+
+        await utils.asyncForEach(individualUpdates, async (individualUpdate) => {
+          const updatedElement = await ElementController.update(req.user, req.params.orgid, req.params.projectid,
+            req.params.refid, individualUpdate);
+          updatedElements = updatedElements.concat(updatedElement);
+        });
+      }
+
+      // Update elements in bulk
+      if (updateElements.length !== 0) {
+        const bulkUpdatedElements = await ElementController.update(req.user, req.params.orgid, req.params.projectid,
+          req.params.refid, updateElements);
+        updatedElements = updatedElements.concat(bulkUpdatedElements);
+      }
+    }
+
+    const results = createdElements.concat(updatedElements);
 
     const data = results.map((e) => format.mmsElement(req.user, e));
 
@@ -751,14 +889,23 @@ async function putElementSearch(req, res, next) {
   try {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
+    let projID = req.params.projectid;
+    let branchID = req.params.refid;
+    let elemID;
 
-    const elemID = req.body.query.bool.filter[0].term.id;
-    const projID = req.body.query.bool.filter[1].term._projectId;
+    if (req.body.aggs) {
+      // TODO
+    }
 
-    const elements = await ElementController.find(req.user, req.params.orgid, projID, req.params.refid, elemID);
+    if (req.body.query) {
+      elemID = req.body.query.bool.filter[0].term.id;
+      projID = req.body.query.bool.filter[1].term._projectId;
+    }
+
+    const elements = await ElementController.find(req.user, req.params.orgid, projID, branchID, elemID);
 
     // Generate the child views of the element if there are any
-    await utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, elements);
+    await utils.generateChildViews(req.user, req.params.orgid, projID, branchID, elements);
 
     // Return the public data of the elements in MMS format
     const data = elements.map((e) => format.mmsElement(req.user, e));

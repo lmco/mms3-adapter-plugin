@@ -306,22 +306,22 @@ router.route('/api/users/whoami')
  *                      side issue.
  */
 router.route('/api/users/:username')
-    .get(
-        authenticate,
-        logRoute,
-        disableUserAPI,
-        utils.addHeaders,
-        getUser,
-        logResponse,
-        respond
-    )
-    .options(
-        logRoute,
-        utils.addHeaders,
-        APIController.optionsDefault,
-        logResponse,
-        respond
-    );
+.get(
+	authenticate,
+	logRoute,
+	disableUserAPI,
+	utils.addHeaders,
+	getUser,
+	logResponse,
+	respond
+)
+.options(
+	logRoute,
+	utils.addHeaders,
+	APIController.optionsDefault,
+	logResponse,
+	respond
+);
 
 // TODO: Document this route. Seems to only be used by View Editor
 router.route('/connection/jms')
@@ -988,6 +988,20 @@ router.route('/alfresco/projects/:projectid/refs/:refid/artifacts/blob/:blobid')
 	respond
 );
 
+/**
+ * @swagger
+ * /projects/{projectid}/refs/{refid}/convert
+ *   post:
+ *     description: Converts mms3's HTML post into a downloadable PDF artifact.
+ *        Request users should receive an email to download the PDF file.
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: OK
+ *       500:
+ *         description: Internal Server Error
+ */
 router.route('/projects/:projectid/refs/:refid/convert')
   .post(
     utils.handleTicket,
@@ -1005,7 +1019,6 @@ router.route('/projects/:projectid/refs/:refid/convert')
     logResponse,
     respond
   );
-
 
 // This is all the other routes that get hit
 // Throwing an error saying no
