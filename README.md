@@ -15,6 +15,8 @@ to the **plugins.plugins** section of the running configuration, ensure
   "source": "https://gitlab.us.lmco.com/mbx/mbee/plugins/mms3-adapter.git",
   "title": "MMS3 Adapter",
   "name": "mms3-adapter",
+  "emailServerUrl": "email.server.com",
+  "emailServerPort": "25",
   "pdf": {
     "directory": "/tmp",
     "filename": "tmp.output",
@@ -130,4 +132,3 @@ located in: *plugins > com.lmco.mbee.magicdraw.mdk* with the jar file created in
 the build directory.
 
 9. Restart Cameo to successfully install and run the plugin.
-    

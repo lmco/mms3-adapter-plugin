@@ -195,43 +195,43 @@ async function generateChildViews(reqUser, orgID, projID, branchID, elements) {
  * @returns prunedHtml - The pruned HTML body.
  */
 function pruneHtml(rawHTMLString) {
-	
-  // Transform javascript code string to json
-  //let jsonString= JSON.stringify(eval("(" + rawHTMLString.body + ")"));
-  
   // Extract HTML from body
   let jsonHtml = rawHTMLString.body;
   
   // Remove HTML comments tags
   let pruneHtml = jsonHtml.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '');
 
+  console.log(pruneHtml);
   // Return the pruned html
   return pruneHtml;
 }
 
 /**
- * @description Gßenerate PDF file based on HTML file.
+ * @description Generate PDF file based on HTML file.
  *
  * @param fullHtmlFilePath - String path of the html file.
  * @param fullPdfFilePath - String path of the generated pdf file.
  */
 async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath) {
-	// Use admin to run PDF convertion
+	// Use admin to run PDF conversion
   const userAuth = `--auth-user=${M.config.server.defaultAdminUsername}`;
   const passAuth = `--auth-password=${M.config.server.defaultAdminPassword}`;
   const config =  M.config.server.plugins.plugins['mms3-adapter'];
   const exec =config.pdf.exec;
   
-  //const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure ${userAuth} ${passAuth}`;
-  const command = `cp ${fullHtmlFilePath} ${fullPdfFilePath}`;
+  // Generate the conversion command
+  const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure ${userAuth} ${passAuth}`;
   const stdout = execSync(command);
-  M.log.info(`Executing... ${command}  \n ${stdout.toString()}`);
+  
+  // Log command
+  M.log.info(`Executing... ${command}  ${stdout.toString()}`);
 }
 
 /**
- * @description Emails user the artifact blob url link.
+ * @description Emails user with an url link.
  *
- * @param string - String that includes the html body and css style.
+ * @param userEmail - The requesting user's email.
+ * @param link - The URL link to be included in the email.
  */
 async function emailBlobLink(userEmail, link) {
 	try {
@@ -252,6 +252,7 @@ async function emailBlobLink(userEmail, link) {
     const message = 'HTML to .PDF generation succeeded.\n\n' +
       `You can access the .PDF file at: ${link}`;
     
+    // Create the transporter and send the email
     await transporter.sendMail({
       from: '"mbee support" <mbee-support.fc-space@lmco.com>', // sender address
       to: userEmail,
@@ -259,6 +260,7 @@ async function emailBlobLink(userEmail, link) {
       text: message                                            // plain text body
     });
     
+    // Log user email
     M.log.info(`Emailing user: ${userEmail}.`);
     
   }

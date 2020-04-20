@@ -1330,16 +1330,16 @@ async function postHtml2Pdf(req, res, next) {
       // Create artifact link
       let link = `http://${serverUrl}/api/orgs/${req.params.orgid}/projects/${req.params.projectid}/artifacts/blob` +
                   `?location=${artifactMetadata.location}&filename=${artifactMetadata.filename}`;
-      const userEmail = req.user.email;
-      // Email user
-      await utils.emailBlobLink('phillip.lee@lmco.com',link);
-      
+      // Check user email
+      if (req.user.email){
+        // Email user
+        await utils.emailBlobLink('phillip.lee@lmco.com',link);
+      }
     });
-    
+    // Set status code
     res.locals.statusCode = 200;
   }
   catch (error) {
-    console.log(error)
     M.log.warn(error.message);
     res.locals.statusCode = getStatusCode(error);
     res.locals.message = error.message;
