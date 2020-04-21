@@ -216,7 +216,7 @@ async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath) {
   // Use admin to run PDF conversion
   const userAuth = `--auth-user=${M.config.server.defaultAdminUsername}`;
   const passAuth = `--auth-password=${M.config.server.defaultAdminPassword}`;
-  const config =  M.config.server.plugins.plugins['mms3-adapter'];
+  const config = M.config.server.plugins.plugins['mms3-adapter'];
   const exec = config.pdf.exec;
   
   // Generate the conversion command
