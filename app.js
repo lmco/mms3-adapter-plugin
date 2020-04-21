@@ -992,7 +992,7 @@ router.route('/alfresco/projects/:projectid/refs/:refid/artifacts/blob/:blobid')
  * @swagger
  * /projects/{projectid}/refs/{refid}/convert
  *   post:
- *     description: Converts mms3's HTML post into a downloadable PDF artifact.
+ *     description: Converts View Editor's HTML post into a downloadable PDF artifact.
  *        Requesting users should receive an email to download the PDF file.
  *     produces:
  *       - application/json
