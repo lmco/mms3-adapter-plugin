@@ -188,7 +188,7 @@ async function generateChildViews(reqUser, orgID, projID, branchID, elements) {
 }
 
 /**
- * @description Prunes and extracts the HTML section from mms's export HTML request.
+ * @description Prunes and extracts the HTML section from View Editor's export HTML request.
  *
  * @param rawHTMLString - String that includes the html body and css style.
  *
