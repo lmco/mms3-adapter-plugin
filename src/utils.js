@@ -190,18 +190,17 @@ async function generateChildViews(reqUser, orgID, projID, branchID, elements) {
 /**
  * @description Prunes and extracts the HTML section from mms's export HTML request.
  *
- * @param rawHTMLString - String that includes the html body and css style.
+ * @param {object} body - Object that includes the html body and css style.
  *
  * @returns prunedHtml - The pruned HTML body.
  */
-function pruneHtml(rawHTMLString) {
+function pruneHtml(body) {
   // Extract HTML from body
-  let jsonHtml = rawHTMLString.body;
+  let rawHTMLString = body.body;
   
   // Remove HTML comments tags
-  let pruneHtml = jsonHtml.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '');
+  let pruneHtml = rawHTMLString.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '');
 
-  console.log(pruneHtml);
   // Return the pruned html
   return pruneHtml;
 }

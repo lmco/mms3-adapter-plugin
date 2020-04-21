@@ -1292,9 +1292,10 @@ async function postHtml2Pdf(req, res, next) {
     const directory = pluginCfg.pdf.directory;
     
     // Extract request body
-    const rawString = req.body;
+    const body = req.body;
+    
     // Filter and prune HTML
-    let prunedHtml = utils.pruneHtml(rawString);
+    let prunedHtml = utils.pruneHtml(body);
     
     // Define HTML/PDF file paths
     const tempHtmlFileName = `${filename}_${Date.now()}.html`;
