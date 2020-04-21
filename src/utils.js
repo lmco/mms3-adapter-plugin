@@ -264,7 +264,7 @@ async function emailBlobLink(userEmail, link) {
     M.log.info(`Emailing user: ${userEmail}.`);
     
   }
-	catch (error) {
+  catch (error) {
     M.log.warn(error);
     throw new M.ServerError('Failed to sent user email.', 'error');
 	}
