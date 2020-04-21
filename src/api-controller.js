@@ -1334,7 +1334,7 @@ async function postHtml2Pdf(req, res, next) {
       // Check user email
       if (req.user.email){
         // Email user
-        await utils.emailBlobLink('phillip.lee@lmco.com',link);
+        await utils.emailBlobLink(req.user.email,link);
       }
     });
     // Set status code

@@ -188,7 +188,7 @@ async function generateChildViews(reqUser, orgID, projID, branchID, elements) {
 }
 
 /**
- * @description Prunes and extracts the HTML section from mms's export HTML request.
+ * @description Prunes and extracts the HTML section from View Editor's export HTML request.
  *
  * @param {object} body - Object that includes the html body and css style.
  *
@@ -212,11 +212,11 @@ function pruneHtml(body) {
  * @param fullPdfFilePath - String path of the generated pdf file.
  */
 async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath) {
-	// Use admin to run PDF conversion
+  // Use admin to run PDF conversion
   const userAuth = `--auth-user=${M.config.server.defaultAdminUsername}`;
   const passAuth = `--auth-password=${M.config.server.defaultAdminPassword}`;
-  const config =  M.config.server.plugins.plugins['mms3-adapter'];
-  const exec =config.pdf.exec;
+  const config = M.config.server.plugins.plugins['mms3-adapter'];
+  const exec = config.pdf.exec;
   
   // Generate the conversion command
   const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure ${userAuth} ${passAuth}`;
@@ -263,10 +263,10 @@ async function emailBlobLink(userEmail, link) {
     M.log.info(`Emailing user: ${userEmail}.`);
     
   }
-	catch (error) {
+  catch (error) {
     M.log.warn(error);
-    throw new M.ServerError('Failed to sent user email.', 'error');
-	}
+    throw new M.ServerError('Failed to send user email.', 'error');
+  }
 }
 
 // Export the module
