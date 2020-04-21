@@ -217,7 +217,7 @@ async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath) {
   const userAuth = `--auth-user=${M.config.server.defaultAdminUsername}`;
   const passAuth = `--auth-password=${M.config.server.defaultAdminPassword}`;
   const config =  M.config.server.plugins.plugins['mms3-adapter'];
-  const exec =config.pdf.exec;
+  const exec = config.pdf.exec;
   
   // Generate the conversion command
   const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure ${userAuth} ${passAuth}`;
