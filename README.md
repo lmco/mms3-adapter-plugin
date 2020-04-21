@@ -52,8 +52,8 @@ in the `angular-mms-grunt-servers.json` is the url of your MCF server (ex:
    allows View Editor to point to your MCF server.
    
    ```javascript
-   URLServiceProvider.setMmsUrl('http://{your-mcf-host}:{your-mcf-port}/plugins/mms3-adapter');
-   URLServiceProvider.setBaseUrl('http://{your-mcf-host}:{your-mcf-port}/plugins/mms3-adapter');
+   URLServiceProvider.setMmsUrl('http://{your-mcf-host}:{your-mcf-port}/plugins/mms3-adapter/alfresco/service');
+   URLServiceProvider.setBaseUrl('http://{your-mcf-host}:{your-mcf-port}/plugins/mms3-adapter/alfresco/service');
    ```
    3b. In `src/services/AuthorizationServices.js` replace line 25 with the
    following line. This allows View Editor to NOT point to alfresco for user
