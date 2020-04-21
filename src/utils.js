@@ -267,7 +267,7 @@ async function emailBlobLink(userEmail, link) {
   catch (error) {
     M.log.warn(error);
     throw new M.ServerError('Failed to sent user email.', 'error');
-	}
+  }
 }
 
 // Export the module
