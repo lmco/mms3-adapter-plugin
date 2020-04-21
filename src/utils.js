@@ -213,7 +213,7 @@ function pruneHtml(rawHTMLString) {
  * @param fullPdfFilePath - String path of the generated pdf file.
  */
 async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath) {
-	// Use admin to run PDF conversion
+  // Use admin to run PDF conversion
   const userAuth = `--auth-user=${M.config.server.defaultAdminUsername}`;
   const passAuth = `--auth-password=${M.config.server.defaultAdminPassword}`;
   const config =  M.config.server.plugins.plugins['mms3-adapter'];
