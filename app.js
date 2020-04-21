@@ -7,7 +7,7 @@
  *
  * @license LMPI - Lockheed Martin Proprietary Information
  *
- * @owner Austin Bieber
+ * @owner Connor Doyle
  *
  * @author Austin Bieber
  * @author Leah De Laurell
@@ -723,7 +723,49 @@ router.route('/projects/:projectid/refs/:refid')
 	respond
 );
 
-// TODO: Document this route
+/**
+ * @swagger
+ * /projects/{projectid}/refs/{refid}/mounts:
+ *   get:
+ *     tags:
+ *       - elements
+ *       - projects
+ *     description: Finds all elements of type "Mount" and looks for the project referenced
+ *                  in their "mountedElementProjectId" field. Finds all projects referenced by all
+ *                  "Mount" elements and returns the found projects.
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project which contains the searched
+ *                      branch/ref.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: refid
+ *         description: The ID of the ref to find.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: alf_ticket
+ *         description: A token passed in the query, used for authorization.
+ *         in: query
+ *         required: false
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.route('/projects/:projectid/refs/:refid/mounts')
 .get(
 	utils.handleTicket,
@@ -742,7 +784,46 @@ router.route('/projects/:projectid/refs/:refid/mounts')
 	respond
 );
 
-// TODO: Document this route
+/**
+ * @swagger
+ * /projects/{projectid}/refs/{refid}/groups:
+ *   get:
+ *     tags:
+ *       - elements
+ *     description: Finds all elements that have a field "_isGroup" with the value of true.
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project which contains the searched
+ *                      branch/ref.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: refid
+ *         description: The ID of the ref to find.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: alf_ticket
+ *         description: A token passed in the query, used for authorization.
+ *         in: query
+ *         required: false
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.route('/projects/:projectid/refs/:refid/groups')
 .get(
 	utils.handleTicket,
@@ -761,7 +842,146 @@ router.route('/projects/:projectid/refs/:refid/groups')
 	respond
 );
 
-// TODO: documentation
+/**
+ * @swagger
+ * /projects/{projectid}/refs/{refid}/elements:
+ *   post:
+ *     tags:
+ *       - elements
+ *     description: Creates or replaces elements
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project which contains the branch/ref.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: refid
+ *         description: The ID of the ref to post elements to.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: body
+ *         in: body
+ *         description: An array of objects containing new element data.
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: object
+ *             required:
+ *               - id
+ *             properties:
+ *               id:
+ *                 type: string
+ *               name:
+ *                 type: string
+ *               documentation:
+ *               	 type: string
+ *               type:
+ *                 type: string
+ *       - name: alf_ticket
+ *         description: A token passed in the query, used for authorization.
+ *         in: query
+ *         required: false
+ *         type: string
+ *   put:
+ *     tags:
+ *       - elements
+ *     description: Rather than create or replace, as would be expected from a PUT request,
+ *     							this request actually functions as a search. The body of the request
+ *     							contains ids of elements, which are searched for and returned.
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project which contains the branch/ref.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: refid
+ *         description: The ID of the ref to search on.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: body
+ *         in: body
+ *         description: An array of objects containing element ids to search for.
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: object
+ *             required:
+ *               - id
+ *             properties:
+ *               id:
+ *                 type: string
+ *       - name: alf_ticket
+ *         description: A token passed in the query, used for authorization.
+ *         in: query
+ *         required: false
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ *   delete:
+ *     tags:
+ *       - elements
+ *     description: Deletes the specified elements
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project which contains the branch/ref.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: refid
+ *         description: The ID of the ref to delete elements on.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: body
+ *         in: body
+ *         description: An array of objects containing element ids to delete.
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: object
+ *             required:
+ *               - id
+ *             properties:
+ *               id:
+ *                 type: string
+ *       - name: alf_ticket
+ *         description: A token passed in the query, used for authorization.
+ *         in: query
+ *         required: false
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.route('/projects/:projectid/refs/:refid/elements')
 .post(
 	utils.handleTicket,
@@ -799,8 +1019,59 @@ router.route('/projects/:projectid/refs/:refid/elements')
 );
 
 /**
+ * @swagger
  * /projects/{projectid}/refs/{refid}/search:
- * TODO: documentation
+ *   get: TODO - not sure if this endpoint is used
+ *   post: TODO - not sure if this endpoint is used
+ *   put:
+ *     tags:
+ *       - elements
+ *     description: Rather than create or replace, as would be expected from a PUT request,
+ *     							this request actually functions as a search. The body of the request
+ *     							contains ids of elements, which are searched for and returned.
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project which contains the branch/ref.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: refid
+ *         description: The ID of the ref to search on.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: body
+ *         in: body
+ *         description: An array of objects containing element ids to search for.
+ *         schema:
+ *           type: array
+ *           items:
+ *             type: object
+ *             required:
+ *               - id
+ *             properties:
+ *               id:
+ *                 type: string
+ *       - name: alf_ticket
+ *         description: A token passed in the query, used for authorization.
+ *         in: query
+ *         required: false
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
  *
  */
 router.route('/projects/:projectid/refs/:refid/search')
@@ -868,6 +1139,11 @@ router.route('/projects/:projectid/refs/:refid/search')
  *         in: path
  *         required: true
  *         type: string
+ *       - name: alf_ticket
+ *         description: A token passed in the query, used for authorization.
+ *         in: query
+ *         required: false
+ *         type: string
  *     responses:
  *       200:
  *         description: OK
@@ -901,9 +1177,9 @@ router.route('/projects/:projectid/refs/:refid/elements/:elementid')
 );
 
 /**
- * TODO
+ * @swagger
  * /projects/{projectid}/refs/{refid}/elements/{elementid}/cfids:
- * TODO
+ *   get: TODO
  */
 router.route('/projects/:projectid/refs/:refid/elements/:elementid/cfids')
 .get(
@@ -916,8 +1192,47 @@ router.route('/projects/:projectid/refs/:refid/elements/:elementid/cfids')
 	respond
 );
 
-
-// TODO: Document this route and eventually find a solution for documents
+/**
+ * @swagger
+ * /projects/{projectid}/refs/{refid}/documents:
+ *   get:
+ *     tags:
+ *       - elements
+ *     description: Returns all documents on a specified branch. Searches for all elements that
+ *                  have the field "_appliedStereotypeIds" which contain the id "_17_0_2_3_87b0275_1371477871400_792964_43374".
+ *                  Returns all elements that meet the search criteria.
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project containing the specified ref/branch.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: refid
+ *         description: The ID of the ref/branch to search on.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: alf_ticket
+ *         description: A token passed in the query, used for authorization.
+ *         in: query
+ *         required: false
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.route('/projects/:projectid/refs/:refid/documents')
 .get(
 	utils.handleTicket,
@@ -941,7 +1256,80 @@ router.route('/projects/:projectid/refs/:refid/commits')
 	respond
 );
 
-// TODO: document
+/**
+ * @swagger
+ * /projects/{projectid}/refs/{refid}/artifacts:
+ *   post:
+ *     tags:
+ *       - artifacts
+ *     description: TODO
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project containing the specified ref/branch.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: refid
+ *         description: The ID of the ref/branch to search on.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: alf_ticket
+ *         description: A token passed in the query, used for authorization.
+ *         in: query
+ *         required: false
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ *   put:
+ *     tags:
+ *       - artifacts
+ *     description: TODO
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project containing the specified ref/branch.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: refid
+ *         description: The ID of the ref/branch to search on.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: alf_ticket
+ *         description: A token passed in the query, used for authorization.
+ *         in: query
+ *         required: false
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.route('/projects/:projectid/refs/:refid/artifacts')
 .post(
 	utils.handleTicket,
@@ -969,7 +1357,50 @@ router.route('/projects/:projectid/refs/:refid/artifacts')
 	respond
 );
 
-// TODO: document
+/**
+ * @swagger
+ * /projects/{projectid}/refs/{refid}/artifacts:
+ *   get:
+ *     tags:
+ *       - artifacts
+ *     description: Retrieves an artifact blob.
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project containing the specified ref/branch.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: refid
+ *         description: The ID of the ref/branch to search on.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: blobid
+ *         description: The ID of the artifact blob to retrieve.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: alf_ticket
+ *         description: A token passed in the query, used for authorization.
+ *         in: query
+ *         required: false
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
 router.route('/alfresco/projects/:projectid/refs/:refid/artifacts/blob/:blobid')
 .get(
 	utils.handleTicket,
@@ -1010,9 +1441,7 @@ router.route('/projects/:projectid/refs/:refid/convert')
 	respond
 );
 
-
-// This is all the other routes that get hit
-// Throwing an error saying no
+// For all other routes that get hit, return an error stating "Not Implemented"
 app.use('*', (req, res, next) => {
 	console.log(`Request for route not implemented: ${req.method}: ${req.originalUrl}`);
 	return res.status(501).send('Not Implemented');
