@@ -545,7 +545,7 @@ async function postElements(req, res, next) {
     let updatedElements = [];
     let individualUpdates = [];
     let deletedViews = {};
-    let addedViews = [];
+    let addedViews = {};
 
     // Create elements if there are any elements to be created
     if (createElements.length !== 0) {
@@ -591,7 +591,9 @@ async function postElements(req, res, next) {
             // If not every old id is in the list of new ids, a new id has been added
             if (!oldIDs.every((id) => newIDs.includes(id))) {
               const addedIDs = newIDs.filter((id) => !oldIDs.includes(id));
-              addedViews.push(...addedIDs);
+              addedIDs.forEach((id) => {
+                addedViews[id] = update.id;
+              });
             }
           }
         }
@@ -619,17 +621,17 @@ async function postElements(req, res, next) {
           // If a view was added that was also deleted, additional updates must be made
           if (Object.keys(deletedViews).includes(key)) {
             // First find the association element
-            const association = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
+            const associations = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
               req.params.refid, deletedViews[key]);
             // Then find the element referenced by the assoiation element's ownedEndId
-            const ownedEnd = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
-              req.params.refid, association[0].custom[namespace].ownedEndId);
+            const ownedEndIds = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
+              req.params.refid, associations[0].custom[namespace].ownedEndIds);
             // Initialize the update to the ownedEnd element
             const update = {
-              id: mcfUtils.parseID(ownedEnd[0]._id).pop(),
+              id: mcfUtils.parseID(ownedEndIds[0]._id).pop(),
               custom: {
                 [namespace]: {
-                  typeId: addedViews[key]
+                  typeId: addedViews[key] // Needs to point to the _id of the new view element that the child view has been added to
                 }
               }
             };
