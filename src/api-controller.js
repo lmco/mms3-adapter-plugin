@@ -581,7 +581,7 @@ async function postElements(req, res, next) {
             const newIDs = update.custom[namespace].ownedAttributeIds;
 
             // If not every new id is in the list of old ids, an old id has been deleted
-            if (!newIDs.every((id) => oldIDs.includes(id))) {
+            if (!oldIDs.every((id) => newIDs.includes(id))) {
               const deletedIDs = oldIDs.filter((id) => !newIDs.includes(id));
               deletedIDs.forEach((id) => {
                 deletedViews[id] = existing.custom[namespace].associationID;
@@ -589,7 +589,7 @@ async function postElements(req, res, next) {
 
             }
             // If not every old id is in the list of new ids, a new id has been added
-            if (!oldIDs.every((id) => newIDs.includes(id))) {
+            if (!newIDs.every((id) => oldIDs.includes(id))) {
               const addedIDs = newIDs.filter((id) => !oldIDs.includes(id));
               addedIDs.forEach((id) => {
                 addedViews[id] = update.id;
