@@ -215,18 +215,6 @@ function pruneHtml(body) {
  * @param fullPdfFilePath - String path of the generated pdf file.
  */
 async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath, css) {
-  let pdf = require('html-pdf');
-  const fs = require('fs');
-  var html = fs.readFileSync(fullHtmlFilePath, 'utf8');
-  //var options = { format: 'Letter' };
-  var options = {base:css};
-  console.log('options: ', options);
-  pdf.create(html, options).toFile(fullPdfFilePath, function(err, res) {
-    if (err) return console.log(err);
-    console.log(res); // { filename: '/app/businesscard.pdf' }
-  });
-  
-  
   // Use admin to run PDF conversion
   // const userAuth = `--auth-user=${M.config.server.defaultAdminUsername}`;
   // const passAuth = `--auth-password=${M.config.server.defaultAdminPassword}`;
