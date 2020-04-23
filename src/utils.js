@@ -7,7 +7,7 @@
  *
  * @license LMPI - Lockheed Martin Proprietary Information
  *
- * @owner Austin Bieber
+ * @owner Connor Doyle
  *
  * @author Leah De Laurell
  * @author Austin Bieber
@@ -97,11 +97,13 @@ function handleTicket(req, res, next) {
 }
 
 /**
- * @description TODO
+ * @description Decodes the token from the request parameters and adds it into an
+ * auth header.
  *
- * @param req
- * @param res
- * @param next
+ * @param {object} req - The request object.
+ * @param {object} res - THe response object.
+ * @param {Function} next - The callback function to call after completion of
+ * the function.
  */
 function formatTicketRequest(req, res, next) {
 	// Parse token from URI encoding
@@ -112,11 +114,11 @@ function formatTicketRequest(req, res, next) {
 }
 
 /**
- * @description TODO
+ * @description A synchronous forEach function for general usage. For each item in the iterable
+ * provided, this function will run the callback synchronously.
  *
- * @param array
- * @param callback
- * @returns {Promise<void>}
+ * @param {array} array - The array of iterables
+ * @param {Function} callback - The function to run on each iterable.
  */
 async function asyncForEach(array, callback) {
 	for (let index = 0; index < array.length; index++) {
@@ -127,14 +129,18 @@ async function asyncForEach(array, callback) {
 
 
 /**
- * @description TODO
+ * @description This replicates a functionality of MMS by searching for, creating, and adding child views
+ * to the specified elements. Certain elements, including document and view elements, are expected by
+ * View Editor to have a field called _childViews containing an array of objects that have an id,
+ * aggregation, and propertyId. These child views are calculated by searching for the elements specified in
+ * the ownedAttributeIds field of the original element. These ownedAttribute elements are then converted into
+ * child views by taking the typeId as the id, the aggregation as the aggregation, and the id as the typeId.
  *
- * @param reqUser
- * @param orgID
- * @param projID
- * @param branchID
- * @param elements
- * @returns {Promise<void>}
+ * @param {object} reqUser - The requesting user.
+ * @param {string} orgID - The id of the organization to search on.
+ * @param {string} projID - The id of the project to search on.
+ * @param {string} branchID - The id of the branch/ref to search on.
+ * @param {object[]} elements - The elements to generate child views for.
  */
 async function generateChildViews(reqUser, orgID, projID, branchID, elements) {
 	const viewStereotype = '_18_0beta_9150291_1392290067481_33752_4359';

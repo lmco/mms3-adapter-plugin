@@ -7,7 +7,7 @@
  *
  * @license LMPI - Lockheed Martin Proprietary Information
  *
- * @owner Austin Bieber
+ * @owner Connor Doyle
  *
  * @author Austin Bieber
  * @author Leah De Laurell
@@ -39,9 +39,11 @@ module.exports = {
 };
 
 /**
+ * @description Formats an MMS org into an MCF org.
  *
- * @param org
- * @returns {*}
+ * @param {object} org - The org to format.
+ *
+ * @returns {object} The formatted org.
  */
 function mcfOrg(org) {
 	// Define known MCF fields
@@ -64,9 +66,11 @@ function mcfOrg(org) {
 }
 
 /**
+ * @description Formats an MMS project into an MCF project.
  *
- * @param proj
- * @returns {*}
+ * @param {object} proj - The project to format.
+ *
+ * @returns {object} The formatted project.
  */
 function mcfProject(proj) {
 	// Define known MCF fields
@@ -89,9 +93,11 @@ function mcfProject(proj) {
 }
 
 /**
+ * @description Formats an MMS ref into an MCF branch.
  *
- * @param branch
- * @returns {*}
+ * @param {object} branch - The branch to format.
+ *
+ * @returns {object} The formatted branch.
  */
 function mcfBranch(branch) {
 	// Define known MCF fields
@@ -116,12 +122,13 @@ function mcfBranch(branch) {
 }
 
 /**
- * @description
+ * @description Formats an MMS element into an MCF element.
  * @async
  *
  * @param {object} req - The request object. Used for its orgid, projectid, and refid parameters.
  * @param {object} elements - The elements to format.
- * @returns The formatted element
+ *
+ * @returns {object} The formatted element
  */
 async function mcfElements(req, elements) {
 	const mcfFields = ['id', 'name', 'documentation', 'type', 'parent', 'source', 'target', 'project', 'branch', 'artifact', 'custom'];
@@ -171,6 +178,7 @@ async function mcfElements(req, elements) {
 /**
  * @description Formats an MCF org into an MMS3 org.
  *
+ * @param {object} reqUser - The requesting user
  * @param {object} orgObj - The MCF org to format
  *
  * @returns {object} An MMS3 formatted org.
@@ -188,7 +196,7 @@ function mmsOrg(reqUser, orgObj) {
 /**
  * @description Formats an MCF project into an MMS3 project.
  *
- * @param {object} reqUser
+ * @param {object} reqUser - The requesting user
  * @param {object} projObj - The MCF project to format
  *
  * @returns {object} An MMS3 formatted project.
@@ -231,6 +239,7 @@ function mmsProject(reqUser, projObj) {
 /**
  * @description Formats an MCF branch into an MMS3 ref.
  *
+ * @param {object} reqUser - The requesting user
  * @param {object} branchObj - The MCF branch to format
  *
  * @returns {object} An MMS3 formatted ref.
@@ -239,8 +248,6 @@ function mmsRef(reqUser, branchObj) {
 	// Get the public data of the branch
 	const publicBranch = getPublicData(reqUser, branchObj, 'branch');
 	// Note: _elasticId is MMS-only
-
-	// TODO: convert custom[namespace] into fields
 
 	const branch = {
 		id: publicBranch.id,
@@ -310,6 +317,14 @@ function mmsElement(reqUser, elemObj) {
 	return elem;
 }
 
+/**
+ * @description Formats an MCF artifact into an MMS3 artifact.
+ *
+ * @param {object} reqUser - The requesting user.
+ * @param {object} artifact - The MCF artifact to format.
+ *
+ * @returns {object} An MMS3 formatted artifact.
+ */
 function mmsArtifact(reqUser, artifact) {
 	// Get the public data of the artifact
 	const artPublicData = getPublicData(reqUser, artifact, 'artifact');
