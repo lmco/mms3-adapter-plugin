@@ -198,6 +198,9 @@ function pruneHtml(body) {
   // Extract HTML from body
   let rawHTMLString = body.body;
   
+  // Extract HTML from body
+  let rawCssString = body.css;
+  console.log("rawCssString: ", rawCssString);
   // Remove HTML comments tags
   let pruneHtml = rawHTMLString.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '');
 
@@ -211,19 +214,31 @@ function pruneHtml(body) {
  * @param fullHtmlFilePath - String path of the html file.
  * @param fullPdfFilePath - String path of the generated pdf file.
  */
-async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath) {
+async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath, css) {
+  let pdf = require('html-pdf');
+  const fs = require('fs');
+  var html = fs.readFileSync(fullHtmlFilePath, 'utf8');
+  //var options = { format: 'Letter' };
+  var options = {base:css};
+  console.log('options: ', options);
+  pdf.create(html, options).toFile(fullPdfFilePath, function(err, res) {
+    if (err) return console.log(err);
+    console.log(res); // { filename: '/app/businesscard.pdf' }
+  });
+  
+  
   // Use admin to run PDF conversion
-  const userAuth = `--auth-user=${M.config.server.defaultAdminUsername}`;
-  const passAuth = `--auth-password=${M.config.server.defaultAdminPassword}`;
-  const config = M.config.server.plugins.plugins['mms3-adapter'];
-  const exec = config.pdf.exec;
-  
-  // Generate the conversion command
-  const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure ${userAuth} ${passAuth}`;
-  const stdout = execSync(command);
-  
-  // Log command
-  M.log.info(`Executing... ${command}  ${stdout.toString()}`);
+  // const userAuth = `--auth-user=${M.config.server.defaultAdminUsername}`;
+  // const passAuth = `--auth-password=${M.config.server.defaultAdminPassword}`;
+  // const config = M.config.server.plugins.plugins['mms3-adapter'];
+  // const exec = config.pdf.exec;
+  //
+  // // Generate the conversion command
+  // const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure ${userAuth} ${passAuth}`;
+	// const stdout = execSync(command);
+  //
+  // // Log command
+  // M.log.info(`Executing... ${command}  ${stdout.toString()}`);
 }
 
 /**
