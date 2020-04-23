@@ -198,9 +198,6 @@ function pruneHtml(body) {
   // Extract HTML from body
   let rawHTMLString = body.body;
   
-  // Extract HTML from body
-  let rawCssString = body.css;
-  console.log("rawCssString: ", rawCssString);
   // Remove HTML comments tags
   let pruneHtml = rawHTMLString.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '');
 
@@ -214,19 +211,19 @@ function pruneHtml(body) {
  * @param fullHtmlFilePath - String path of the html file.
  * @param fullPdfFilePath - String path of the generated pdf file.
  */
-async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath, css) {
+async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath) {
   // Use admin to run PDF conversion
-  // const userAuth = `--auth-user=${M.config.server.defaultAdminUsername}`;
-  // const passAuth = `--auth-password=${M.config.server.defaultAdminPassword}`;
-  // const config = M.config.server.plugins.plugins['mms3-adapter'];
-  // const exec = config.pdf.exec;
-  //
-  // // Generate the conversion command
-  // const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure ${userAuth} ${passAuth}`;
-	// const stdout = execSync(command);
-  //
-  // // Log command
-  // M.log.info(`Executing... ${command}  ${stdout.toString()}`);
+  const userAuth = `--auth-user=${M.config.server.defaultAdminUsername}`;
+  const passAuth = `--auth-password=${M.config.server.defaultAdminPassword}`;
+  const config = M.config.server.plugins.plugins['mms3-adapter'];
+  const exec = config.pdf.exec;
+
+  // Generate the conversion command
+  const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure ${userAuth} ${passAuth}`;
+	const stdout = execSync(command);
+
+  // Log command
+  M.log.info(`Executing... ${command}  ${stdout.toString()}`);
 }
 
 /**

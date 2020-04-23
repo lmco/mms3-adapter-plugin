@@ -1293,7 +1293,7 @@ async function postHtml2Pdf(req, res, next) {
     
     // Extract request body
     const body = req.body;
-    console.log("body: ", body);
+
     // Filter and prune HTML
     let prunedHtml = utils.pruneHtml(body);
     
@@ -1309,7 +1309,7 @@ async function postHtml2Pdf(req, res, next) {
       if (err) throw new M.OperationError(`Could not export PDF: ${err} `, 'warn');
       
       // Convert HTML to PDF
-      await utils.convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath, body.css);
+      await utils.convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath);
       
       // Read the generated pdf file
       const pdfBlob = fs.readFileSync(fullPdfFilePath);

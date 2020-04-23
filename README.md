@@ -24,6 +24,20 @@ to the **plugins.plugins** section of the running configuration, ensure
   }
 }
 ```
+### PDF Export Configuration
+This plugin allows documents(HTML format) to be exported as a PDF. This plugin 
+uses Prince, a PDF conversion engine, to generate the PDF file. When the 
+conversion is completed, an email is sent to the requesting user with an artifact
+link to download the PDF. 
+
+To set up PDF export, supply the configuration with the **emailServerUrl** and 
+**emailServerPort**.
+
+[Prince](https://www.princexml.com/) will have to be installed separately with 
+its executable path, file directory, and filename template included. 
+1. **exec** - Prince executable path.
+2. **directory** - Location to store the documents. (HTML, PDF) 
+3. **filename** - Filename template prepended to each file. 
 
 ### Accessing Endpoints
 Once the plugin is installed and MCF is restarted, all normal MMS3 API endpoints
