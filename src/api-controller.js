@@ -544,8 +544,8 @@ async function postElements(req, res, next) {
     let createdElements = [];
     let updatedElements = [];
     let individualUpdates = [];
-    let deletedViews = {};
-    let addedViews = {};
+    let deletedChildViews = {};
+    let addedChildViews = {};
 
     // Create elements if there are any elements to be created
     if (createElements.length !== 0) {
@@ -556,6 +556,12 @@ async function postElements(req, res, next) {
     if (updateElements.length !== 0) {
       updateElements.forEach((update) => {
         const existing = foundJMI[update.id];
+
+        // This was needed for creating elements but causes issues with updating elements
+        if (update.custom[namespace].hasOwnProperty('name')) delete update.custom[namespace].name;
+        if (update.custom[namespace].hasOwnProperty('documentation')) {
+          delete update.custom[namespace].documentation;
+        }
 
         // Additional processing for updates to child views
         if (update.custom[namespace].hasOwnProperty('_childViews')) {
@@ -584,7 +590,7 @@ async function postElements(req, res, next) {
             if (!oldIDs.every((id) => newIDs.includes(id))) {
               const deletedIDs = oldIDs.filter((id) => !newIDs.includes(id));
               deletedIDs.forEach((id) => {
-                deletedViews[id] = existing.custom[namespace].associationID;
+                deletedChildViews[id] = existing;
               });
 
             }
@@ -592,7 +598,7 @@ async function postElements(req, res, next) {
             if (!newIDs.every((id) => oldIDs.includes(id))) {
               const addedIDs = newIDs.filter((id) => !oldIDs.includes(id));
               addedIDs.forEach((id) => {
-                addedViews[id] = update.id;
+                addedChildViews[id] = update.id;
               });
             }
           }
@@ -602,7 +608,8 @@ async function postElements(req, res, next) {
         // we want to keep the data that's already there and only add new fields.  TBD: deleting fields.
         if (existing.custom && existing.custom[namespace]) {
           Object.keys(existing.custom[namespace]).forEach((key) => {
-            if (!Object.keys(update.custom[namespace]).includes(key)) {
+            if (!Object.keys(update.custom[namespace]).includes(key)
+              && !(update.hasOwnProperty('name') && key === 'name')) {
               update.custom[namespace][key] = existing.custom[namespace][key];
             }
           });
@@ -616,29 +623,34 @@ async function postElements(req, res, next) {
 
       // When a view has been moved, i.e. deleted from one element and added to another element, we must also make
       // updates to a special relationship element that is linked to the view.
-      if (Object.keys(addedViews).length > 0) {
-        await utils.asyncForEach(Object.keys(addedViews), async(key) => {
+      if (Object.keys(addedChildViews).length > 0) {
+        await utils.asyncForEach(Object.keys(addedChildViews), async(key) => {
           // If a view was added that was also deleted, additional updates must be made
-          if (Object.keys(deletedViews).includes(key)) {
-            // First find the association element
+          if (Object.keys(deletedChildViews).includes(key)) {
+            // First find the child view element
+            const cvElems = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
+              req.params.refid, key);
+            // Then find the association element
             const associations = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
-              req.params.refid, deletedViews[key]);
+              req.params.refid, cvElems[0].custom[namespace].associationId);
             // Then find the element referenced by the assoiation element's ownedEndId
-            const ownedEndIds = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
+            const ownedEnds = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
               req.params.refid, associations[0].custom[namespace].ownedEndIds);
             // Initialize the update to the ownedEnd element
             const update = {
-              id: mcfUtils.parseID(ownedEndIds[0]._id).pop(),
+              id: mcfUtils.parseID(ownedEnds[0]._id).pop(),
               custom: {
                 [namespace]: {
-                  typeId: addedViews[key] // Needs to point to the _id of the new view element that the child view has been added to
+                  typeId: addedChildViews[key] // Needs to point to the _id of the new view element that the child view has been added to
                 }
               }
             };
+            const oldView = deletedChildViews[key];
             // Make sure to save the custom data of the element
-            Object.keys(existing.custom[namespace]).forEach((key) => {
-              if (!Object.keys(update.custom[namespace]).includes(key)) {
-                update.custom[namespace][key] = existing.custom[namespace][key];
+            Object.keys(oldView.custom[namespace]).forEach((key) => {
+              if (!Object.keys(update.custom[namespace]).includes(key)
+                && !(update.hasOwnProperty('name') && key === 'name')) {
+                update.custom[namespace][key] = oldView.custom[namespace][key];
               }
             });
             // Add the update to a list of updates to be made
