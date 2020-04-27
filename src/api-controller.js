@@ -1,5 +1,5 @@
 /**
- * Classification: UNCLASSIFIED
+ * @classification UNCLASSIFIED
  *
  * @module src.api-controller
  *
@@ -10,6 +10,7 @@
  * @owner Connor Doyle
  *
  * @author Connor Doyle
+ * @author Austin Bieber
  *
  * @description Handles API functions.
  */
@@ -34,16 +35,17 @@ const errors = M.require('lib.errors');
 // Adapter modules
 const format = require('./formatter.js');
 const utils = require('./utils.js');
+const sjm = require('./sjm.js');
 const namespace = utils.customDataNamespace;
 
 
 /**
  * @description Formats the session token so that it can be cleanly represented in URIS.
- * Returns the token nested in an object: { data: { ticket: token } }
+ * Returns the token nested in an object: { data: { ticket: token } }.
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 function postLogin(req, res, next) {
   res.locals.statusCode = 200;
@@ -59,20 +61,20 @@ function postLogin(req, res, next) {
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 function optionsDefault(req, res, next) {
-    res.locals.statusCode = 200;
-    next();
+  res.locals.statusCode = 200;
+  next();
 }
 
 /**
  * @description Returns the id of the user based on authentication of the session token calculated
- * in previous middleware in the format: { username: userID }
+ * in previous middleware in the format: { username: userID }.
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 function getTicket(req, res, next) {
   res.locals.statusCode = 200;
@@ -87,7 +89,7 @@ function getTicket(req, res, next) {
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function getOrg(req, res, next) {
   try {
@@ -116,7 +118,7 @@ async function getOrg(req, res, next) {
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function getOrgs(req, res, next) {
   try {
@@ -145,7 +147,7 @@ async function getOrgs(req, res, next) {
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function postOrgs(req, res, next) {
   try {
@@ -178,7 +180,7 @@ async function postOrgs(req, res, next) {
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function getProjects(req, res, next) {
   try {
@@ -207,7 +209,7 @@ async function getProjects(req, res, next) {
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function postProjects(req, res, next) {
   try {
@@ -226,7 +228,7 @@ async function postProjects(req, res, next) {
         parent: 'model'
       };
       // Create the view_instances_bin
-      await ElementController.create(req.user, req.params.orgid, projectID, 'master', elem)
+      await ElementController.create(req.user, req.params.orgid, projectID, 'master', elem);
     });
 
     // Return the public data of the newly created projects in MMS format
@@ -251,7 +253,7 @@ async function postProjects(req, res, next) {
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function getAllProjects(req, res, next) {
   // Set the orgid to null, specifying to find all projects
@@ -261,12 +263,13 @@ async function getAllProjects(req, res, next) {
 
 /**
  * @description Gets a single project on a specific org which a requesting user has access to.
- * Returns the project formatted as MMS3 project in the MMS3 API style: { projects: [foundProject] }
+ * Returns the project formatted as MMS3 project in the MMS3 API style:
+ * { projects: [foundProject] }.
  * @async
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function getProject(req, res, next) {
   try {
@@ -297,12 +300,12 @@ async function getProject(req, res, next) {
 /**
  * @description Gets all MCF branches (MMS3 refs) on a specific project which a requesting user
  * has access to. Returns the branches formatted as MMS3 refs in the MMS3 API style:
- * { refs: [...foundBranches] }
+ * { refs: [...foundBranches] }.
  * @async
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function getRefs(req, res, next) {
   try {
@@ -334,7 +337,7 @@ async function getRefs(req, res, next) {
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function postRefs(req, res, next) {
   try {
@@ -350,7 +353,7 @@ async function postRefs(req, res, next) {
     const ids = branches.map((b) => mcfUtils.createID(req.params.orgid,
       req.params.projectid, b.id));
 
-    const findQuery = { _id: { $in: ids }};
+    const findQuery = { _id: { $in: ids } };
     const foundBranches = await Branch.find(findQuery);
 
     const foundBranchIDs = foundBranches.map(b => mcfUtils.parseID(b._id).pop());
@@ -359,18 +362,18 @@ async function postRefs(req, res, next) {
       if (foundBranchIDs.includes(branch.id)) {
         promises.push(
           BranchController.update(req.user, req.params.orgid, req.params.projectid, branch)
-            .then((updatedBranch) => {
-              results.push(updatedBranch[0]);
-            })
+          .then((updatedBranch) => {
+            results.push(updatedBranch[0]);
+          })
         );
       }
       // Handle branches to create
       else {
         promises.push(
           BranchController.create(req.user, req.params.orgid, req.params.projectid, branch)
-            .then((createdBranch) => {
-              results.push(createdBranch[0]);
-            })
+          .then((createdBranch) => {
+            results.push(createdBranch[0]);
+          })
         );
       }
     });
@@ -393,13 +396,13 @@ async function postRefs(req, res, next) {
 }
 
 /**
- * @description Gets a specific MCF branch (MMS3 ref) by ID. Returns the branch formatted as an MMS3 ref
- * in the MMS3 API style: { refs: [foundBranch] }.
+ * @description Gets a specific MCF branch (MMS3 ref) by ID. Returns the branch formatted as
+ * an MMS3 ref in the MMS3 API style: { refs: [foundBranch] }.
  * @async
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function getRef(req, res, next) {
   try {
@@ -432,7 +435,7 @@ async function getRef(req, res, next) {
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function getMounts(req, res, next) {
   try {
@@ -443,17 +446,19 @@ async function getMounts(req, res, next) {
     const mounts = await ProjectController.find(req.user, req.params.orgid, req.params.projectid);
 
     // Get all "Mount" elements
-    const options = { type: "Mount" };
-    const mountElements = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
-      req.params.refid, options);
+    const options = { type: 'Mount' };
+    const mountElements = await ElementController.find(req.user, req.params.orgid,
+      req.params.projectid, req.params.refid, options);
 
     // Find the mounted projects
-    const mountedProjectsToFind = mountElements.map((e) => e.custom[namespace].mountedElementProjectId)
-      .filter((id) => id );
+    const mountedProjectsToFind = mountElements
+    .map((e) => e.custom[namespace].mountedElementProjectId)
+    .filter((id) => id);
 
     let mountedProjects;
     try {
-      mountedProjects = await ProjectController.find(req.user, req.params.orgid, mountedProjectsToFind);
+      mountedProjects = await ProjectController.find(req.user, req.params.orgid,
+        mountedProjectsToFind);
     }
     catch (error) {
       M.log.info('No mounted projects found');
@@ -465,14 +470,14 @@ async function getMounts(req, res, next) {
 
     // Set the status code and response message
     res.locals.statusCode = 200;
-    res.locals.message = { projects: formattedMounts};
+    res.locals.message = { projects: formattedMounts };
   }
   catch (error) {
     M.log.warn(error.message);
     res.locals.statusCode = getStatusCode(error);
     res.locals.message = error.message;
   }
-  next()
+  next();
 }
 
 /**
@@ -481,7 +486,7 @@ async function getMounts(req, res, next) {
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function getGroups(req, res, next) {
   try {
@@ -489,9 +494,9 @@ async function getGroups(req, res, next) {
     await utils.getOrgId(req);
 
     // Find all elements on the branch with the _isGroup field
-    const groupQuery = { [`custom.${namespace}._isGroup`] : 'true' };
-    const foundGroups = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
-      req.params.refid, groupQuery);
+    const groupQuery = { [`custom.${namespace}._isGroup`]: 'true' };
+    const foundGroups = await ElementController.find(req.user, req.params.orgid,
+      req.params.projectid, req.params.refid, groupQuery);
 
     // Return the public data of the group elements in MMS format
     const data = foundGroups.map((e) => format.mmsElement(req.user, e));
@@ -515,7 +520,7 @@ async function getGroups(req, res, next) {
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function postElements(req, res, next) {
   try {
@@ -529,28 +534,29 @@ async function postElements(req, res, next) {
     const elemIDs = elements.map((e) => e.id);
 
     // Check to see if any of the elements exist already
-    const foundElements = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
-      req.params.refid, elemIDs);
+    const foundElements = await ElementController.find(req.user, req.params.orgid,
+      req.params.projectid, req.params.refid, elemIDs);
     const foundIDs = foundElements.map((e) => {
       e._id = mcfUtils.parseID(e._id).pop();
       return e._id;
     });
     const foundJMI = jmi.convertJMI(1, 2, foundElements);
 
-    // Divide the incoming elements into elements that need to be created and elements that need to be updated
+    // Divide the incoming elements into elements that need to be created and elements that need
+    // to be updated
     const createElements = elements.filter((e) => !foundIDs.includes(e.id));
     let updateElements = elements.filter((e) => foundIDs.includes(e.id));
 
     let createdElements = [];
     let updatedElements = [];
-    let individualUpdates = [];
-    let deletedChildViews = {};
-    let addedChildViews = {};
+    const individualUpdates = [];
+    const deletedChildViews = {};
+    const addedChildViews = {};
 
     // Create elements if there are any elements to be created
     if (createElements.length !== 0) {
-      createdElements = await ElementController.create(req.user, req.params.orgid, req.params.projectid,
-        req.params.refid, createElements);
+      createdElements = await ElementController.create(req.user, req.params.orgid,
+        req.params.projectid, req.params.refid, createElements);
     }
 
     if (updateElements.length !== 0) {
@@ -568,20 +574,20 @@ async function postElements(req, res, next) {
           const cvUpdate = update.custom[namespace]._childViews;
 
           // Verify that the _childViews update is valid
-          if (Array.isArray(cvUpdate) && cvUpdate.every((v) => {
-            return (typeof v.id === 'string' && typeof v.aggregation === 'string' && typeof v.propertyId === 'string');
-          })) {
+          if (Array.isArray(cvUpdate) && cvUpdate.every((v) => typeof v.id === 'string'
+            && typeof v.aggregation === 'string' && typeof v.propertyId === 'string')) {
             // Initialize the ownedAttributeIds field on the update
             update.custom[namespace].ownedAttributeIds = [];
             // Add ownedAttributeIds to the update in order corresponding to the _childViews update
             for (let i = 0; i < cvUpdate.length; i++) {
-              update.custom[namespace].ownedAttributeIds.push(cvUpdate[i].propertyId)
+              update.custom[namespace].ownedAttributeIds.push(cvUpdate[i].propertyId);
             }
           }
           else {
-            throw new M.DataFormatError('Invalid update to _childViews field.', 'warn')
+            throw new M.DataFormatError('Invalid update to _childViews field.', 'warn');
           }
-          // Check if a child view is being added or removed by comparing existing and updated ownedAttributeIds
+          // Check if a child view is being added or removed by comparing existing and
+          // updated ownedAttributeIds
           if (existing.custom[namespace] && existing.custom[namespace].ownedAttributeIds) {
             const oldIDs = existing.custom[namespace].ownedAttributeIds;
             const newIDs = update.custom[namespace].ownedAttributeIds;
@@ -590,9 +596,9 @@ async function postElements(req, res, next) {
             if (!oldIDs.every((id) => newIDs.includes(id))) {
               const deletedIDs = oldIDs.filter((id) => !newIDs.includes(id));
               deletedIDs.forEach((id) => {
+                // Associate the existing element with the deleted childView; it will be used later
                 deletedChildViews[id] = existing;
               });
-
             }
             // If not every old id is in the list of new ids, a new id has been added
             if (!newIDs.every((id) => oldIDs.includes(id))) {
@@ -604,8 +610,9 @@ async function postElements(req, res, next) {
           }
         }
 
-        // Special logic for update elements: custom data is normally replaced in an update operation.  Here, however,
-        // we want to keep the data that's already there and only add new fields.  TBD: deleting fields.
+        // Special logic for update elements: custom data is normally replaced in an update
+        // operation.  Here, however, we want to keep the data that's already there and only
+        // add new fields.  TBD: deleting fields.
         if (existing.custom && existing.custom[namespace]) {
           Object.keys(existing.custom[namespace]).forEach((key) => {
             if (!Object.keys(update.custom[namespace]).includes(key)
@@ -621,42 +628,44 @@ async function postElements(req, res, next) {
         }
       });
 
-      // When a view has been moved, i.e. deleted from one element and added to another element, we must also make
-      // updates to a special relationship element that is linked to the view.
+      // When a view has been moved, i.e. deleted from one element and added to another element,
+      // we must also make updates to a special relationship element that is linked to the view.
       if (Object.keys(addedChildViews).length > 0) {
-        await utils.asyncForEach(Object.keys(addedChildViews), async(key) => {
+        await utils.asyncForEach(Object.keys(addedChildViews), async (key) => {
           // If a view was added that was also deleted, additional updates must be made
           if (Object.keys(deletedChildViews).includes(key)) {
             // First find the child view element
-            const cvElems = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
-              req.params.refid, key);
+            const cvElems = await ElementController.find(req.user, req.params.orgid,
+              req.params.projectid, req.params.refid, key);
             // Then find the association element
-            const associations = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
-              req.params.refid, cvElems[0].custom[namespace].associationId);
-            // Then find the element referenced by the assoiation element's ownedEndId
-            const ownedEnds = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
-              req.params.refid, associations[0].custom[namespace].ownedEndIds);
-            // Initialize the update to the ownedEnd element
+            const associations = await ElementController.find(req.user, req.params.orgid,
+              req.params.projectid, req.params.refid, cvElems[0].custom[namespace].associationId);
+            // Then find the element referenced by the association element's ownedEndId
+            const ownedEnds = await ElementController.find(req.user, req.params.orgid,
+              req.params.projectid, req.params.refid,
+              associations[0].custom[namespace].ownedEndIds);
+            // Initialize the update to the ownedEnd element.  The typeId of this element needs to
+            // point to the id of the new view element that the child view has been added to.
             const update = {
               id: mcfUtils.parseID(ownedEnds[0]._id).pop(),
               custom: {
                 [namespace]: {
-                  typeId: addedChildViews[key] // Needs to point to the _id of the new view element that the child view has been added to
+                  typeId: addedChildViews[key]
                 }
               }
             };
             const oldView = deletedChildViews[key];
             // Make sure to save the custom data of the element
-            Object.keys(oldView.custom[namespace]).forEach((key) => {
-              if (!Object.keys(update.custom[namespace]).includes(key)
+            Object.keys(oldView.custom[namespace]).forEach((field) => {
+              if (!Object.keys(update.custom[namespace]).includes(field)
                 && !(update.hasOwnProperty('name') && key === 'name')) {
-                update.custom[namespace][key] = oldView.custom[namespace][key];
+                update.custom[namespace][field] = oldView.custom[namespace][field];
               }
             });
             // Add the update to a list of updates to be made
-            individualUpdates.push(update)
+            individualUpdates.push(update);
           }
-        })
+        });
       }
 
       // If there are elements that need to be updated individually, remove them from the bulk list
@@ -666,16 +675,16 @@ async function postElements(req, res, next) {
         updateElements = updateElements.filter((e) => !individualIDs.includes(e.id));
 
         await utils.asyncForEach(individualUpdates, async (individualUpdate) => {
-          const updatedElement = await ElementController.update(req.user, req.params.orgid, req.params.projectid,
-            req.params.refid, individualUpdate);
+          const updatedElement = await ElementController.update(req.user, req.params.orgid,
+            req.params.projectid, req.params.refid, individualUpdate);
           updatedElements = updatedElements.concat(updatedElement);
         });
       }
 
       // Update elements in bulk
       if (updateElements.length !== 0) {
-        const bulkUpdatedElements = await ElementController.update(req.user, req.params.orgid, req.params.projectid,
-          req.params.refid, updateElements);
+        const bulkUpdatedElements = await ElementController.update(req.user, req.params.orgid,
+          req.params.projectid, req.params.refid, updateElements);
         updatedElements = updatedElements.concat(bulkUpdatedElements);
       }
     }
@@ -701,12 +710,12 @@ async function postElements(req, res, next) {
  * to function. Instead of a create or replace request, MDK is actually requesting a
  * find operation by providing element ids. This function attempts to find elements
  * using the IDs passed in through the body of the request and returns all found elements
- * in the MMS3 api format: { elements: [...foundElements] }
+ * in the MMS3 api format: { elements: [...foundElements] }.
  * @async
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function putElements(req, res, next) {
   try {
@@ -718,30 +727,8 @@ async function putElements(req, res, next) {
 
     // Define valid option and its parsed type
     const validOptions = {
-      //MMS3 Compatible options
       alf_ticket: 'string',
-      depth: 'number',
-      //Standard MCF Options
-      populate: 'array',
-      archived: 'boolean',
-      includeArchived: 'boolean',
-      subtree: 'boolean',
-      fields: 'array',
-      limit: 'number',
-      skip: 'number',
-      sort: 'string',
-      ids: 'array',
-      format: 'string',
-      minified: 'boolean',
-      parent: 'string',
-      source: 'string',
-      target: 'string',
-      type: 'string',
-      name: 'string',
-      createdBy: 'string',
-      lastModifiedBy: 'string',
-      archivedBy: 'string',
-      artifact: 'string'
+      depth: 'number'
     };
 
     // Add custom.* query options
@@ -761,7 +748,6 @@ async function putElements(req, res, next) {
       // Remove MMS3 ticket from find
       delete options.alf_ticket;
       // Convert MMS3 depth to MCF
-      //TODO: Introduce depth to subtree functionality in core MCF or build custom depth search here
       if (options.depth !== 0) {
         options.subtree = true;
       }
@@ -772,12 +758,6 @@ async function putElements(req, res, next) {
       return mcfUtils.formatResponse(req, res, error.message, errors.getStatusCode(error), next);
     }
 
-    // Check query for element IDs
-    //if (options.ids) {
-    //  elemIDs = options.ids;
-    //  delete options.ids;
-    //}
-
     const elements = req.body.elements;
     // .filter because sometimes VE sends { id: null } and this will cause an error
     const elemIDs = elements.map((e) => e.id).filter((id) => id);
@@ -787,7 +767,8 @@ async function putElements(req, res, next) {
       req.params.projectid, req.params.refid, elemIDs, options);
 
     // Generate the child views of the element if there are any
-    await utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, foundElements);
+    await utils.generateChildViews(req.user, req.params.orgid, req.params.projectid,
+      req.params.refid, foundElements);
 
     // Return the public data of the elements in MMS format
     const data = foundElements.map((e) => format.mmsElement(req.user, e));
@@ -806,12 +787,12 @@ async function putElements(req, res, next) {
 
 /**
  * @description Deletes elements by ID and returns the IDs of the successfully
- * deleted elements in the MMS3 API format: { elements: [...deletedIDs] }
+ * deleted elements in the MMS3 API format: { elements: [...deletedIDs] }.
  * @async
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function deleteElements(req, res, next) {
   try {
@@ -838,82 +819,32 @@ async function deleteElements(req, res, next) {
 }
 
 /**
- * @description TODO: not sure if this endpoint is ever used.
+ * @description This function is a work in progress. It is expected to mirror the MMS search
+ * endpoint which accepts a formatted ElasticSearch query, runs that query on its own
+ * ElasticSearch database, and then returns the results of that query. This function is
+ * awaiting a small re-write of View Editor's search function to send a more generic query
+ * format than specifically formatted ElasticSearch queries.
  * @async
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
- */
-async function getElementSearch(req, res, next) {
-  try {
-    // Grabs the org id from the session user
-    await utils.getOrgId(req);
-
-    // Set the status code and response message
-    res.locals.statusCode = 404;
-    res.locals.message = { elements: [] };
-  }
-  catch (error) {
-    M.log.warn(error.message);
-    res.locals.statusCode = getStatusCode(error);
-    res.locals.message = error.message;
-  }
-  next();
-}
-
-/**
- * @description TODO: not sure if this endpoint is ever used.
- * @async
- *
- * @param {object} req - Request express object.
- * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
- */
-async function postElementSearch(req, res, next) {
-  try {
-    // Grabs the org id from the session user
-    await utils.getOrgId(req);
-
-    // Set the status code and response message
-    res.locals.statusCode = 404;
-    res.locals.message = { elements: [] };
-  }
-  catch (error) {
-    M.log.warn(error.message);
-    res.locals.statusCode = getStatusCode(error);
-    res.locals.message = error.message;
-  }
-  next();
-}
-
-/**
- * @description Searches for elements, similar to getElements.
- * TODO: still need to determine the difference between this function and getElements.
- * @async
- *
- * @param {object} req - Request express object.
- * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function putElementSearch(req, res, next) {
   try {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
     let projID = req.params.projectid;
-    let branchID = req.params.refid;
+    const branchID = req.params.refid;
     let elemID;
-
-    if (req.body.aggs) {
-      // TODO
-    }
 
     if (req.body.query) {
       elemID = req.body.query.bool.filter[0].term.id;
       projID = req.body.query.bool.filter[1].term._projectId;
     }
 
-    const elements = await ElementController.find(req.user, req.params.orgid, projID, branchID, elemID);
+    const elements = await ElementController.find(req.user, req.params.orgid, projID, branchID,
+      elemID);
 
     // Generate the child views of the element if there are any
     await utils.generateChildViews(req.user, req.params.orgid, projID, branchID, elements);
@@ -937,7 +868,7 @@ async function putElementSearch(req, res, next) {
           id: req.params.elementid,
           message: error.message
         }
-      }
+      };
     }
     else {
       res.locals.statusCode = statusCode;
@@ -953,31 +884,31 @@ async function putElementSearch(req, res, next) {
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function getElement(req, res, next) {
   try {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
 
-    // TODO: Handle the 'extended' query parameter
-
     // This is code for View Editor
-    // JPL decided to query for elements on different projects by providing the CURRENT project in the parameters.
-    // There seems to be no indication that the element is expected to be found on a separate project, but it is.
-    // So now we have to loop through all the mounts and look for the element everywhere
+    // For some reason, View Editor expects to be able to query for elements on different projects
+    // by providing the CURRENT project in the parameters. There seems to be no indication that
+    // the element is expected to be found on a separate project, but it is. So now it is necessary
+    // to loop through all the project mounts and look for the element everywhere
 
     let elements = [];
 
     // If the element is found on the current project, great
     // Grabs an element from controller
-    elements = await ElementController.find(req.user, req.params.orgid, req.params.projectid, req.params.refid, req.params.elementid);
+    elements = await ElementController.find(req.user, req.params.orgid, req.params.projectid,
+      req.params.refid, req.params.elementid);
 
     // If the element isn't found, look for it on the mounts
     if (elements.length === 0) {
       // Get all the mounts
-      const mounts = await ElementController.find(req.user, req.params.orgid, req.params.projectid, req.params.refid,
-        {type: 'Mount'});
+      const mounts = await ElementController.find(req.user, req.params.orgid,
+        req.params.projectid, req.params.refid, { type: 'Mount' });
       if (mounts.length !== 0) {
         // Now loop through the mounts and try to find the original element
         await utils.asyncForEach(mounts, async (mount) => {
@@ -987,11 +918,13 @@ async function getElement(req, res, next) {
           // Check that the project and branch exist first
           const foundProject = await ProjectController.find(req.user, req.params.orgid, projID);
           if (foundProject.length === 0) return;
-          const foundBranch = await BranchController.find(req.user, req.params.orgid, projID, refID);
+          const foundBranch = await BranchController.find(req.user, req.params.orgid, projID,
+            refID);
           if (foundBranch.length === 0) return;
 
           // Look for the element
-          const foundElements = await ElementController.find(req.user, req.params.orgid, projID, refID, req.params.elementid);
+          const foundElements = await ElementController.find(req.user, req.params.orgid, projID,
+            refID, req.params.elementid);
           if (foundElements.length !== 0) {
             elements.push(foundElements[0]);
           }
@@ -1000,12 +933,13 @@ async function getElement(req, res, next) {
     }
 
     // If no elements are found, throw an error
-    if (elements.length === 0)  {
+    if (elements.length === 0) {
       throw new M.NotFoundError(`Element ${req.params.elementid} not found.`, 'warn');
     }
 
     // Generate the child views of the element if there are any
-    await utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, elements);
+    await utils.generateChildViews(req.user, req.params.orgid, req.params.projectid,
+      req.params.refid, elements);
 
     // Format the element object, return it inside an array
     const data = [format.mmsElement(req.user, elements[0])];
@@ -1025,7 +959,7 @@ async function getElement(req, res, next) {
           id: req.params.elementid,
           message: error.message
         }
-      }
+      };
     }
     else {
       res.locals.statusCode = statusCode;
@@ -1036,19 +970,18 @@ async function getElement(req, res, next) {
 }
 
 /**
- * @description TODO
+ * @description This endpoint still needs to be implemented. It is expected to return
+ * the ids of all cross-referenced elements on the project.
  * @async
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function getElementCfids(req, res, next) {
-
-  // TODO
-
-  return res.status(200).send({ elementIds: [] });
-  //return res.status(501).send('Not Implemented');
+  res.locals.message = { elementIds: [] };
+  res.locals.statusCode = 200;
+  next();
 }
 
 /**
@@ -1057,7 +990,7 @@ async function getElementCfids(req, res, next) {
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function getDocuments(req, res, next) {
   try {
@@ -1066,13 +999,14 @@ async function getDocuments(req, res, next) {
 
     // The only way to find documents is to use this hard-coded ID created by the SysML community
     // several years ago and set to be replaced in the next year or so.
-    const documentStereotypeID = '_17_0_2_3_87b0275_1371477871400_792964_43374';
+    const documentStereotypeID = sjm.documentStereotypeID;
     const documentQuery = { [`custom.${namespace}._appliedStereotypeIds`]: documentStereotypeID };
     const documentElements = await ElementController.find(req.user, req.params.orgid,
       req.params.projectid, req.params.refid, documentQuery);
 
     // Generate the child views of the element if there are any
-    await utils.generateChildViews(req.user, req.params.orgid, req.params.projectid, req.params.refid, documentElements);
+    await utils.generateChildViews(req.user, req.params.orgid, req.params.projectid,
+      req.params.refid, documentElements);
 
     // Convert elements into MMS3 format
     const formattedDocs = documentElements.map((e) => format.mmsElement(req.user, e));
@@ -1091,29 +1025,17 @@ async function getDocuments(req, res, next) {
 /**
  * @description The commits object is an array of every commit on the project. Each commit object
  * has an id, a _creator, and a _created field.  Because commits are not yet implemented in MCF,
- * this function will query the latest commits object and return it to give the impression that
- * MCF is at the latest commit.
+ * this function only returns an empty array.
  * @async
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function getCommits(req, res, next) {
   try {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
-
-    // TODO: Figure out what to do about commits
-    const result = {
-      commits: [
-        {
-          id: 'id',
-          _creator: "creator",
-          _created: "date"
-        }
-      ]
-    };
 
     res.locals.statusCode = 200;
     res.locals.message = { commits: [] };
@@ -1133,17 +1055,14 @@ async function getCommits(req, res, next) {
  *
  * @param {object} req - The Express request object.
  * @param {object} res - The Express response object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function postArtifacts(req, res, next) {
-
   // Grabs the org id from the session user
   await utils.getOrgId(req);
 
   await upload(req, res, async function(err) {
-
-    const fileType = req.file.mimetype === "image/png" ? 'png': 'svg';
-
+    const fileType = req.file.mimetype === 'image/png' ? 'png' : 'svg';
     const artifactMetadata = {
       id: req.body.id,
       location: `${req.params.orgid}/${req.params.projectid}`,
@@ -1168,7 +1087,7 @@ async function postArtifacts(req, res, next) {
     }
 
     try {
-      const artifact = await ArtifactController.create(req.user, req.params.orgid,
+      await ArtifactController.create(req.user, req.params.orgid,
         req.params.projectid, req.params.refid, artifactMetadata);
       const blobResult = await ArtifactController.postBlob(req.user, req.params.orgid,
         req.params.projectid, artifactMetadata, req.file.buffer);
@@ -1194,7 +1113,7 @@ async function postArtifacts(req, res, next) {
  *
  * @param {object} req - The Express request object.
  * @param {object} res - The Express response object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function putArtifacts(req, res, next) {
   try {
@@ -1225,7 +1144,7 @@ async function putArtifacts(req, res, next) {
  *
  * @param {object} req - The Express request object.
  * @param {object} res - The Express response object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function getBlob(req, res, next) {
   try {
@@ -1270,8 +1189,6 @@ module.exports = {
   postElements,
   putElements,
   deleteElements,
-  getElementSearch,
-  postElementSearch,
   putElementSearch,
   getElement,
   getElementCfids,
