@@ -57,7 +57,9 @@ function postLogin(req, res, next) {
 }
 
 /**
- * @description Responds with a 200 status code, used for OPTIONS requests.
+ * @description Responds with a 200 status code, used for OPTIONS requests. For some reason,
+ * View Editor needs OPTIONS endpoints to be available for most of the endpoints it makes
+ * requests to.
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
