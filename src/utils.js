@@ -1,5 +1,5 @@
 /**
- * Classification: UNCLASSIFIED
+ * @classification UNCLASSIFIED
  *
  * @module src.utils
  *
@@ -25,7 +25,10 @@ const Project = M.require('models.project');
 const Element = M.require('models.element');
 const mcfUtils = M.require('lib.utils');
 
-// variable to be exported
+// Adapter modules
+const sjm = require('./sjm.js');
+
+// Variable that defines the
 const customDataNamespace = 'CameoMDK';
 
 /**
@@ -42,22 +45,22 @@ const customDataNamespace = 'CameoMDK';
  * lookup the AdapterSession document.
  */
 async function getOrgId(req) {
-	const projects = await Project.find({});
+  const projects = await Project.find({});
 
-	const projectID = projects.filter(p =>
-		p._id.endsWith(`${mcfUtils.ID_DELIMITER}${req.params.projectid}`)
-	).map(p => p._id);
+  const projectID = projects
+  .filter(p => p._id.endsWith(`${mcfUtils.ID_DELIMITER}${req.params.projectid}`))
+  .map(p => p._id);
 
-	if (projectID.length > 1) {
-		throw new M.ServerError('Multiple projects with the same ID exist. Please'
-			+ 'contact your local administrator.', 'error')
-	}
-	else if (projectID.length === 0) {
-		throw new M.NotFoundError(`The project ${req.params.projectid} was not found.`)
-	}
+  if (projectID.length > 1) {
+    throw new M.ServerError('Multiple projects with the same ID exist. Please'
+      + 'contact your local administrator.', 'error');
+  }
+  else if (projectID.length === 0) {
+    throw new M.NotFoundError(`The project ${req.params.projectid} was not found.`);
+  }
 
-	// Modify the requesting object
-	req.params.orgid = mcfUtils.parseID(projectID[0])[0];
+  // Modify the requesting object
+  req.params.orgid = mcfUtils.parseID(projectID[0])[0];
 }
 
 /**
@@ -66,20 +69,20 @@ async function getOrgId(req) {
  *
  * @param {object} req - The request object.
  * @param {object} res - The response object.
- * @param {function} next - A callback function to move onto the next middleware
+ * @param {Function} next - A callback function to move onto the next middleware
  * function.
  */
 function addHeaders(req, res, next) {
-	res.header('Access-Control-Allow-Origin', req.headers.origin);
-	res.header('Access-Control-Allow-Credentials', 'true');
-	res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-	res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
-	next();
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+  next();
 }
 
 /**
  * @description Checks the request query for the key alf_ticket, and if it
- * exists, it removes the ticket and adds an auth header for token auth
+ * exists, it removes the ticket and adds an auth header for token auth.
  *
  * @param {object} req - The request object to parse/modify.
  * @param {object} res - THe response object.
@@ -87,13 +90,13 @@ function addHeaders(req, res, next) {
  * the function.
  */
 function handleTicket(req, res, next) {
-	if (req.query.alf_ticket) {
-		// Parse token from URI encoding
-		const token = decodeURIComponent(req.query.alf_ticket);
+  if (req.query.alf_ticket) {
+    // Parse token from URI encoding
+    const token = decodeURIComponent(req.query.alf_ticket);
 
-		req.headers.authorization = `Bearer ${token}`;
-	}
-	next();
+    req.headers.authorization = `Bearer ${token}`;
+  }
+  next();
 }
 
 /**
@@ -106,35 +109,35 @@ function handleTicket(req, res, next) {
  * the function.
  */
 function formatTicketRequest(req, res, next) {
-	// Parse token from URI encoding
-	const token = decodeURIComponent(req.params[0]);
+  // Parse token from URI encoding
+  const token = decodeURIComponent(req.params[0]);
 
-	req.headers.authorization = `Bearer ${token}`;
-	next();
+  req.headers.authorization = `Bearer ${token}`;
+  next();
 }
 
 /**
  * @description A synchronous forEach function for general usage. For each item in the iterable
  * provided, this function will run the callback synchronously.
  *
- * @param {array} array - The array of iterables
+ * @param {Array} array - The array of iterables.
  * @param {Function} callback - The function to run on each iterable.
  */
 async function asyncForEach(array, callback) {
-	for (let index = 0; index < array.length; index++) {
-		// eslint-disable-next-line no-await-in-loop
-		await callback(array[index], index, array);
-	}
+  for (let index = 0; index < array.length; index++) {
+    // eslint-disable-next-line no-await-in-loop
+    await callback(array[index], index, array);
+  }
 }
 
-
 /**
- * @description This replicates a functionality of MMS by searching for, creating, and adding child views
- * to the specified elements. Certain elements, including document and view elements, are expected by
- * View Editor to have a field called _childViews containing an array of objects that have an id,
- * aggregation, and propertyId. These child views are calculated by searching for the elements specified in
- * the ownedAttributeIds field of the original element. These ownedAttribute elements are then converted into
- * child views by taking the typeId as the id, the aggregation as the aggregation, and the id as the typeId.
+ * @description This replicates a functionality of MMS by searching for, creating, and adding child
+ * views to the specified elements. Certain elements, including document and view elements, are
+ * expected by View Editor to have a field called _childViews containing an array of objects that
+ * have an id, aggregation, and propertyId. These child views are calculated by searching for the
+ * elements specified in the ownedAttributeIds field of the original element. These ownedAttribute
+ * elements are then converted into child views by taking the typeId as the id, the aggregation as
+ * the aggregation, and the id as the typeId.
  *
  * @param {object} reqUser - The requesting user.
  * @param {string} orgID - The id of the organization to search on.
@@ -143,54 +146,55 @@ async function asyncForEach(array, callback) {
  * @param {object[]} elements - The elements to generate child views for.
  */
 async function generateChildViews(reqUser, orgID, projID, branchID, elements) {
-	const viewStereotype = '_18_0beta_9150291_1392290067481_33752_4359';
-	const docStereotype = '_17_0_2_3_87b0275_1371477871400_792964_43374';
+  const docStereotype = sjm.documentStereotypeID;
+  const viewStereotype = sjm.viewStereotypeID;
 
-	let ownedAttributesToFind = [];
+  const ownedAttributesToFind = [];
 
-	// Make list of ids to find
-	elements.forEach((elem) => {
-		// If element has an applied stereotype of View or Document
-		if (elem.custom[customDataNamespace] && elem.custom[customDataNamespace]._appliedStereotypeIds
-			&& (elem.custom[customDataNamespace]._appliedStereotypeIds.includes(viewStereotype)
-				|| elem.custom[customDataNamespace]._appliedStereotypeIds.includes(docStereotype))
-			&& elem.custom[customDataNamespace].hasOwnProperty('ownedAttributeIds')) {
-			// Initialize childViews on the element
-			elem.custom[customDataNamespace]._childViews = [];
+  // Make list of ids to find
+  elements.forEach((elem) => {
+    // If element has an applied stereotype of View or Document
+    if (elem.custom[customDataNamespace] && elem.custom[customDataNamespace]._appliedStereotypeIds
+      && (elem.custom[customDataNamespace]._appliedStereotypeIds.includes(viewStereotype)
+      || elem.custom[customDataNamespace]._appliedStereotypeIds.includes(docStereotype))
+      && elem.custom[customDataNamespace].hasOwnProperty('ownedAttributeIds')) {
+      // Initialize childViews on the element
+      elem.custom[customDataNamespace]._childViews = [];
 
-			// Add ownedAttributeIDs to find (generate the full _id from the id in the same step)
-			ownedAttributesToFind.push(...elem.custom[customDataNamespace].ownedAttributeIds.map((id) => {
-				return mcfUtils.createID(orgID, projID, branchID, id)
-			}));
-		}
-	});
+      // Add ownedAttributeIDs to find (generate the full _id from the id in the same step)
+      ownedAttributesToFind
+      .push(...(elem.custom[customDataNamespace].ownedAttributeIds
+      .map((id) => mcfUtils.createID(orgID, projID, branchID, id))
+      ));
+    }
+  });
 
-	// Find the ownedAttribute elements in a single batch request
-	const oaElems = await Element.find({ _id: { $in: ownedAttributesToFind } });
+  // Find the ownedAttribute elements in a single batch request
+  const oaElems = await Element.find({ _id: { $in: ownedAttributesToFind } });
 
-	// Create the child views
-	const childViews = {};
-	oaElems.forEach((e) => {
-		const id = mcfUtils.parseID(e._id).pop();
-		if (!childViews.hasOwnProperty(id)) {
-			childViews[id] = {
-				id: e.custom[customDataNamespace].typeId,
-				aggregation: e.custom[customDataNamespace].aggregation,
-				propertyId: id
-			}
-		}
-	});
+  // Create the child views
+  const childViews = {};
+  oaElems.forEach((e) => {
+    const id = mcfUtils.parseID(e._id).pop();
+    if (!childViews.hasOwnProperty(id)) {
+      childViews[id] = {
+        id: e.custom[customDataNamespace].typeId,
+        aggregation: e.custom[customDataNamespace].aggregation,
+        propertyId: id
+      };
+    }
+  });
 
-	// Add the child views to their respective elements
-	elements.forEach((elem) => {
-		if (elem.custom[customDataNamespace] && elem.custom[customDataNamespace].hasOwnProperty('_childViews')) {
-			elem.custom[customDataNamespace].ownedAttributeIds.forEach((id) => {
-				if (childViews.hasOwnProperty(id)) {
-					elem.custom[customDataNamespace]._childViews.push(childViews[id]);
-				}
-			})
-		}
-	});
+  // Add the child views to their respective elements
+  elements.forEach((elem) => {
+    if (elem.custom[customDataNamespace] && elem.custom[customDataNamespace].hasOwnProperty('_childViews')) {
+      elem.custom[customDataNamespace].ownedAttributeIds.forEach((id) => {
+        if (childViews.hasOwnProperty(id)) {
+          elem.custom[customDataNamespace]._childViews.push(childViews[id]);
+        }
+      });
+    }
+  });
 }
 
 /**

@@ -1,5 +1,5 @@
 /**
- * Classification: UNCLASSIFIED
+ * @classification UNCLASSIFIED
  *
  * @module app
  *
@@ -12,7 +12,7 @@
  * @author Austin Bieber
  * @author Leah De Laurell
  *
- * @description The main application for the MMS3 Adapter. Handles router
+ * @description The application entry point for the MMS3 Adapter. Handles router
  * initialization and all routing.
  */
 
@@ -23,7 +23,6 @@ const router = express.Router();
 
 // MBEE modules
 const { authenticate, doLogin } = M.require('lib.auth');
-const { getStatusCode } = M.require('lib.errors');
 const { logRoute, logResponse, respond, disableUserAPI } = M.require('lib.middleware');
 const { version, login, whoami, getUser } = M.require('controllers.api-controller');
 
@@ -31,6 +30,8 @@ const { version, login, whoami, getUser } = M.require('controllers.api-controlle
 const APIController = require('./src/api-controller');
 const utils = require('./src/utils.js');
 
+// We do this because MDK automatically appends '/alfresco/service' to the base MMS url.
+// It's simpler to add this here than to have to modify MDK
 app.use('/alfresco/service', router);
 
 /**
@@ -61,20 +62,20 @@ app.use('/alfresco/service', router);
  */
 router.route('/api/login')
 .post(
-	authenticate,
-	logRoute,
-	doLogin,
-	utils.addHeaders,
-	APIController.postLogin,
-	logResponse,
-	respond
+  authenticate,
+  logRoute,
+  doLogin,
+  utils.addHeaders,
+  APIController.postLogin,
+  logResponse,
+  respond
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 /**
@@ -84,7 +85,7 @@ router.route('/api/login')
  *     tags:
  *       - general
  *     description: Authenticates a user using the MCF auth module and returns
- *        a response containing a barer token.
+ *        a response containing a bearer token.
  *     responses:
  *       200:
  *         description: OK
@@ -105,20 +106,20 @@ router.route('/api/login')
  */
 router.route('/api/login/ticket')
 .post(
-	authenticate,
-	logRoute,
-	doLogin,
-	utils.addHeaders,
-	login,
-	logResponse,
-	respond
+  authenticate,
+  logRoute,
+  doLogin,
+  utils.addHeaders,
+  login,
+  logResponse,
+  respond
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 
@@ -142,20 +143,20 @@ router.route('/api/login/ticket')
  */
 router.route('/mms/login/ticket/*')
 .get(
-	utils.formatTicketRequest,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.getTicket,
-	logResponse,
-	respond
+  utils.formatTicketRequest,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getTicket,
+  logResponse,
+  respond
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 /**
@@ -179,19 +180,19 @@ router.route('/mms/login/ticket/*')
  */
 router.route('/api/version')
 .get(
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	version,
-	logResponse,
-	respond
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  version,
+  logResponse,
+  respond
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 /**
@@ -213,7 +214,7 @@ router.route('/api/version')
  *         default: false
  *     responses:
  *       200:
- *         description: OK, Succeeded to GET current user information returns
+ *         description: OK, Succeeded to GET current user information and returns
  *                      user public data.
  *       401:
  *         description: Unauthorized, Failed to GET user information due to not
@@ -229,21 +230,21 @@ router.route('/api/version')
  *                      server side issue.
  */
 router.route('/api/users/whoami')
-    .get(
-        authenticate,
-        logRoute,
-        utils.addHeaders,
-        whoami,
-        logResponse,
-        respond
-    )
-    .options(
-        logRoute,
-        utils.addHeaders,
-        APIController.optionsDefault,
-        logResponse,
-        respond
-    );
+.get(
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  whoami,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
 
 /**
  * @swagger
@@ -307,36 +308,36 @@ router.route('/api/users/whoami')
  */
 router.route('/api/users/:username')
 .get(
-	authenticate,
-	logRoute,
-	disableUserAPI,
-	utils.addHeaders,
-	getUser,
-	logResponse,
-	respond
+  authenticate,
+  logRoute,
+  disableUserAPI,
+  utils.addHeaders,
+  getUser,
+  logResponse,
+  respond
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 // TODO: Document this route. Seems to only be used by View Editor
 router.route('/connection/jms')
 .get(
-	utils.addHeaders,
-	(req, res, next) => {
-		res.status(200).send();
-	}
+  utils.addHeaders,
+  (req, res, next) => {
+    res.status(200).send();
+  }
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 /**
@@ -364,29 +365,29 @@ router.route('/connection/jms')
  */
 router.route('/orgs')
 .get(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.getOrgs,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getOrgs,
+  logResponse,
+  respond
 )
 .post(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.postOrgs,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.postOrgs,
+  logResponse,
+  respond
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 /**
@@ -412,20 +413,20 @@ router.route('/orgs')
  */
 router.route('/orgs/:orgid')
 .get(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.getOrg,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getOrg,
+  logResponse,
+  respond
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 /**
@@ -462,29 +463,29 @@ router.route('/orgs/:orgid')
  */
 router.route('/orgs/:orgid/projects')
 .get(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.getProjects,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getProjects,
+  logResponse,
+  respond
 )
 .post(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.postProjects,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.postProjects,
+  logResponse,
+  respond
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 /**
@@ -514,20 +515,20 @@ router.route('/orgs/:orgid/projects')
  */
 router.route('/projects')
 .get(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.getAllProjects,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getAllProjects,
+  logResponse,
+  respond
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 /**
@@ -562,20 +563,20 @@ router.route('/projects')
  */
 router.route('/projects/:projectid')
 .get(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.getProject,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getProject,
+  logResponse,
+  respond
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 /**
@@ -638,29 +639,29 @@ router.route('/projects/:projectid')
  */
 router.route('/projects/:projectid/refs')
 .get(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.getRefs,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getRefs,
+  logResponse,
+  respond
 )
 .post(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.postRefs,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.postRefs,
+  logResponse,
+  respond
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 /**
@@ -707,20 +708,20 @@ router.route('/projects/:projectid/refs')
  */
 router.route('/projects/:projectid/refs/:refid')
 .get(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.getRef,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getRef,
+  logResponse,
+  respond
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 /**
@@ -768,20 +769,20 @@ router.route('/projects/:projectid/refs/:refid')
  */
 router.route('/projects/:projectid/refs/:refid/mounts')
 .get(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.getMounts,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getMounts,
+  logResponse,
+  respond
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 /**
@@ -826,20 +827,20 @@ router.route('/projects/:projectid/refs/:refid/mounts')
  */
 router.route('/projects/:projectid/refs/:refid/groups')
 .get(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.getGroups,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getGroups,
+  logResponse,
+  respond
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 /**
@@ -877,7 +878,7 @@ router.route('/projects/:projectid/refs/:refid/groups')
  *               name:
  *                 type: string
  *               documentation:
- *               	 type: string
+ *                  type: string
  *               type:
  *                 type: string
  *       - name: alf_ticket
@@ -889,8 +890,8 @@ router.route('/projects/:projectid/refs/:refid/groups')
  *     tags:
  *       - elements
  *     description: Rather than create or replace, as would be expected from a PUT request,
- *     							this request actually functions as a search. The body of the request
- *     							contains ids of elements, which are searched for and returned.
+ *                   this request actually functions as a search. The body of the request
+ *                   contains ids of elements, which are searched for and returned.
  *     produces:
  *       - application/json
  *     parameters:
@@ -984,51 +985,49 @@ router.route('/projects/:projectid/refs/:refid/groups')
  */
 router.route('/projects/:projectid/refs/:refid/elements')
 .post(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.postElements,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.postElements,
+  logResponse,
+  respond
 )
 .put(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.putElements,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.putElements,
+  logResponse,
+  respond
 )
 .delete(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.deleteElements,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.deleteElements,
+  logResponse,
+  respond
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 /**
  * @swagger
  * /projects/{projectid}/refs/{refid}/search:
- *   get: TODO - not sure if this endpoint is used
- *   post: TODO - not sure if this endpoint is used
  *   put:
  *     tags:
  *       - elements
  *     description: Rather than create or replace, as would be expected from a PUT request,
- *     							this request actually functions as a search. The body of the request
- *     							contains ids of elements, which are searched for and returned.
+ *                   this request actually functions as a search. The body of the request
+ *                   contains ids of elements, which are searched for and returned.
  *     produces:
  *       - application/json
  *     parameters:
@@ -1075,39 +1074,21 @@ router.route('/projects/:projectid/refs/:refid/elements')
  *
  */
 router.route('/projects/:projectid/refs/:refid/search')
-.get(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.getElementSearch,
-	logResponse,
-	respond
-)
-.post(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.postElementSearch,
-	logResponse,
-	respond
-)
 .put(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.putElementSearch,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.putElementSearch,
+  logResponse,
+  respond
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 /**
@@ -1160,36 +1141,62 @@ router.route('/projects/:projectid/refs/:refid/search')
  */
 router.route('/projects/:projectid/refs/:refid/elements/:elementid')
 .get(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.getElement,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getElement,
+  logResponse,
+  respond
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 /**
  * @swagger
  * /projects/{projectid}/refs/{refid}/elements/{elementid}/cfids:
- *   get: TODO
+ *   get:
+ *     tags:
+ *       - elements
+ *     description: The functionality of this endpoint is still a work in progress.
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project containing the specified ref/branch.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: refid
+ *         description: The ID of the ref/branch to search on.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: alf_ticket
+ *         description: A token passed in the query, used for authorization.
+ *         in: query
+ *         required: false
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: Returns an empty array. This is the only response returned at the moment.
+ *       500:
+ *         description: Internal Server Error
  */
 router.route('/projects/:projectid/refs/:refid/elements/:elementid/cfids')
 .get(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.getElementCfids,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getElementCfids,
+  logResponse,
+  respond
 );
 
 /**
@@ -1235,25 +1242,55 @@ router.route('/projects/:projectid/refs/:refid/elements/:elementid/cfids')
  */
 router.route('/projects/:projectid/refs/:refid/documents')
 .get(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.getDocuments,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getDocuments,
+  logResponse,
+  respond
 );
 
-// TODO: Document this route and eventually find a solution for commits
+/**
+ * @swagger
+ * /projects/{projectid}/refs/{refid}/commits:
+ *   get:
+ *     tags:
+ *       - commits
+ *     description: The functionality of this endpoint is still a work in progress.
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project containing the specified ref/branch.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: refid
+ *         description: The ID of the ref/branch to search on.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: alf_ticket
+ *         description: A token passed in the query, used for authorization.
+ *         in: query
+ *         required: false
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: Returns an empty array. This is the only response returned at the moment.
+ *       500:
+ *         description: Internal Server Error
+ */
 router.route('/projects/:projectid/refs/:refid/commits')
 .get(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.getCommits,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getCommits,
+  logResponse,
+  respond
 );
 
 /**
@@ -1262,7 +1299,8 @@ router.route('/projects/:projectid/refs/:refid/commits')
  *   post:
  *     tags:
  *       - artifacts
- *     description: TODO
+ *     description: Posts artifact blobs to the MCF storage directory and creates artifact
+ *                  documents to store metadata for the blobs.
  *     produces:
  *       - application/json
  *     parameters:
@@ -1297,7 +1335,8 @@ router.route('/projects/:projectid/refs/:refid/commits')
  *   put:
  *     tags:
  *       - artifacts
- *     description: TODO
+ *     description: Searches for and returns artifact blobs based on the artifact ids sent in
+ *                  the body of the request.
  *     produces:
  *       - application/json
  *     parameters:
@@ -1332,29 +1371,29 @@ router.route('/projects/:projectid/refs/:refid/commits')
  */
 router.route('/projects/:projectid/refs/:refid/artifacts')
 .post(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.postArtifacts,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.postArtifacts,
+  logResponse,
+  respond
 )
 .put(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.putArtifacts,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.putArtifacts,
+  logResponse,
+  respond
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 /**
@@ -1365,7 +1404,7 @@ router.route('/projects/:projectid/refs/:refid/artifacts')
  *       - artifacts
  *     description: Retrieves an artifact blob.
  *     produces:
- *       - application/json
+ *       - application/octet-stream
  *     parameters:
  *       - name: projectid
  *         description: The ID of the project containing the specified ref/branch.
@@ -1403,33 +1442,51 @@ router.route('/projects/:projectid/refs/:refid/artifacts')
  */
 router.route('/alfresco/projects/:projectid/refs/:refid/artifacts/blob/:blobid')
 .get(
-	utils.handleTicket,
-	authenticate,
-	logRoute,
-	utils.addHeaders,
-	APIController.getBlob,
-	logResponse,
-	respond
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getBlob,
+  logResponse,
+  respond
 )
 .options(
-	logRoute,
-	utils.addHeaders,
-	APIController.optionsDefault,
-	logResponse,
-	respond
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
 );
 
 /**
  * @swagger
  * /projects/{projectid}/refs/{refid}/convert
- *   post:
- *     description: Converts View Editor's HTML post into a downloadable PDF artifact.
+ *   get:
+ *     tags:
+ *       - pdf
+ *     description: description: Converts View Editor's HTML post into a downloadable PDF artifact.
  *        Requesting users should receive an email to download the PDF file.
  *     produces:
  *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project containing the specified ref/branch.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: refid
+ *         description: The ID of the ref/branch to search on.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: alf_ticket
+ *         description: A token passed in the query, used for authorization.
+ *         in: query
+ *         required: false
+ *         type: string
  *     responses:
  *       200:
- *         description: OK
+ *         description: Ok.
  *       500:
  *         description: Internal Server Error
  */
@@ -1453,8 +1510,8 @@ router.route('/projects/:projectid/refs/:refid/convert')
 
 // For all other routes that get hit, return an error stating "Not Implemented"
 app.use('*', (req, res, next) => {
-	console.log(`Request for route not implemented: ${req.method}: ${req.originalUrl}`);
-	return res.status(501).send('Not Implemented');
+  console.log(`Request for route not implemented: ${req.method}: ${req.originalUrl}`);
+  return res.status(501).send('Not Implemented');
 });
 
 
