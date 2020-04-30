@@ -253,7 +253,6 @@ async function mmsRef() {
 
   chai.expect(convertedRef.id).to.equal(branchID);
   chai.expect(convertedRef.name).to.equal(branch.name);
-  chai.expect(convertedRef._creator).to.equal(branch.createdBy);
   chai.expect(convertedRef._modifier).to.equal(null);
   chai.expect(convertedRef.property1).to.equal('test1');
   chai.expect(convertedRef.property2).to.equal('test2');
@@ -294,6 +293,7 @@ async function mmsElement() {
 async function mmsArtifact() {
   const artObj = {
     _id: mcfUtils.createID(org._id, projID, branchID, 'test-artifact'),
+    id: 'test-artifact',
     project: mcfUtils.createID(org._id, projID),
     branch: mcfUtils.createID(org._id, projID, branchID),
     location: 'test',
@@ -311,10 +311,10 @@ async function mmsArtifact() {
 
   const convertedArtifact = format.mmsArtifact(adminUser, artObj);
 
-  chai.expect(convertedArtifact.id).to.equal(mcfUtils.parseID(artObj._id).pop());
+  chai.expect(convertedArtifact.id).to.equal(artObj.id);
   chai.expect(convertedArtifact._projectId).to.equal(projID);
   chai.expect(convertedArtifact._refId).to.equal(branchID);
-  chai.expect(convertedArtifact.artifactLocation).to.equal(`/projects/${projID}/refs/${branchID}/artifacts/blob/${artPublicData.id}`);
+  chai.expect(convertedArtifact.artifactLocation).to.equal(`/projects/${projID}/refs/${branchID}/artifacts/blob/${artObj.id}`);
   chai.expect(convertedArtifact._creator).to.equal(artObj.createdBy);
   chai.expect(convertedArtifact._modifier).to.equal(null);
   chai.expect(convertedArtifact._editable).to.equal(true);
