@@ -1460,11 +1460,11 @@ router.route('/alfresco/projects/:projectid/refs/:refid/artifacts/blob/:blobid')
 
 /**
  * @swagger
- * /projects/{projectid}/refs/{refid}/convert
+ * /projects/{projectid}/refs/{refid}/convert:
  *   get:
  *     tags:
  *       - pdf
- *     description: description: Converts View Editor's HTML post into a downloadable PDF artifact.
+ *     description: Converts View Editor's HTML post into a downloadable PDF artifact.
  *        Requesting users should receive an email to download the PDF file.
  *     produces:
  *       - application/json
@@ -1491,22 +1491,22 @@ router.route('/alfresco/projects/:projectid/refs/:refid/artifacts/blob/:blobid')
  *         description: Internal Server Error
  */
 router.route('/projects/:projectid/refs/:refid/convert')
-  .post(
-    utils.handleTicket,
-    authenticate,
-    logRoute,
-    utils.addHeaders,
-    APIController.postHtml2Pdf,
-    logResponse,
-    respond
-  )
-  .options(
-    logRoute,
-    utils.addHeaders,
-    APIController.optionsDefault,
-    logResponse,
-    respond
-  );
+.post(
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.postHtml2Pdf,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
 
 // For all other routes that get hit, return an error stating "Not Implemented"
 app.use('*', (req, res, next) => {
