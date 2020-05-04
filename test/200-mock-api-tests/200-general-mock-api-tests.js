@@ -68,9 +68,9 @@ describe(M.getModuleName(module.filename), () => {
 
   /* Execute tests */
   it('should return a token from the request session as a ticket in the response', postLogin);
-  //it('should ')
+  it('should verify that a token is valid and return the associated username', ticketLogin);
   /*
-  /api/login/ticket
+  //mms/login/ticket/*
   /api/login/ticket/*
   /api/version
    */
@@ -94,9 +94,26 @@ function postLogin(done) {
     chai.expect(body.hasOwnProperty('data')).to.equal(true);
     chai.expect(body.data.hasOwnProperty('ticket')).to.equal(true);
     chai.expect(body.data.ticket).to.equal(token);
-
-    // expect { data: { ticket: token } }
     done();
   };
   APIController.postLogin(req, res, next(req, res));
+}
+
+/**
+ * @description Verifies that the username is returned from a login request.
+ *
+ * @param {Function} done - The mocha callback.
+ */
+function ticketLogin(done) {
+  const req = testUtils.createRequest(adminUser, {}, null, null);
+  const res = {
+    locals: {}
+  };
+
+  testUtils.createResponse(res);
+  res.send = function send(body) {
+    console.log(body);
+    done();
+  };
+  APIController.getTicket(req, res, next(req, res));
 }
