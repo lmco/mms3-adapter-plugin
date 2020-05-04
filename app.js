@@ -1464,7 +1464,7 @@ router.route('/alfresco/projects/:projectid/refs/:refid/artifacts/blob/:blobid')
  *   get:
  *     tags:
  *       - pdf
- *     description: description: Converts View Editor's HTML post into a downloadable PDF artifact.
+ *     description: Converts View Editor's HTML post into a downloadable PDF artifact.
  *        Requesting users should receive an email to download the PDF file.
  *     produces:
  *       - application/json
