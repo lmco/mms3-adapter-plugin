@@ -25,7 +25,7 @@ to the **plugins.plugins** section of the running configuration, ensure
 }
 ```
 ### PDF Export Configuration
-This plugin allows documents(HTML format) to be exported as a PDF. This plugin 
+This plugin allows documents (HTML format) to be exported as a PDF. This plugin 
 uses Prince, a PDF conversion engine, to generate the PDF file. When the 
 conversion is completed, an email is sent to the requesting user with an artifact
 link to download the PDF. 
