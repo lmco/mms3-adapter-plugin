@@ -69,11 +69,6 @@ describe(M.getModuleName(module.filename), () => {
   /* Execute tests */
   it('should return a token from the request session as a ticket in the response', postLogin);
   it('should verify that a token is valid and return the associated username', ticketLogin);
-  /*
-  //mms/login/ticket/*
-  /api/login/ticket/*
-  /api/version
-   */
 });
 
 /* --------------------( Tests )-------------------- */
