@@ -112,7 +112,8 @@ function ticketLogin(done) {
 
   testUtils.createResponse(res);
   res.send = function send(body) {
-    console.log(body);
+    chai.expect(body.hasOwnProperty('username')).to.equal(true);
+    chai.expect(body.username).to.equal('test_admin');
     done();
   };
   APIController.getTicket(req, res, next(req, res));
