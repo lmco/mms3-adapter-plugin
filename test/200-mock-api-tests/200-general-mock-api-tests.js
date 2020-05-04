@@ -18,8 +18,10 @@
 const chai = require('chai');
 
 // MBEE modules
-const APIController = M.require('controllers.api-controller');
 const jmi = M.require('lib.jmi-conversions');
+
+// Adapter modules
+const APIController = require('../../src/api-controller');
 
 /* --------------------( Test Data )-------------------- */
 // Variables used across test functions
@@ -81,110 +83,20 @@ describe(M.getModuleName(module.filename), () => {
  * @param {Function} done - The mocha callback.
  */
 function postLogin(done) {
-  // TODO
-  done();
-}
-
-function postOrgs(done) {
-  // Create request object
-  const orgData = [
-    testData.orgs[1],
-    testData.orgs[2]
-  ];
-  const params = {};
-  const method = 'POST';
-  const req = testUtils.createRequest(adminUser, params, orgData, method);
-
-  // Set response as empty object
-  const res = {};
-
-  // Verifies status code and headers
+  const req = testUtils.createRequest(adminUser, {}, null, null);
+  const res = {
+    locals: {}
+  };
+  const token = 'abc';
+  req.session.token=token;
   testUtils.createResponse(res);
+  res.send = function send(body) {
+    chai.expect(body.hasOwnProperty('data')).to.equal(true);
+    chai.expect(body.data.hasOwnProperty('ticket')).to.equal(true);
+    chai.expect(body.data.ticket).to.equal(token);
 
-  // Verifies the response data
-  res.send = function send(_data) {
-    // Verify response body
-    const postedOrgs = JSON.parse(_data);
-    chai.expect(postedOrgs.length).to.equal(orgData.length);
-
-    // Convert foundProjects to JMI type 2 for easier lookup
-    const jmi2Orgs = jmi.convertJMI(1, 2, postedOrgs, 'id');
-    // Loop through each project data object
-    orgData.forEach((orgDataObject) => {
-      const postedOrg = jmi2Orgs[orgDataObject.id];
-
-      // Verify project created properly
-      chai.expect(postedOrg.id).to.equal(orgDataObject.id);
-      chai.expect(postedOrg.name).to.equal(orgDataObject.name);
-      chai.expect(postedOrg.custom).to.deep.equal(orgDataObject.custom || {});
-      chai.expect(postedOrg.permissions[adminUser._id]).to.equal('admin');
-
-      // Verify additional properties
-      chai.expect(postedOrg.createdBy).to.equal(adminUser._id);
-      chai.expect(postedOrg.lastModifiedBy).to.equal(adminUser._id);
-      chai.expect(postedOrg.createdOn).to.not.equal(null);
-      chai.expect(postedOrg.updatedOn).to.not.equal(null);
-      chai.expect(postedOrg.archived).to.equal(false);
-
-      // Verify specific fields not returned
-      chai.expect(postedOrg).to.not.have.any.keys('archivedOn', 'archivedBy',
-        '__v', '_id');
-    });
-
-    // Expect the statusCode to be 200
-    chai.expect(res.statusCode).to.equal(200);
-
+    // expect { data: { ticket: token } }
     done();
   };
-
-  // POST multiple orgs
-  APIController.postOrgs(req, res, next(req, res));
-}
-
-/**
- * @description Verifies mock GET request to get an organization.
- *
- * @param {Function} done - The mocha callback.
- */
-function getOrg(done) {
-  // Create request object
-  const body = {};
-  const params = { orgid: testData.orgs[0].id };
-  const method = 'GET';
-  const req = testUtils.createRequest(adminUser, params, body, method);
-
-  // Set response as empty object
-  const res = {};
-
-  // Verifies status code and headers
-  testUtils.createResponse(res);
-
-  // Verifies the response data
-  res.send = function send(_data) {
-    // Verify response body
-    const foundOrg = JSON.parse(_data);
-    chai.expect(foundOrg.id).to.equal(testData.orgs[0].id);
-    chai.expect(foundOrg.name).to.equal(testData.orgs[0].name);
-    chai.expect(foundOrg.custom).to.deep.equal(testData.orgs[0].custom || {});
-    chai.expect(foundOrg.permissions[adminUser._id]).to.equal('admin');
-
-    // Verify additional properties
-    chai.expect(foundOrg.createdBy).to.equal(adminUser._id);
-    chai.expect(foundOrg.lastModifiedBy).to.equal(adminUser._id);
-    chai.expect(foundOrg.createdOn).to.not.equal(null);
-    chai.expect(foundOrg.updatedOn).to.not.equal(null);
-    chai.expect(foundOrg.archived).to.equal(false);
-
-    // Verify specific fields not returned
-    chai.expect(foundOrg).to.not.have.any.keys('archivedOn', 'archivedBy',
-      '__v', '_id');
-
-    // Expect the statusCode to be 200
-    chai.expect(res.statusCode).to.equal(200);
-
-    done();
-  };
-
-  // GET an org
-  APIController.getOrg(req, res, next(req, res));
+  APIController.postLogin(req, res, next(req, res));
 }
