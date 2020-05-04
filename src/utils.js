@@ -198,38 +198,18 @@ async function generateChildViews(reqUser, orgID, projID, branchID, elements) {
 }
 
 /**
- * @description Prunes and extracts the HTML section from View Editor's export HTML request.
- *
- * @param {object} body - Object that includes the html body and css style.
- *
- * @returns prunedHtml - The pruned HTML body.
- */
-function pruneHtml(body) {
-  // Extract HTML from body
-  let rawHTMLString = body.body;
-  
-  // Remove HTML comments tags
-  let pruneHtml = rawHTMLString.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '');
-
-  // Return the pruned html
-  return pruneHtml;
-}
-
-/**
  * @description Generate PDF file based on HTML file.
  *
  * @param fullHtmlFilePath - String path of the html file.
  * @param fullPdfFilePath - String path of the generated pdf file.
  */
 async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath) {
-  // Use admin to run PDF conversion
-  const userAuth = `--auth-user=${M.config.server.defaultAdminUsername}`;
-  const passAuth = `--auth-password=${M.config.server.defaultAdminPassword}`;
   const config = M.config.server.plugins.plugins['mms3-adapter'];
   const exec = config.pdf.exec;
 
   // Generate the conversion command
-  const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure ${userAuth} ${passAuth}`;
+  //const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure`;
+  const command = `cp ${fullHtmlFilePath} ${fullPdfFilePath}`;
 	const stdout = execSync(command);
 
   // Log command
@@ -288,7 +268,6 @@ module.exports = {
 	asyncForEach,
 	generateChildViews,
 	customDataNamespace,
-  pruneHtml,
   convertHtml2Pdf,
   emailBlobLink
 };

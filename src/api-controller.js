@@ -1195,11 +1195,30 @@ async function postHtml2Pdf(req, res, next) {
     const directory = pluginCfg.pdf.directory;
     
     // Extract request body
-    const body = req.body;
-
-    // Filter and prune HTML
-    let prunedHtml = utils.pruneHtml(body);
+    const exportObj = req.body;
+  
+    // Get HTML body and remove comment tags
+    let removedTagsHTML = exportObj.body.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '')
     
+    // Filter and prune HTML
+    //let prunedHtml = utils.pruneHtml(body); TODO: Remove
+    
+    // Generate refresh token with extended time
+    // Compute token expiration time 24 hours
+    const timeDelta = 24 * utils.timeConversions['HOURS'];
+    
+    // Generate and set the token
+    req.session.token = mbeeCrypto.generateToken({
+      type: 'user',
+      username: (req.user.username || req.user._id),
+      created: (new Date(Date.now())),
+      expires: (new Date(Date.now() + timeDelta))
+    });
+  
+    // Replace token with newly generated token
+    tokenizedHTML= removedTagsHTML.replace('TICKET_[a-zA-Z0-9]*\"', req.session.token)
+    
+    console.log('tokenizedHTML: ', tokenizedHTML);
     // Define HTML/PDF file paths
     const tempHtmlFileName = `${filename}_${Date.now()}.html`;
     const tempPdfFileName = `${filename}_${Date.now()}.pdf`;
@@ -1207,7 +1226,7 @@ async function postHtml2Pdf(req, res, next) {
     const fullPdfFilePath = path.join(directory, tempPdfFileName);
   
     // Write the HTML file to storage
-    fs.writeFile(fullHtmlFilePath, prunedHtml, async(err) => {
+    fs.writeFile(fullHtmlFilePath, tokenizedHTML, async(err) => {
       // Check for error
       if (err) throw new M.OperationError(`Could not export PDF: ${err} `, 'warn');
       
@@ -1240,6 +1259,10 @@ async function postHtml2Pdf(req, res, next) {
         await utils.emailBlobLink(req.user.email,link);
       }
     });
+    
+    // TODO: destroy the token
+    req.session.destroy();
+    
     // Set status code
     res.locals.statusCode = 200;
   }
