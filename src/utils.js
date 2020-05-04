@@ -207,7 +207,7 @@ async function generateChildViews(reqUser, orgID, projID, branchID, elements) {
 function pruneHtml(body) {
   // Extract HTML from body
   let rawHTMLString = body.body;
-  
+
   // Remove HTML comments tags
   let pruneHtml = rawHTMLString.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '');
 
@@ -230,10 +230,12 @@ async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath) {
 
   // Generate the conversion command
   const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure ${userAuth} ${passAuth}`;
+  // Log command
+  M.log.info(`Executing... ${command}`);
 	const stdout = execSync(command);
 
-  // Log command
-  M.log.info(`Executing... ${command}  ${stdout.toString()}`);
+  // Log Results
+  M.log.info(${stdout.toString()});
 }
 
 /**
@@ -256,11 +258,11 @@ async function emailBlobLink(userEmail, link) {
         rejectUnauthorized: false
       }
     });
-    
+
     // Hard code user message
     const message = 'HTML to .PDF generation succeeded.\n\n' +
       `You can access the .PDF file at: ${link}`;
-    
+
     // Create the transporter and send the email
     await transporter.sendMail({
       from: '"mbee support" <mbee-support.fc-space@lmco.com>', // sender address
@@ -268,10 +270,10 @@ async function emailBlobLink(userEmail, link) {
       subject: "HTML to .pdf generation completed.",           // Subject line
       text: message                                            // plain text body
     });
-    
+
     // Log user email
     M.log.info(`Emailing user: ${userEmail}.`);
-    
+
   }
   catch (error) {
     M.log.warn(error);
@@ -281,14 +283,14 @@ async function emailBlobLink(userEmail, link) {
 
 // Export the module
 module.exports = {
-	getOrgId,
-	addHeaders,
-	handleTicket,
-	formatTicketRequest,
-	asyncForEach,
-	generateChildViews,
-	customDataNamespace,
-  pruneHtml,
-  convertHtml2Pdf,
-  emailBlobLink
+        getOrgId,
+      	addHeaders,
+      	handleTicket,
+      	formatTicketRequest,
+      	asyncForEach,
+      	generateChildViews,
+      	customDataNamespace,
+        pruneHtml,
+        convertHtml2Pdf,
+        emailBlobLink
 };
