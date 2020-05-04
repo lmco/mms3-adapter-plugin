@@ -272,8 +272,7 @@ async function emailBlobLink(userEmail, link) {
     });
 
     // Log user email
-    M.log.info(`Emailing user: ${userEmail}.`);
-
+    M.log.info(`Emailed user: ${userEmail}.`);
   }
   catch (error) {
     M.log.warn(error);
