@@ -1460,7 +1460,7 @@ router.route('/alfresco/projects/:projectid/refs/:refid/artifacts/blob/:blobid')
 
 /**
  * @swagger
- * /projects/{projectid}/refs/{refid}/convert
+ * /projects/{projectid}/refs/{refid}/convert:
  *   get:
  *     tags:
  *       - pdf
