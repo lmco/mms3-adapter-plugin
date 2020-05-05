@@ -32,6 +32,7 @@ const ElementController = M.require('controllers.element-controller');
 const ArtifactController = M.require('controllers.artifact-controller');
 const { getStatusCode } = M.require('lib.errors');
 const mcfUtils = M.require('lib.utils');
+const mbeeCrypto = M.require('lib.crypto');
 const jmi = M.require('lib.jmi-conversions');
 const errors = M.require('lib.errors');
 
@@ -1188,68 +1189,61 @@ async function postHtml2Pdf(req, res, next) {
   try {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
-    
+
     // Get plugin configuration
     const pluginCfg =  M.config.server.plugins.plugins['mms3-adapter'];
     const filename = pluginCfg.pdf.filename;
     const directory = pluginCfg.pdf.directory;
-    
+
     // Extract request body
     const exportObj = req.body;
-  
+
     // Get HTML body and remove comment tags
     let removedTagsHTML = exportObj.body.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '')
-    
+
     // Filter and prune HTML
     //let prunedHtml = utils.pruneHtml(body); TODO: Remove
-    
+
+    // Save off the expiration time
+    let expiration = req.session.expires;
+
     // Generate refresh token with extended time
     // Compute token expiration time 24 hours
-    const timeDelta = 24 * utils.timeConversions['HOURS'];
-    
-    // Generate and set the token
-    req.session.token = mbeeCrypto.generateToken({
-      type: 'user',
-      username: (req.user.username || req.user._id),
-      created: (new Date(Date.now())),
-      expires: (new Date(Date.now() + timeDelta))
-    });
-  
-    // Replace token with newly generated token
-    tokenizedHTML= removedTagsHTML.replace('TICKET_[a-zA-Z0-9]*\"', req.session.token)
-    
-    console.log('tokenizedHTML: ', tokenizedHTML);
+    const timeDelta = 24 * mcfUtils.timeConversions['HOURS'];
+    req.session.expires = (new Date(Date.now() + timeDelta));
+    req.session.extend = true;
+
     // Define HTML/PDF file paths
     const tempHtmlFileName = `${filename}_${Date.now()}.html`;
     const tempPdfFileName = `${filename}_${Date.now()}.pdf`;
     const fullHtmlFilePath = path.join(directory, tempHtmlFileName);
     const fullPdfFilePath = path.join(directory, tempPdfFileName);
-  
+
     // Write the HTML file to storage
-    fs.writeFile(fullHtmlFilePath, tokenizedHTML, async(err) => {
+    fs.writeFile(fullHtmlFilePath, removedTagsHTML, async(err) => {
       // Check for error
       if (err) throw new M.OperationError(`Could not export PDF: ${err} `, 'warn');
-      
+
       // Convert HTML to PDF
       await utils.convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath);
-      
+
       // Read the generated pdf file
       const pdfBlob = fs.readFileSync(fullPdfFilePath);
-  
+
       // Define artifact blob meta data
       const artifactMetadata = {
         id: req.body.id,
         location: `${req.params.orgid}/${req.params.projectid}`,
         filename: tempPdfFileName
       };
-      
+
       // Store the artifact blob
       await ArtifactController.postBlob(req.user, req.params.orgid,
           req.params.projectid, artifactMetadata, pdfBlob);
-  
+
       // Get server url
       let serverUrl = req.headers.host;
-      
+
       // Create artifact link
       let link = `http://${serverUrl}/api/orgs/${req.params.orgid}/projects/${req.params.projectid}/artifacts/blob` +
                   `?location=${artifactMetadata.location}&filename=${artifactMetadata.filename}`;
@@ -1259,10 +1253,12 @@ async function postHtml2Pdf(req, res, next) {
         await utils.emailBlobLink(req.user.email,link);
       }
     });
-    
-    // TODO: destroy the token
-    req.session.destroy();
-    
+
+    // Session not required to extend,set to false
+    // Revert back to original expiration time
+    req.session.extend = false;
+    req.session.expires = expiration;
+
     // Set status code
     res.locals.statusCode = 200;
   }

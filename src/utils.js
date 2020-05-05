@@ -208,15 +208,14 @@ async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath) {
   const exec = config.pdf.exec;
 
   // Generate the conversion command
-  //const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure`;
-  const command = `cp ${fullHtmlFilePath} ${fullPdfFilePath}`;
+  const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure`;
 
   // Execute and log command
   M.log.info(`Executing... ${command}`);
 	const stdout = execSync(command);
 
   // Log Results
-  M.log.info(${stdout.toString()});
+  M.log.info(stdout.toString());
 }
 
 /**
