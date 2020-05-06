@@ -552,7 +552,7 @@ async function postElements(req, res, next) {
     let createdElements = [];
     let updatedElements = [];
     const individualUpdates = [];
-    const deletedChildViews = {};
+    const deletedChildViews = [];
     const addedChildViews = {};
 
     // Create elements if there are any elements to be created
@@ -590,25 +590,25 @@ async function postElements(req, res, next) {
           }
           // Check if a child view is being added or removed by comparing existing and
           // updated ownedAttributeIds
+          let oldIDs = [];
           if (existing.custom[namespace] && existing.custom[namespace].ownedAttributeIds) {
-            const oldIDs = existing.custom[namespace].ownedAttributeIds;
-            const newIDs = update.custom[namespace].ownedAttributeIds;
+            oldIDs = existing.custom[namespace].ownedAttributeIds
+          }
+          const newIDs = update.custom[namespace].ownedAttributeIds;
 
-            // If not every new id is in the list of old ids, an old id has been deleted
-            if (!oldIDs.every((id) => newIDs.includes(id))) {
-              const deletedIDs = oldIDs.filter((id) => !newIDs.includes(id));
-              deletedIDs.forEach((id) => {
-                // Associate the existing element with the deleted childView; it will be used later
-                deletedChildViews[id] = existing;
-              });
-            }
-            // If not every old id is in the list of new ids, a new id has been added
-            if (!newIDs.every((id) => oldIDs.includes(id))) {
-              const addedIDs = newIDs.filter((id) => !oldIDs.includes(id));
-              addedIDs.forEach((id) => {
-                addedChildViews[id] = update.id;
-              });
-            }
+          // If not every new id is in the list of old ids, an old id has been deleted
+          if (!oldIDs.every((id) => newIDs.includes(id))) {
+            const deletedIDs = oldIDs.filter((id) => !newIDs.includes(id));
+            deletedIDs.forEach((id) => {
+              deletedChildViews.push(id);
+            });
+          }
+          // If not every old id is in the list of new ids, a new id has been added
+          if (!newIDs.every((id) => oldIDs.includes(id))) {
+            const addedIDs = newIDs.filter((id) => !oldIDs.includes(id));
+            addedIDs.forEach((id) => {
+              addedChildViews[id] = update.id;
+            });
           }
         }
 
@@ -624,7 +624,8 @@ async function postElements(req, res, next) {
           });
         }
 
-        // Updates to elements' parents cannot be made in bulk
+        // Updates to elements' parents cannot be made in bulk so we'll make those updates on
+        // an individual basis
         if (update.hasOwnProperty('parent')) {
           individualUpdates.push(update);
         }
@@ -635,7 +636,7 @@ async function postElements(req, res, next) {
       if (Object.keys(addedChildViews).length > 0) {
         await utils.asyncForEach(Object.keys(addedChildViews), async (key) => {
           // If a view was added that was also deleted, additional updates must be made
-          if (Object.keys(deletedChildViews).includes(key)) {
+          if (deletedChildViews.includes(key)) {
             // First find the child view element
             const cvElems = await ElementController.find(req.user, req.params.orgid,
               req.params.projectid, req.params.refid, key);
@@ -646,6 +647,7 @@ async function postElements(req, res, next) {
             const ownedEnds = await ElementController.find(req.user, req.params.orgid,
               req.params.projectid, req.params.refid,
               associations[0].custom[namespace].ownedEndIds);
+            const ownedEnd = ownedEnds[0];
             // Initialize the update to the ownedEnd element.  The typeId of this element needs to
             // point to the id of the new view element that the child view has been added to.
             const update = {
@@ -656,12 +658,11 @@ async function postElements(req, res, next) {
                 }
               }
             };
-            const oldView = deletedChildViews[key];
             // Make sure to save the custom data of the element
-            Object.keys(oldView.custom[namespace]).forEach((field) => {
+            Object.keys(ownedEnd.custom[namespace]).forEach((field) => {
               if (!Object.keys(update.custom[namespace]).includes(field)
                 && !(update.hasOwnProperty('name') && key === 'name')) {
-                update.custom[namespace][field] = oldView.custom[namespace][field];
+                update.custom[namespace][field] = ownedEnd.custom[namespace][field];
               }
             });
             // Add the update to a list of updates to be made
@@ -1059,7 +1060,7 @@ async function getCommits(req, res, next) {
  * @param {object} res - The Express response object.
  * @param {Function} next - Middleware callback to trigger the next function.
  */
-async function postArtifacts(req, res, next) {
+async function postArtifact(req, res, next) {
   // Grabs the org id from the session user
   await utils.getOrgId(req);
 
@@ -1196,7 +1197,7 @@ module.exports = {
   getElementCfids,
   getDocuments,
   getCommits,
-  postArtifacts,
+  postArtifact,
   putArtifacts,
   getBlob
 };

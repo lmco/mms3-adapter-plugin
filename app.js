@@ -1375,7 +1375,7 @@ router.route('/projects/:projectid/refs/:refid/artifacts')
   authenticate,
   logRoute,
   utils.addHeaders,
-  APIController.postArtifacts,
+  APIController.postArtifact,
   logResponse,
   respond
 )

@@ -17,16 +17,12 @@
 // NPM modules
 const chai = require('chai');
 
-// MBEE modules
-const jmi = M.require('lib.jmi-conversions');
-
 // Adapter modules
 const APIController = require('../../src/api-controller');
 
 /* --------------------( Test Data )-------------------- */
 // Variables used across test functions
 const testUtils = M.require('lib.test-utils');
-const testData = testUtils.importTestData('test_data.json');
 const next = testUtils.next;
 let adminUser = null;
 
