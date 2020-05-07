@@ -1200,10 +1200,7 @@ async function postHtml2Pdf(req, res, next) {
 
     // Get HTML body and remove comment tags
     let removedTagsHTML = exportObj.body.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '')
-
-    // Filter and prune HTML
-    //let prunedHtml = utils.pruneHtml(body); TODO: Remove
-
+    
     // Save off the expiration time
     let expiration = req.session.expires;
 
@@ -1254,7 +1251,7 @@ async function postHtml2Pdf(req, res, next) {
       }
     });
 
-    // Session not required to extend,set to false
+    // Export complete, session not required. Set extend to false
     // Revert back to original expiration time
     req.session.extend = false;
     req.session.expires = expiration;
