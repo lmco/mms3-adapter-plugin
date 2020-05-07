@@ -262,13 +262,13 @@ async function emailBlobLink(userEmail, link) {
 
 // Export the module
 module.exports = {
-	getOrgId,
-	addHeaders,
-	handleTicket,
-	formatTicketRequest,
-	asyncForEach,
-	generateChildViews,
-	customDataNamespace,
+  getOrgId,
+  addHeaders,
+  handleTicket,
+  formatTicketRequest,
+  asyncForEach,
+  generateChildViews,
+  customDataNamespace,
   convertHtml2Pdf,
   emailBlobLink
 };
