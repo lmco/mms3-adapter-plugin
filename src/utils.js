@@ -208,8 +208,8 @@ async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath) {
   const exec = config.pdf.exec;
 
   // Generate the conversion command
-  const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure`;
-
+  //const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure`;
+  const command = `cp ${fullHtmlFilePath} ${fullPdfFilePath}`;
   // Execute and log command
   M.log.info(`Executing... ${command}`);
 	const stdout = execSync(command);
@@ -260,6 +260,22 @@ async function emailBlobLink(userEmail, link) {
   }
 }
 
+/**
+ * @description Generates a random password.
+ */
+function generatePassword() {
+  const upperLetters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const specialLetters = '\'-`~!@#$%^&*()_+={}[\]:;\'",.<>?/|\\';
+  
+  // Generate random number (in the range 0..1) to a base36 string (lowercase a-z plus 0-9)
+  // Remove the leading zero and decimal point
+  let password = Math.random().toString(36).slice(2);
+  // Append uppercase and special character requirements
+  password+=upperLetters[Math.floor(Math.random() * upperLetters.length)];
+  password+=specialLetters[Math.floor(Math.random() * specialLetters.length)];
+  return password;
+}
+
 // Export the module
 module.exports = {
   getOrgId,
@@ -270,5 +286,6 @@ module.exports = {
   generateChildViews,
   customDataNamespace,
   convertHtml2Pdf,
-  emailBlobLink
+  emailBlobLink,
+  generatePassword
 };

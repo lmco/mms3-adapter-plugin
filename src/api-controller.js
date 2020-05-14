@@ -30,11 +30,12 @@ const BranchController = M.require('controllers.branch-controller');
 const Branch = M.require('models.branch');
 const ElementController = M.require('controllers.element-controller');
 const ArtifactController = M.require('controllers.artifact-controller');
+const UserController = M.require('controllers.user-controller');
 const { getStatusCode } = M.require('lib.errors');
 const mcfUtils = M.require('lib.utils');
-const mbeeCrypto = M.require('lib.crypto');
 const jmi = M.require('lib.jmi-conversions');
 const errors = M.require('lib.errors');
+const mbeeCrypto = M.require('lib.crypto');
 
 // Adapter modules
 const format = require('./formatter.js');
@@ -1201,15 +1202,57 @@ async function postHtml2Pdf(req, res, next) {
     // Get HTML body and remove comment tags
     let removedTagsHTML = exportObj.body.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '')
     
-    // Save off the expiration time
-    let expiration = req.session.expires;
+    // User data
+    // let userData = {
+    //   "username": `${req.user._id}tmp`,
+    //   "password": utils.generatePassword(),
+    //   "admin": false,
+    // }
+  
+    // Create temp admin user TODO: Remove block?
+    // let adminUser = {'_id': 'admin', 'admin': true}
+    //
+    // // Check if temp user exist
+    // let tempUser = await UserController.find(adminUser, userData.username);
+    //
+    // if (tempUser.length == 0) {
+    //   // Create temporary user
+    //   tempUser = await UserController.create(adminUser, userData);
+    // }
+    //
+    // // Get temporary user name
+    // const tmpUser = tempUser[0]._id;
 
     // Generate refresh token with extended time
     // Compute token expiration time 24 hours
     const timeDelta = 24 * mcfUtils.timeConversions['HOURS'];
-    req.session.expires = (new Date(Date.now() + timeDelta));
-    req.session.extend = true;
+    let userTokenData = {
+      type: 'temporary_user',
+      // username: tmpUser, TODO: remove? no temp user
+      username: req.user._id,
+      created: (new Date(Date.now())),
+      expires: (new Date(Date.now() + timeDelta))
+    }
 
+    // Generate the bearer token and encode it
+    let userBearerToken = encodeURIComponent(mbeeCrypto.generateToken(userTokenData));
+  
+    // Replace token with newly generated tmp user token
+    tokenizedHTML= removedTagsHTML.replace(/alf_ticket=[a-zA-Z0-9%]*\"/g, `alf_ticket=${userBearerToken}\"`)
+    
+    // // Update permissions with user read access
+    // const updateObj = {
+    //   id: req.params.orgid,
+    //   'permissions':
+    //     {
+    //       [tmpUser]: 'read'
+    //     }
+    // }
+
+    // await OrgController.update(adminUser, updateObj); TODO: Remove?
+    // updateObj.id = req.params.projectid;
+    // await ProjectController.update(adminUser,  req.params.orgid, updateObj);
+    
     // Define HTML/PDF file paths
     const tempHtmlFileName = `${filename}_${Date.now()}.html`;
     const tempPdfFileName = `${filename}_${Date.now()}.pdf`;
@@ -1217,7 +1260,7 @@ async function postHtml2Pdf(req, res, next) {
     const fullPdfFilePath = path.join(directory, tempPdfFileName);
 
     // Write the HTML file to storage
-    fs.writeFile(fullHtmlFilePath, removedTagsHTML, async(err) => {
+    fs.writeFile(fullHtmlFilePath, tokenizedHTML, async(err) => {
       // Check for error
       if (err) throw new M.OperationError(`Could not export PDF: ${err} `, 'warn');
 
@@ -1244,17 +1287,16 @@ async function postHtml2Pdf(req, res, next) {
       // Create artifact link
       let link = `http://${serverUrl}/api/orgs/${req.params.orgid}/projects/${req.params.projectid}/artifacts/blob` +
                   `?location=${artifactMetadata.location}&filename=${artifactMetadata.filename}`;
+      
       // Check user email
       if (req.user.email){
         // Email user
         await utils.emailBlobLink(req.user.email,link);
       }
     });
-
-    // Export complete, session not required. Set extend to false
-    // Revert back to original expiration time
-    req.session.extend = false;
-    req.session.expires = expiration;
+  
+    // Delete temporary user
+    //await UserController.remove(adminUser, tempUser[0]._id)
 
     // Set status code
     res.locals.statusCode = 200;
