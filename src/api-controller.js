@@ -1202,33 +1202,11 @@ async function postHtml2Pdf(req, res, next) {
     // Get HTML body and remove comment tags
     let removedTagsHTML = exportObj.body.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '')
     
-    // User data
-    // let userData = {
-    //   "username": `${req.user._id}tmp`,
-    //   "password": utils.generatePassword(),
-    //   "admin": false,
-    // }
-  
-    // Create temp admin user TODO: Remove block?
-    // let adminUser = {'_id': 'admin', 'admin': true}
-    //
-    // // Check if temp user exist
-    // let tempUser = await UserController.find(adminUser, userData.username);
-    //
-    // if (tempUser.length == 0) {
-    //   // Create temporary user
-    //   tempUser = await UserController.create(adminUser, userData);
-    // }
-    //
-    // // Get temporary user name
-    // const tmpUser = tempUser[0]._id;
-
     // Generate refresh token with extended time
     // Compute token expiration time 24 hours
     const timeDelta = 24 * mcfUtils.timeConversions['HOURS'];
     let userTokenData = {
       type: 'temporary_user',
-      // username: tmpUser, TODO: remove? no temp user
       username: req.user._id,
       created: (new Date(Date.now())),
       expires: (new Date(Date.now() + timeDelta))
@@ -1239,19 +1217,6 @@ async function postHtml2Pdf(req, res, next) {
   
     // Replace token with newly generated tmp user token
     tokenizedHTML= removedTagsHTML.replace(/alf_ticket=[a-zA-Z0-9%]*\"/g, `alf_ticket=${userBearerToken}\"`)
-    
-    // // Update permissions with user read access
-    // const updateObj = {
-    //   id: req.params.orgid,
-    //   'permissions':
-    //     {
-    //       [tmpUser]: 'read'
-    //     }
-    // }
-
-    // await OrgController.update(adminUser, updateObj); TODO: Remove?
-    // updateObj.id = req.params.projectid;
-    // await ProjectController.update(adminUser,  req.params.orgid, updateObj);
     
     // Define HTML/PDF file paths
     const tempHtmlFileName = `${filename}_${Date.now()}.html`;
@@ -1294,10 +1259,7 @@ async function postHtml2Pdf(req, res, next) {
         await utils.emailBlobLink(req.user.email,link);
       }
     });
-  
-    // Delete temporary user
-    //await UserController.remove(adminUser, tempUser[0]._id)
-
+    
     // Set status code
     res.locals.statusCode = 200;
   }
