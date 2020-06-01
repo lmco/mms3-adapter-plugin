@@ -14,7 +14,13 @@ to the **plugins.plugins** section of the running configuration, ensure
 "mms3-adapter": {
   "source": "https://gitlab.us.lmco.com/mbx/mbee/plugins/mms3-adapter.git",
   "title": "MMS3 Adapter",
-  "name": "mms3-adapter"
+  "name": "mms3-adapter",
+  "url": "SDVC_HOST",
+  "port": "SDVC_PORT",
+  "auth": {
+        "username": "SDVC_USERNAME",
+        "password": "SDVC_PASSWORD"
+    }
 }
 ```
 
