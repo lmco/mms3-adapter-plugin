@@ -225,7 +225,7 @@ async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath) {
  * @param link - The URL link to be included in the email.
  */
 async function emailBlobLink(userEmail, link) {
-	try {
+  try {
     // Get adapter configuration
     const config =  M.config.server.plugins.plugins['mms3-adapter'];
 
