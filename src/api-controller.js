@@ -1152,6 +1152,12 @@ async function putArtifacts(req, res, next) {
  * @param {object} res - The Express response object.
  * @param {Function} next - Middleware callback to trigger the next function.
  */
+
+/**
+ * @param req
+ * @param res
+ * @param next
+ */
 async function getBlob(req, res, next) {
   try {
     // Grabs the org id from the session user
@@ -1178,12 +1184,11 @@ async function getBlob(req, res, next) {
 
 /**
  * @description This function converts a html document into a PDF.
+ * @async
  *
  * @param {object} req - The Express request object.
  * @param {object} res - The Express response object.
- * @param {Function} next - Middleware callback to trigger the next function
- *
- * @returns {Promise}
+ * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function postHtml2Pdf(req, res, next) {
   try {
@@ -1191,7 +1196,7 @@ async function postHtml2Pdf(req, res, next) {
     await utils.getOrgId(req);
 
     // Get plugin configuration
-    const pluginCfg =  M.config.server.plugins.plugins['mms3-adapter'];
+    const pluginCfg = M.config.server.plugins.plugins['mms3-adapter'];
     const filename = pluginCfg.pdf.filename;
     const directory = pluginCfg.pdf.directory;
 
@@ -1199,24 +1204,24 @@ async function postHtml2Pdf(req, res, next) {
     const exportObj = req.body;
 
     // Get HTML body and remove comment tags
-    let removedTagsHTML = exportObj.body.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '');
-    
+    const removedTagsHTML = exportObj.body.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '');
+
     // Generate refresh token with extended time
     // Compute token expiration time 24 hours
-    const timeDelta = 24 * mcfUtils.timeConversions['HOURS'];
-    let userTokenData = {
+    const timeDelta = 24 * mcfUtils.timeConversions.HOURS;
+    const userTokenData = {
       type: 'temporary_user',
       username: req.user._id,
       created: (new Date(Date.now())),
       expires: (new Date(Date.now() + timeDelta))
-    }
+    };
 
     // Generate the bearer token and encode it
-    let userBearerToken = encodeURIComponent(mbeeCrypto.generateToken(userTokenData));
-  
+    const userBearerToken = encodeURIComponent(mbeeCrypto.generateToken(userTokenData));
+
     // Replace token with newly generated tmp user token
-    const tokenizedHTML = removedTagsHTML.replace(/alf_ticket=[a-zA-Z0-9%]*\"/g, `alf_ticket=${userBearerToken}\"`)
-    
+    const tokenizedHTML = removedTagsHTML.replace(/alf_ticket=[a-zA-Z0-9%]*\"/g, `alf_ticket=${userBearerToken}\"`);
+
     // Define HTML/PDF file paths
     const tempHtmlFileName = `${filename}_${Date.now()}.html`;
     const tempPdfFileName = `${filename}_${Date.now()}.pdf`;
@@ -1224,7 +1229,7 @@ async function postHtml2Pdf(req, res, next) {
     const fullPdfFilePath = path.join(directory, tempPdfFileName);
 
     // Write the HTML file to storage
-    fs.writeFile(fullHtmlFilePath, tokenizedHTML, async(err) => {
+    fs.writeFile(fullHtmlFilePath, tokenizedHTML, async (err) => {
       // Check for error
       if (err) throw new M.OperationError(`Could not export PDF: ${err} `, 'warn');
 
@@ -1243,22 +1248,22 @@ async function postHtml2Pdf(req, res, next) {
 
       // Store the artifact blob
       await ArtifactController.postBlob(req.user, req.params.orgid,
-          req.params.projectid, artifactMetadata, pdfBlob);
+        req.params.projectid, artifactMetadata, pdfBlob);
 
       // Get server url
-      let serverUrl = req.headers.host;
+      const serverUrl = req.headers.host;
 
       // Create artifact link
-      let link = `http://${serverUrl}/api/orgs/${req.params.orgid}/projects/${req.params.projectid}/artifacts/blob` +
-                  `?location=${artifactMetadata.location}&filename=${artifactMetadata.filename}`;
-      
+      const link = `http://${serverUrl}/api/orgs/${req.params.orgid}/projects/${req.params.projectid}/artifacts/blob`
+                  + `?location=${artifactMetadata.location}&filename=${artifactMetadata.filename}`;
+
       // Check user email
-      if (req.user.email){
+      if (req.user.email) {
         // Email user
-        await utils.emailBlobLink(req.user.email,link);
+        await utils.emailBlobLink(req.user.email, link);
       }
     });
-    
+
     // Set status code
     res.locals.statusCode = 200;
   }
