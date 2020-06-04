@@ -126,3 +126,21 @@ the build directory.
 
 9. Restart Cameo to successfully install and run the plugin.
     
+
+### Known Issues
+
+* The plugin currently uses the Prince application to generate PDFs.  The plugin
+receives html from the View Editor application which historically has included links
+to retrieve artifacts from MMS with an alf_ticket included. MMS would then send the
+html to Prince.  The issue arises with the handling of the alf_ticket in the MMS3
+Adaptor Plugin.  Because the intention was to avoid using Alfresco while maintaining
+backwards API compatibility, we kept support for the alf_ticket query parameter but
+re-purposed it into a bearer token.  When sending html to Prince for PDF generation,
+we currently create a new bearer token with an expiry time of 24 hours, because of
+reports that the generation can take exceptionally long periods of time for
+exceptionally large models.  Currently there is no way to destroy or invalidate
+a bearer token in the MCF backend once it is created, meaning this token will
+continue to exist regardless of how soon the PDF generation is finished.  In a
+future release of MCF, we plan to implement a way for admins to manage, i.e. view
+and destroy, all currently active bearer tokens.  Until then, this plugin will
+generate an indestructible 24hr token every time a PDF generation is requested.
