@@ -1514,7 +1514,7 @@ router.route('/projects/:projectid/refs/:refid/convert')
 /**
  * @swagger
  * /commit/org/:org/project/:project/branch/:branch:
- *   post:
+ *   put:
  *     tags:
  *       - general
  *     description: Handles the commit.

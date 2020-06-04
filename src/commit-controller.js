@@ -38,7 +38,7 @@ const validUpdateFields = ['name', 'documentation', 'custom', 'archived', 'paren
  * @param {object} res - Response express object.
  * @param {Function} next - Middleware callback to trigger the next function.
  */
-async function handleCommit(req, res) {
+async function handleCommit(req, res, next) {
     // Setting variables
     const organization = req.params.org;
     const project = req.params.project;
@@ -170,8 +170,9 @@ async function handleCommit(req, res) {
         throw new Error('Error creating mms3 sdvc element. Element probably never changed.');
     }
 
-    res.statusCode = 200;
-    res.send({'org': sdvcOrg, "proj": sdvcProj, 'branch': sdvcBranch, 'element': sdvcElement});
+    res.locals.statusCode = 200;
+    res.locals.message = {'org': sdvcOrg, "proj": sdvcProj, 'branch': sdvcBranch, 'element': sdvcElement};
+    next();
 }
   
 /*************************************************/
