@@ -1199,7 +1199,7 @@ async function postHtml2Pdf(req, res, next) {
     const exportObj = req.body;
 
     // Get HTML body and remove comment tags
-    let removedTagsHTML = exportObj.body.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '')
+    let removedTagsHTML = exportObj.body.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '');
     
     // Generate refresh token with extended time
     // Compute token expiration time 24 hours
