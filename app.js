@@ -1206,8 +1206,7 @@ router.route('/projects/:projectid/refs/:refid/elements/:elementid/cfids')
  *     tags:
  *       - elements
  *     description: Returns all documents on a specified branch. Searches for all elements that
- *                  have the field "_appliedStereotypeIds" which contain a specific id.
- *                  Specific ID: "_17_0_2_3_87b0275_1371477871400_792964_43374"
+ *                  have the field "_appliedStereotypeIds" which contain the id "_17_0_2_3_87b0275_1371477871400_792964_43374".
  *                  Returns all elements that meet the search criteria.
  *     produces:
  *       - application/json
@@ -1511,7 +1510,7 @@ router.route('/projects/:projectid/refs/:refid/convert')
 
 // For all other routes that get hit, return an error stating "Not Implemented"
 app.use('*', (req, res, next) => {
-  M.log.info(`Request for route not implemented: ${req.method}: ${req.originalUrl}`);
+  console.log(`Request for route not implemented: ${req.method}: ${req.originalUrl}`);
   return res.status(501).send('Not Implemented');
 });
 
