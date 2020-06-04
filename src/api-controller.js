@@ -1215,7 +1215,7 @@ async function postHtml2Pdf(req, res, next) {
     let userBearerToken = encodeURIComponent(mbeeCrypto.generateToken(userTokenData));
   
     // Replace token with newly generated tmp user token
-    tokenizedHTML= removedTagsHTML.replace(/alf_ticket=[a-zA-Z0-9%]*\"/g, `alf_ticket=${userBearerToken}\"`)
+    const tokenizedHTML = removedTagsHTML.replace(/alf_ticket=[a-zA-Z0-9%]*\"/g, `alf_ticket=${userBearerToken}\"`)
     
     // Define HTML/PDF file paths
     const tempHtmlFileName = `${filename}_${Date.now()}.html`;
