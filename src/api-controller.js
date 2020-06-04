@@ -30,7 +30,6 @@ const BranchController = M.require('controllers.branch-controller');
 const Branch = M.require('models.branch');
 const ElementController = M.require('controllers.element-controller');
 const ArtifactController = M.require('controllers.artifact-controller');
-const UserController = M.require('controllers.user-controller');
 const { getStatusCode } = M.require('lib.errors');
 const mcfUtils = M.require('lib.utils');
 const jmi = M.require('lib.jmi-conversions');
