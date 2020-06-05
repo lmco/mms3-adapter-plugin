@@ -15,6 +15,9 @@
  * @description Handles API functions.
  */
 
+// Node modules
+const fs = require('fs');
+const path = require('path');
 
 // NPM modules
 const multer = require('multer');
@@ -31,6 +34,7 @@ const { getStatusCode } = M.require('lib.errors');
 const mcfUtils = M.require('lib.utils');
 const jmi = M.require('lib.jmi-conversions');
 const errors = M.require('lib.errors');
+const mbeeCrypto = M.require('lib.crypto');
 
 // Adapter modules
 const format = require('./formatter.js');
@@ -1172,6 +1176,101 @@ async function getBlob(req, res, next) {
   next();
 }
 
+/**
+ * @description This function converts a html document into a PDF.
+ * @async
+ *
+ * @param {object} req - The Express request object.
+ * @param {object} res - The Express response object.
+ * @param {Function} next - Middleware callback to trigger the next function.
+ *
+ * @returns {Promise}
+ */
+async function postHtml2Pdf(req, res, next) {
+  try {
+    // Grabs the org id from the session user
+    await utils.getOrgId(req);
+
+    // Get plugin configuration
+    const pluginCfg = M.config.server.plugins.plugins['mms3-adapter'];
+    const filename = pluginCfg.pdf.filename;
+    const directory = pluginCfg.pdf.directory;
+
+    // Extract request body
+    const exportObj = req.body;
+
+    // Get HTML body and remove comment tags
+    const removedTagsHTML = exportObj.body.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '');
+
+    // Generate refresh token with extended time
+    // Compute token expiration time 24 hours
+    const timeDelta = 24 * mcfUtils.timeConversions.HOURS;
+    const userTokenData = {
+      type: 'temporary_user',
+      username: req.user._id,
+      created: (new Date(Date.now())),
+      expires: (new Date(Date.now() + timeDelta))
+    };
+
+    // Generate the bearer token and encode it
+    const userBearerToken = encodeURIComponent(mbeeCrypto.generateToken(userTokenData));
+
+    // Replace token with newly generated tmp user token
+    const tokenizedHTML = removedTagsHTML.replace(/alf_ticket=[a-zA-Z0-9%]*\"/g, `alf_ticket=${userBearerToken}\"`);
+
+    // Define HTML/PDF file paths
+    const tempHtmlFileName = `${filename}_${Date.now()}.html`;
+    const tempPdfFileName = `${filename}_${Date.now()}.pdf`;
+    const fullHtmlFilePath = path.join(directory, tempHtmlFileName);
+    const fullPdfFilePath = path.join(directory, tempPdfFileName);
+
+    // Write the HTML file to storage
+    fs.writeFile(fullHtmlFilePath, tokenizedHTML, async (err) => {
+      // Check for error
+      if (err) throw new M.OperationError(`Could not export PDF: ${err} `, 'warn');
+
+      // Convert HTML to PDF
+      await utils.convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath);
+
+      // Read the generated pdf file
+      const pdfBlob = fs.readFileSync(fullPdfFilePath);
+
+      // Define artifact blob meta data
+      const artifactMetadata = {
+        id: req.body.id,
+        location: `${req.params.orgid}/${req.params.projectid}`,
+        filename: tempPdfFileName
+      };
+
+      // Store the artifact blob
+      await ArtifactController.postBlob(req.user, req.params.orgid,
+        req.params.projectid, artifactMetadata, pdfBlob);
+
+      // Get server url
+      const serverUrl = req.headers.host;
+
+      // Create artifact link
+      const link = `http://${serverUrl}/api/orgs/${req.params.orgid}/projects/${req.params.projectid}/artifacts/blob`
+                  + `?location=${artifactMetadata.location}&filename=${artifactMetadata.filename}`;
+
+      // Check user email
+      if (req.user.email) {
+        // Email user
+        await utils.emailBlobLink(req.user.email, link);
+      }
+    });
+
+    // Set status code
+    res.locals.statusCode = 200;
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
 module.exports = {
   postLogin,
   optionsDefault,
@@ -1198,5 +1297,6 @@ module.exports = {
   getCommits,
   postArtifacts,
   putArtifacts,
-  getBlob
+  getBlob,
+  postHtml2Pdf
 };

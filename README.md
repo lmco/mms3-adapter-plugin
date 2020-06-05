@@ -14,9 +14,30 @@ to the **plugins.plugins** section of the running configuration, ensure
 "mms3-adapter": {
   "source": "https://gitlab.us.lmco.com/mbx/mbee/plugins/mms3-adapter.git",
   "title": "MMS3 Adapter",
-  "name": "mms3-adapter"
+  "name": "mms3-adapter",
+  "emailServerUrl": "email.server.com",
+  "emailServerPort": "25",
+  "pdf": {
+    "directory": "/tmp",
+    "filename": "tmp.output",
+    "exec": "/usr/local/bin/prince"
+  }
 }
 ```
+### PDF Export Configuration
+This plugin allows documents (HTML format) to be exported as a PDF. This plugin 
+uses Prince, a PDF conversion engine, to generate the PDF file. When the 
+conversion is completed, an email is sent to the requesting user with an artifact
+link to download the PDF. 
+
+To set up PDF export, supply the configuration with the **emailServerUrl** and 
+**emailServerPort**.
+
+[Prince](https://www.princexml.com/) will have to be installed separately with 
+its executable path, file directory, and filename template included. 
+1. **exec** - Prince executable path.
+2. **directory** - Location to store the documents. (HTML, PDF) 
+3. **filename** - Filename template prepended to each file. 
 
 ### Accessing Endpoints
 Once the plugin is installed and MCF is restarted, all normal MMS3 API endpoints
