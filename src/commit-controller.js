@@ -40,38 +40,42 @@ const validUpdateFields = ['name', 'documentation', 'custom', 'archived', 'paren
  */
 async function handleCommit(req, res, next) {
     // Setting variables
-    const organization = req.params.org;
-    const project = req.params.project;
-    const branch = req.params.branch;
+    const organization = req.params.orgid;
+    const project = req.params.projectid;
+    const branch = req.params.branchid;
 
     // Check if body exists
     if (!req.body) {
-        res.statusCode = 406;
-        res.send({message: 'No element to commit'});
+        res.locals.statusCode = 406;
+        res.locals.message = {message: 'No element to commit'};
+        next();
         throw new Error('No element to commit');
     }
 
     // Check if organization exists in MCF
     const orgMCF = await orgController.find(req.user, organization);
     if (orgMCF.length === 0) {
-        res.statusCode = 406;
-        res.send({ 'message': `Organization ${organization} does not exist` });
+        res.locals.statusCode = 406;
+        res.locals.message = {'message': `Organization ${organization} does not exist`};
+        next();
         throw new Error(`Organization ${organization} does not exist`);
     }
 
     // Check if project exists in MCF
     const projMCF = await projectController.find(req.user, organization, project);
     if (projMCF.length === 0) {
-        res.statusCode = 406;
-        res.send({ 'message': `Project ${project} does not exist` });
+        res.locals.statusCode = 406;
+        res.locals.message = {'message': `Project ${project} does not exist`};
+        next();
         throw new Error(`Project ${project} does not exist`);
     }
 
     // Check if branch exists in MCF
     const branchMCF = await branchController.find(req.user, organization, project, branch);
     if (branchMCF.length === 0) {
-        res.statusCode = 406;
-        res.send({ 'message': `Branch ${branch} does not exist` });
+        res.locals.statusCode = 406;
+        res.locals.message = {'message': `Branch ${branch} does not exist`};
+        next();
         throw new Error(`Branch ${branch} does not exist`);
     }
 
@@ -84,8 +88,9 @@ async function handleCommit(req, res, next) {
     // Getting the current element from the mcf database
     const currentElement = await elementController.find(req.user, organization, project, branch, id);
     if (!currentElement) {
-        res.statusCode = 406;
-        res.send({ 'message': `Element ${updatedElement._id} does not exist in mcf database` });
+        res.locals.statusCode = 406;
+        res.locals.message = {'message': `Element ${updatedElement._id} does not exist in mcf database`};
+        next();
         throw new Error(`Element ${updatedElement._id} does not exist in mcf database`);
     }
 
@@ -94,8 +99,9 @@ async function handleCommit(req, res, next) {
     if (!sdvcOrg) {
         sdvcOrg = await createSDVCOrganization(req.user, orgMCF[0]);
         if (!sdvcOrg) {
-            res.statusCode = 500;
-            res.send({ 'message': 'Error creating mms3 sdvc organization' });
+            res.locals.statusCode = 500;
+            res.locals.message = {'message': 'Error creating mms3 sdvc organization'};
+            next();
             throw new Error('Error creating mms3 sdvc organization');
         }
     }
@@ -105,8 +111,9 @@ async function handleCommit(req, res, next) {
     if (!sdvcProj) {
         sdvcProj = await createSDVCProject(req.user, projMCF[0]);
         if (!sdvcProj) {
-            res.statusCode = 500;
-            res.send({ 'message': 'Error creating mms3 sdvc project' });
+            res.locals.statusCode = 500;
+            res.locals.message = {'message': 'Error creating mms3 sdvc project'};
+            next();
             throw new Error('Error creating mms3 sdvc project');
         }
     }
@@ -116,8 +123,9 @@ async function handleCommit(req, res, next) {
     if (!sdvcBranch) {
         sdvcBranch = await createSDVCBranch(req.user, project, branchMCF[0]);
         if (!sdvcBranch) {
-            res.statusCode = 500;
-            res.send({ 'message': 'Error creating mms3 sdvc ref/branch' });
+            res.locals.statusCode = 500;
+            res.locals.message = {'message': 'Error creating mms3 sdvc ref/branch'};
+            next();
             throw new Error('Error creating mms3 sdvc ref/branch');
         }
     }
@@ -165,8 +173,9 @@ async function handleCommit(req, res, next) {
     // Create or update the element
     sdvcElement = await createUpdateSDVCElement(project, branch, formattedUpdatedElement);
     if (!sdvcElement) {
-        res.statusCode = 500;
-        res.send({ 'message': 'Error creating mms3 sdvc element. Element probably never changed.' });
+        res.locals.statusCode = 500;
+        res.locals.message = {'message': 'Error creating mms3 sdvc element. Element probably never changed.'};
+        next();
         throw new Error('Error creating mms3 sdvc element. Element probably never changed.');
     }
 

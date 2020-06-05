@@ -1535,7 +1535,7 @@ router.route('/projects/:projectid/refs/:refid/convert')
  *       200:
  *         description: OK
  */
-router.route('/commit/org/:org/project/:project/branch/:branch')
+router.route('/commit/orgs/:orgid/projects/:projectid/branches/:branchid')
 .put(
   authenticate,
   logRoute,
