@@ -1510,7 +1510,7 @@ router.route('/projects/:projectid/refs/:refid/convert')
 
 // For all other routes that get hit, return an error stating "Not Implemented"
 app.use('*', (req, res, next) => {
-  console.log(`Request for route not implemented: ${req.method}: ${req.originalUrl}`);
+  M.log.info(`Request for route not implemented: ${req.method}: ${req.originalUrl}`);
   return res.status(501).send('Not Implemented');
 });
 
