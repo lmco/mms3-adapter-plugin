@@ -16,6 +16,10 @@
  * plugin.
  */
 
+// NPM modules
+const nodemailer = require("nodemailer");
+const { execSync } = require('child_process');
+
 // MBEE modules
 const Project = M.require('models.project');
 const Element = M.require('models.element');
@@ -126,7 +130,6 @@ async function asyncForEach(array, callback) {
   }
 }
 
-
 /**
  * @description This replicates a functionality of MMS by searching for, creating, and adding child
  * views to the specified elements. Certain elements, including document and view elements, are
@@ -194,6 +197,68 @@ async function generateChildViews(reqUser, orgID, projID, branchID, elements) {
   });
 }
 
+/**
+ * @description Generate PDF file based on HTML file.
+ *
+ * @param fullHtmlFilePath - String path of the html file.
+ * @param fullPdfFilePath - String path of the generated pdf file.
+ */
+async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath) {
+  const config = M.config.server.plugins.plugins['mms3-adapter'];
+  const exec = config.pdf.exec;
+
+  // Generate the conversion command
+  //const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure`;
+  const command = `cp ${fullHtmlFilePath} ${fullPdfFilePath}`;
+  // Execute and log command
+  M.log.info(`Executing... ${command}`);
+	const stdout = execSync(command);
+
+  // Log Results
+  M.log.info(stdout.toString());
+}
+
+/**
+ * @description Emails user with an url link.
+ *
+ * @param userEmail - The requesting user's email.
+ * @param link - The URL link to be included in the email.
+ */
+async function emailBlobLink(userEmail, link) {
+  try {
+    // Get adapter configuration
+    const config =  M.config.server.plugins.plugins['mms3-adapter'];
+
+    // Create mail transporter
+    let transporter = nodemailer.createTransport({
+      host: config.emailServerUrl,
+      port: config.emailServerPort,
+      secure: false,
+      tls: {
+        rejectUnauthorized: false
+      }
+    });
+
+    // Hard code user message
+    const message = 'HTML to .PDF generation succeeded.\n\n' +
+      `You can access the .PDF file at: ${link}`;
+
+    // Create the transporter and send the email
+    await transporter.sendMail({
+      from: '"mbee support" <mbee-support.fc-space@lmco.com>', // sender address
+      to: userEmail,
+      subject: "HTML to .pdf generation completed.",           // Subject line
+      text: message                                            // plain text body
+    });
+
+    // Log user email
+    M.log.info(`Emailed user: ${userEmail}.`);
+  }
+  catch (error) {
+    M.log.warn(error);
+    throw new M.ServerError('Failed to send user email.', 'error');
+  }
+}
 
 // Export the module
 module.exports = {
@@ -203,5 +268,7 @@ module.exports = {
   formatTicketRequest,
   asyncForEach,
   generateChildViews,
-  customDataNamespace
+  customDataNamespace,
+  convertHtml2Pdf,
+  emailBlobLink
 };

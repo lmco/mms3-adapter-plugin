@@ -1465,7 +1465,8 @@ router.route('/alfresco/projects/:projectid/refs/:refid/artifacts/blob/:blobid')
  *   get:
  *     tags:
  *       - pdf
- *     description: The functionality of this endpoint is still a work in progress.
+ *     description: Converts View Editor's HTML post into a downloadable PDF artifact.
+ *        Requesting users should receive an email to download the PDF file.
  *     produces:
  *       - application/json
  *     parameters:
@@ -1496,10 +1497,7 @@ router.route('/projects/:projectid/refs/:refid/convert')
   authenticate,
   logRoute,
   utils.addHeaders,
-  (req, res, next) => {
-    // TODO: handle pdf converter
-    next();
-  },
+  APIController.postHtml2Pdf,
   logResponse,
   respond
 )
