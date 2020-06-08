@@ -17,15 +17,18 @@
 
 'use strict';
 
+// NPM Modules
+const axios = require('axios');
+
 // MBEE Modules
 const elementController = M.require('controllers.element-controller');
 const orgController = M.require('controllers.organization-controller');
 const projectController = M.require('controllers.project-controller');
 const branchController = M.require('controllers.branch-controller');
-const config = M.config.server.plugins.plugins['mms3-adapter'];
+const config = M.config.server.plugins.plugins['mms3-adapter'].sdvc;
 const mcfUtils = M.require('lib.utils');
-// NPM Modules
-const axios = require('axios');
+const errors = M.require('lib.errors');
+
 // MMS3 Adapter Modules
 const mms3Formatter = require('./formatter.js');
 const validUpdateFields = ['name', 'documentation', 'custom', 'archived', 'parent', 'type',
@@ -39,149 +42,114 @@ const validUpdateFields = ['name', 'documentation', 'custom', 'archived', 'paren
  * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function handleCommit(req, res, next) {
-    // Setting variables
-    const organization = req.params.orgid;
-    const project = req.params.projectid;
-    const branch = req.params.branchid;
+    try {
+        // Setting variables
+        const organization = req.params.orgid;
+        const project = req.params.projectid;
+        const branch = req.params.branchid;
 
-    // Check if body exists
-    if (!req.body) {
-        res.locals.statusCode = 406;
-        res.locals.message = {message: 'No element to commit'};
-        next();
-        throw new Error('No element to commit');
-    }
+        // Check if body exists
+        if (Object.keys(req.body).length === 0) {
+            throw new M.DataFormatError('No element to commit');
+        }
 
-    // Check if organization exists in MCF
-    const orgMCF = await orgController.find(req.user, organization);
-    if (orgMCF.length === 0) {
-        res.locals.statusCode = 406;
-        res.locals.message = {'message': `Organization ${organization} does not exist`};
-        next();
-        throw new Error(`Organization ${organization} does not exist`);
-    }
+        // Check if organization exists in MCF
+        const orgMCF = await orgController.find(req.user, organization);
+        if (orgMCF.length === 0) {
+            throw new M.NotFoundError(`Organization ${organization} does not exist`);
+        }
 
-    // Check if project exists in MCF
-    const projMCF = await projectController.find(req.user, organization, project);
-    if (projMCF.length === 0) {
-        res.locals.statusCode = 406;
-        res.locals.message = {'message': `Project ${project} does not exist`};
-        next();
-        throw new Error(`Project ${project} does not exist`);
-    }
+        // Check if project exists in MCF
+        const projMCF = await projectController.find(req.user, organization, project);
+        if (projMCF.length === 0) {
+            throw new M.NotFoundError(`Project ${project} does not exist`);
+        }
 
-    // Check if branch exists in MCF
-    const branchMCF = await branchController.find(req.user, organization, project, branch);
-    if (branchMCF.length === 0) {
-        res.locals.statusCode = 406;
-        res.locals.message = {'message': `Branch ${branch} does not exist`};
-        next();
-        throw new Error(`Branch ${branch} does not exist`);
-    }
+        // Check if branch exists in MCF
+        const branchMCF = await branchController.find(req.user, organization, project, branch);
+        if (branchMCF.length === 0) {
+            throw new M.NotFoundError(`Branch ${branch} does not exist`);
+        }
 
-    const updatedElement = req.body;
-    if (!updatedElement._id) {
-        updatedElement._id = updatedElement.id;
-    }
-    const id = mcfUtils.parseID(updatedElement._id).pop();
+        const updatedElement = req.body;
+        if (!updatedElement._id) {
+            updatedElement._id = updatedElement.id;
+        }
+        const id = mcfUtils.parseID(updatedElement._id).pop();
 
-    // Getting the current element from the mcf database
-    const currentElement = await elementController.find(req.user, organization, project, branch, id);
-    if (!currentElement) {
-        res.locals.statusCode = 406;
-        res.locals.message = {'message': `Element ${updatedElement._id} does not exist in mcf database`};
-        next();
-        throw new Error(`Element ${updatedElement._id} does not exist in mcf database`);
-    }
+        // Getting the current element from the mcf database
+        const currentElement = await elementController.find(req.user, organization, project, branch, id);
+        if (!currentElement) {
+            throw new M.NotFoundError(`Element ${updatedElement._id} does not exist in mcf database`);
+        }
 
-    // Check if organization exist in MMS3 SDVC
-    let sdvcOrg = await getSDVCOrganization(organization);
-    if (!sdvcOrg) {
-        sdvcOrg = await createSDVCOrganization(req.user, orgMCF[0]);
+        // Check if organization exist in MMS3 SDVC
+        let sdvcOrg = await getSDVCOrganization(organization);
         if (!sdvcOrg) {
-            res.locals.statusCode = 500;
-            res.locals.message = {'message': 'Error creating mms3 sdvc organization'};
-            next();
-            throw new Error('Error creating mms3 sdvc organization');
+            sdvcOrg = await createSDVCOrganization(req.user, orgMCF[0]);
+            if (!sdvcOrg) {
+                throw new M.ServerError('Error creating mms3 sdvc organization');
+            }
         }
-    }
 
-    // Check if project exists in MMS3 SDVC
-    let sdvcProj = await getSDVCProject(project);
-    if (!sdvcProj) {
-        sdvcProj = await createSDVCProject(req.user, projMCF[0]);
+        // Check if project exists in MMS3 SDVC
+        let sdvcProj = await getSDVCProject(project);
         if (!sdvcProj) {
-            res.locals.statusCode = 500;
-            res.locals.message = {'message': 'Error creating mms3 sdvc project'};
-            next();
-            throw new Error('Error creating mms3 sdvc project');
+            sdvcProj = await createSDVCProject(req.user, projMCF[0]);
+            if (!sdvcProj) {
+                throw new M.ServerError('Error creating mms3 sdvc project');
+            }
         }
-    }
 
-    // Check if branch exists in MMS3 SDVC
-    let sdvcBranch = await getSDVCBranch(project, branch);
-    if (!sdvcBranch) {
-        sdvcBranch = await createSDVCBranch(req.user, project, branchMCF[0]);
+        // Check if branch exists in MMS3 SDVC
+        let sdvcBranch = await getSDVCBranch(project, branch);
         if (!sdvcBranch) {
-            res.locals.statusCode = 500;
-            res.locals.message = {'message': 'Error creating mms3 sdvc ref/branch'};
-            next();
-            throw new Error('Error creating mms3 sdvc ref/branch');
+            sdvcBranch = await createSDVCBranch(req.user, project, branchMCF[0]);
+            if (!sdvcBranch) {
+                throw new M.ServerError('Error creating mms3 sdvc ref/branch');
+            }
         }
-    }
 
-    const formattedCurrentElement = mms3Formatter.mmsElement(req.user, currentElement[0]); // the element object from mcf database
-    const formattedUpdatedElement = mms3Formatter.mmsElement(req.user, updatedElement); // the element object being updated
+        const formattedUpdatedElement = mms3Formatter.mmsElement(req.user, updatedElement); // the element object being updated
 
-    // Add all valid updated fields to formattedCurrentElement
-    for (const [key, value] of Object.entries(currentElement[0])) {
-        if (validUpdateFields.includes(key)) {
-            formattedCurrentElement[key] = currentElement[0][key];
+        // Add all valid updated fields to formattedUpdatedElement
+        for (const [key, value] of Object.entries(updatedElement)) {
+            if (validUpdateFields.includes(key)) {
+                formattedUpdatedElement[key] = updatedElement[key];
+            }
         }
-    }
 
-    // Add all valid updated fields to formattedUpdatedElement
-    for (const [key, value] of Object.entries(updatedElement)) {
-        if (validUpdateFields.includes(key)) {
-            formattedUpdatedElement[key] = updatedElement[key];
+        // Remove properties that are not needed.
+        // If these properties get updated, the element gets deleted
+        // WARNING/NOTE: This is a limitation of SDVC and we are constrained to this implementation...    
+        delete formattedUpdatedElement.ownerId;
+        delete formattedUpdatedElement._projectId;
+        delete formattedUpdatedElement._refId;
+        delete formattedUpdatedElement._creator;
+        delete formattedUpdatedElement._created;
+        delete formattedUpdatedElement._modifier;
+        delete formattedUpdatedElement._modified;
+        delete formattedUpdatedElement._editable;
+
+        // Create or update the element
+        const sdvcElement = await createUpdateSDVCElement(project, branch, formattedUpdatedElement);
+        
+        if (!sdvcElement) {
+            throw new M.ServerError('Error creating mms3 sdvc element. Element probably never changed.');
         }
-    }
 
-    // Remove properties that are not needed.
-    // If these properties get updated, the element gets deleted
-    // WARNING/NOTE: This is a limitation of SDVC and we are constrained to this implementation...
-    delete formattedCurrentElement.ownerId;
-    delete formattedCurrentElement._projectId;
-    delete formattedCurrentElement._refId;
-    delete formattedCurrentElement._creator;
-    delete formattedCurrentElement._created;
-    delete formattedCurrentElement._modifier;
-    delete formattedCurrentElement._modified;
-    delete formattedCurrentElement._editable;
-    
-    delete formattedUpdatedElement.ownerId;
-    delete formattedUpdatedElement._projectId;
-    delete formattedUpdatedElement._refId;
-    delete formattedUpdatedElement._creator;
-    delete formattedUpdatedElement._created;
-    delete formattedUpdatedElement._modifier;
-    delete formattedUpdatedElement._modified;
-    delete formattedUpdatedElement._editable;
-
-    // Check if element exists in MMS3 SDVC
-    let sdvcElement = await getSDVCElement(project, branch, formattedUpdatedElement.id);
-    // Create or update the element
-    sdvcElement = await createUpdateSDVCElement(project, branch, formattedUpdatedElement);
-    if (!sdvcElement) {
-        res.locals.statusCode = 500;
-        res.locals.message = {'message': 'Error creating mms3 sdvc element. Element probably never changed.'};
+        res.locals.statusCode = 200;
+        res.locals.message = JSON.stringify({
+            org: sdvcOrg,
+            proj: sdvcProj,
+            branch: sdvcBranch,
+            element: sdvcElement
+        });
         next();
-        throw new Error('Error creating mms3 sdvc element. Element probably never changed.');
     }
-
-    res.locals.statusCode = 200;
-    res.locals.message = {'org': sdvcOrg, "proj": sdvcProj, 'branch': sdvcBranch, 'element': sdvcElement};
-    next();
+    catch (error) {
+        return mcfUtils.formatResponse(req, res, error.message, errors.getStatusCode(error), next);
+    }
 }
   
 /*************************************************/
