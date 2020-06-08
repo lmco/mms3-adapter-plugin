@@ -1,20 +1,62 @@
 # MMS3 Adapter Plugin
-The MMS3 Adapter Plugin is a plugin designed to be run on MCF/MMS4. It mimics
-the MMS3 API endpoints, to allow for a seamless transition between MMS3 and MMS4
-formatted data. Each endpoint accepts data in the same format which MMS3 would
-expect, and returns data in the same format which MMS3 would.
+The MMS3 Adapter Plugin is a plugin designed to be run within MBEE Core Framework (MCF). 
+It exposes a MMS3 compatible interface from MCF. It mimics the MMS3 API endpoints, to 
+allow for a seamless transition between MMS3 and MCF formatted data. Each endpoint 
+accepts data in the same format which MMS3 would expect and returns data in the same 
+format which MMS3 would.
 
-### Installation
+## Prerequisites
+
+#### Node.js
+NPM comes with Node.js; just install packages with NPM to get started. To start up MBEE,
+node version 10.15.0 or greater is required.
+See [nodejs.org](https://nodejs.org/en/) for information on Node.js.
+
+#### MBEE Core Framework (MCF)
+An installation of MCF is required. It is hosted here: https://github.com/lmco/mbee. 
+Please refer to the `README.md` for installation instructions.
+
+#### PrincePDF
+For PDF generation, [Prince](https://www.princexml.com/) will have to be installed 
+separately with its executable path, file directory, and filename template included. 
+See [PDF Export Configuration](#pdf-export-configuration) section below.
+
+#### Source Code
+This source code can be cloned and referenced by the MCF config from your local directory 
+or by adding an MCF config reference to the hosted repo.
+
+##### Clone
+1. Clone the MBEE code by running: `git clone https://github.com/Open-MBEE/mms3-adapter-plugin`. 
+2. Enter the directory with `cd mms3-adapter-plugin`.
+
+##### MCF Config References
+```json
+"mms3-adapter": {
+  "source": "https://github.com/Open-MBEE/mms3-adapter-plugin.git",
+  "title": "MMS3 Adapter",
+  "name": "mms3-adapter"
+}
+```
+
+## Getting Started
 The requirements for installing the MMS3 Adapter Plugin are simple: a running
 copy of MCF, version 0.10 or greater. To install the plugin, add the following
-to the **plugins.plugins** section of the running configuration, ensure
+to the **plugins.plugins** section of the running MCF configuration, ensure
 **plugins.enabled** is set to true, and restart MCF.
 
 ```json
 "mms3-adapter": {
-  "source": "https://gitlab.us.lmco.com/mbx/mbee/plugins/mms3-adapter.git",
+  "source": "https://github.com/Open-MBEE/mms3-adapter-plugin.git",
   "title": "MMS3 Adapter",
   "name": "mms3-adapter",
+  "sdvc": {
+    "url": "SDVC_HOST",
+    "port": "SDVC_PORT",
+    "auth": {
+      "username": "SDVC_USERNAME",
+      "password": "SDVC_PASSWORD"
+    }
+  },
   "emailServerUrl": "email.server.com",
   "emailServerPort": "25",
   "pdf": {
@@ -24,25 +66,35 @@ to the **plugins.plugins** section of the running configuration, ensure
   }
 }
 ```
+
+### Structured Data Version Control (SDVC) Configuration
+To track element commit history this plugin leverages [MMS SDVC](https://github.com/Open-MBEE/mms).
+Follow linked installation instructions within the `README.md` to deploy.
+
 ### PDF Export Configuration
 This plugin allows documents (HTML format) to be exported as a PDF. This plugin 
 uses Prince, a PDF conversion engine, to generate the PDF file. When the 
 conversion is completed, an email is sent to the requesting user with an artifact
 link to download the PDF. 
 
-To set up PDF export, supply the configuration with the **emailServerUrl** and 
-**emailServerPort**.
+To set up PDF export, supply the configuration with the following information:
 
-[Prince](https://www.princexml.com/) will have to be installed separately with 
-its executable path, file directory, and filename template included. 
-1. **exec** - Prince executable path.
-2. **directory** - Location to store the documents. (HTML, PDF) 
-3. **filename** - Filename template prepended to each file. 
+```
+"mms3-adapter": {
+  "emailServerUrl": "MAIL_SERVER",
+  "emailServerPort": "MAIL_PORT",
+  "pdf": {
+    "directory": "/tmp",             # Location to store the documents. (HTML, PDF) 
+    "filename": "tmp.output",        # Filename template prepended to each file.
+    "exec": "/usr/local/bin/prince"  # Prince executable path.
+  }
+}
+```
 
 ### Accessing Endpoints
 Once the plugin is installed and MCF is restarted, all normal MMS3 API endpoints
 should be accessible through the MCF API. Simply append
-**/plugins/mms3-adapter** to the normal MMS3 endpoint to access that endpoint in
+`/plugins/mms3-adapter` to the normal MMS3 endpoint to access that endpoint in
 MCF. For example, to login through the MMS3 API on a localhost server on port
 6233, the POST request route would look like 
 `http://localhost:6233/plugins/mms3-adapter/api/login`.
@@ -165,3 +217,10 @@ continue to exist regardless of how soon the PDF generation is finished.  In a
 future release of MCF, we plan to implement a way for admins to manage, i.e. view
 and destroy, all currently active bearer tokens.  Until then, this plugin will
 generate an indestructible 24hr token every time a PDF generation is requested.
+
+## Reporting Vulnerabilities and Bugs
+
+If an issue is identified in MBEE, please email
+[mbee-software.fc-space@lmco.com](mailto:mbee-software.fc-space@lmco.com).
+Refer to **SECURITY.md** for more information as well as the PGP encryption key.
+
