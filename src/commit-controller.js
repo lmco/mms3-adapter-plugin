@@ -43,6 +43,10 @@ const validUpdateFields = ['name', 'documentation', 'custom', 'archived', 'paren
  */
 async function handleCommit(req, res, next) {
     try {
+        // Test that the field exists.
+        if (config === undefined) {
+            throw new Error('Configuration file is not defined. Please reference README.md');
+        }
         // Setting variables
         const organization = req.params.orgid;
         const project = req.params.projectid;
@@ -87,27 +91,18 @@ async function handleCommit(req, res, next) {
         let sdvcOrg = await getSDVCOrganization(organization);
         if (!sdvcOrg) {
             sdvcOrg = await createSDVCOrganization(req.user, orgMCF[0]);
-            if (!sdvcOrg) {
-                throw new M.ServerError('Error creating mms3 sdvc organization');
-            }
         }
 
         // Check if project exists in MMS3 SDVC
         let sdvcProj = await getSDVCProject(project);
         if (!sdvcProj) {
             sdvcProj = await createSDVCProject(req.user, projMCF[0]);
-            if (!sdvcProj) {
-                throw new M.ServerError('Error creating mms3 sdvc project');
-            }
         }
 
         // Check if branch exists in MMS3 SDVC
         let sdvcBranch = await getSDVCBranch(project, branch);
         if (!sdvcBranch) {
             sdvcBranch = await createSDVCBranch(req.user, project, branchMCF[0]);
-            if (!sdvcBranch) {
-                throw new M.ServerError('Error creating mms3 sdvc ref/branch');
-            }
         }
 
         const formattedUpdatedElement = mms3Formatter.mmsElement(req.user, updatedElement); // the element object being updated
@@ -309,7 +304,7 @@ async function createSDVCOrganization(user, orgObj) {
         return org.data.orgs[0];
     }
     catch(error) {
-        return false;
+        throw new M.ServerError('Error creating mms3 sdvc organization');
     }
 }
 
@@ -343,7 +338,7 @@ async function createSDVCProject(user, projectObj) {
         return proj.data.projects[0];
     }
     catch(error) {
-        return false;
+        throw new M.ServerError('Error creating mms3 sdvc project');
     }
 }
 
@@ -378,7 +373,7 @@ async function createSDVCBranch(user, projectId, branchObj) {
         return branch.data.refs[0];
     }
     catch(error) {
-        return false;
+        throw new M.ServerError('Error creating mms3 sdvc ref/branch');
     }
 }
 
