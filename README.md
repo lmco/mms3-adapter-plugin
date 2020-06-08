@@ -21,6 +21,10 @@ For PDF generation, [Prince](https://www.princexml.com/) will have to be install
 separately with its executable path, file directory, and filename template included. 
 See [PDF Export Configuration](#pdf-export-configuration) section below.
 
+#### Structured Data Version Control (SDVC) Configuration
+To track element commit history this plugin leverages [MMS SDVC](https://github.com/Open-MBEE/mms).
+Follow linked installation instructions within the `README.md` to deploy.
+
 #### Source Code
 This source code can be cloned and referenced by the MCF config from your local directory 
 or by adding an MCF config reference to the hosted repo.
@@ -68,8 +72,24 @@ to the **plugins.plugins** section of the running MCF configuration, ensure
 ```
 
 ### Structured Data Version Control (SDVC) Configuration
-To track element commit history this plugin leverages [MMS SDVC](https://github.com/Open-MBEE/mms).
-Follow linked installation instructions within the `README.md` to deploy.
+To leverage SDVC commit tracking, supply the plugin config the following information:
+
+```json
+"mms3-adapter": {
+  "sdvc": {
+    "url": "SDVC_HOST",
+    "port": "SDVC_PORT",
+    "auth": {
+      "username": "SDVC_USERNAME",
+      "password": "SDVC_PASSWORD"
+    }
+  }
+}
+```
+
+**NOTE**: This plugin does not have a UI component. This commit tracking is handled 
+in a separate application. See [MMS SDVC](https://github.com/Open-MBEE/mms) for 
+more detailed information.
 
 ### PDF Export Configuration
 This plugin allows documents (HTML format) to be exported as a PDF. This plugin 
@@ -102,7 +122,7 @@ MCF. For example, to login through the MMS3 API on a localhost server on port
 ### View Editor Configuration
 To get the MMS3 Adapter working with View Editor, follow the instructions below.
 Please note that the instructions below assume you are running an **unmodified**
-instance of View Editor from the Open-MBEE GitHub.
+instance of View Editor from the [Open-MBEE GitHub](https://github.com/Open-MBEE/ve).
 
 1. Clone the Open-MBEE instance of VE into a directory titled angular-mms.
     ```bash
@@ -150,13 +170,14 @@ instance of View Editor from the Open-MBEE GitHub.
    
 5. Run the command `grunt server:ems` to start VE on port `9000`.
 
-### MDK Configuration
-To get a local version of MDK working with the MMS3 Adapter plugin, follow the
-instructions below. Please note that the instructions below assume you are
-running the **modified** instance of MDK for Lockheed Martin. These instructions
-assume that you also have an instance of the Lockheed Martin version of Cameo,
-which comes bundled with necessary plugins. If you do not have this, please
-download and setup the zip file from
+### Cameo Configuration
+If you are using NoMagic’s Cameo Enterprise Architecture along with OpenMBEE’s MDK and 
+you want to upload your model to MCF as you would to MMS3, you will have to give the 
+root element of your model in Cameo the “MMS url”. This should be:
+
+```
+http://{your-mcf-host}:{your-mcf-port}/plugins/mms3-adapter
+```
 
 ### Known Issues
 
