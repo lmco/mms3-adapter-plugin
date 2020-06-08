@@ -1,0 +1,78 @@
+# Contributing to MMS3 Adapter
+
+**Contents**
+- [Reporting Bugs](#reporting-bugs)
+- [Pull Requests](#pull-requests)
+  - [Linter](#linter)
+  - [Tests](#tests)
+  - [Errors](#errors)
+  - [Commenting](#commenting)
+- [Contributors](#contributors)
+
+### Reporting Bugs
+To report any bugs found in the software, please open a new issue on the 
+[MMS3 Adapter GitHub](https://github.com/Open-MBEE/mms3-adapter-plugin/issues/new). 
+It is important that you provide as much information as possible to help us reproduce 
+and fix the bug. The following information will be expected in all bug reports:
+
+- A detailed description of the issue
+- MBEE Version (found in [package.json](./package.json))
+- MMS3 Adapter Version (found in [package.json](./package.json))
+- Node Version (found by running `node -v`)
+- Database Version
+
+Any additional information which may be useful in reproducing the bug would be
+greatly appreciated, such as details from the running configuration or the stack
+trace of the error.
+
+**If you believe the bug to be a security vulnerability, do not report it on
+GitHub.** Instead, email the same information above to
+[mbee-software.fc-space@lmco.com](mailto:mbee-software.fc-space@lmco.com). To
+see more information about security vulnerability reporting, see the 
+[SECURITY.md](./SECURITY.md).
+
+With any bug or vulnerability reported, the Lockheed Martin MBEE team will make
+an effort to address the issue within 1 business day, and provide a detailed
+follow-up within 5 business days.
+
+### Pull Requests
+As an open-sourced project, this plugin is open to contributions from community members
+who wish to enhance or fix portions of the software. Below are some guidelines
+to follow which will help your pull request be approved and ultimately keep the
+code base clean, readable, and maintainable.
+
+#### Linter
+TBD
+
+#### Tests
+TBD
+
+#### Errors
+Throughout the code, the plugin leverages the global `M` object with custom 
+errors defined within `MCF ./app/lib/errors.js`. Each of these errors is associated 
+with a specific HTTP status code which will be sent in response from the API. 
+These errors are attached to the global M object. Example usage is as follows:
+
+```
+  try {
+    ...
+  }
+  catch(error) {
+    throw new M.ServerError('Error creating mms3 sdvc organization');
+  }
+```
+
+All code merged in which has access to the global M object is expected to use
+these custom errors. The only code which may not have access to the M object
+would be found in the [scripts](./scripts).
+
+### Contributors
+Thanks to all of the following people who have directly contributed code to 
+the MMS3 Adapter Plugin:
+
+- Connor Doyle
+- Austin Bieber
+- Leah De Laurell
+- Phillip Lee
+- Donte McDaniel
+- Jimmy Eckstein
