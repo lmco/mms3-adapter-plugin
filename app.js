@@ -3,7 +3,7 @@
  *
  * @module app
  *
- * @copyright Copyright (C) 2019, Lockheed Martin Corporation
+ * @copyright Copyright (C) 2020, Lockheed Martin Corporation
  *
  * @license LMPI - Lockheed Martin Proprietary Information
  *
@@ -1376,7 +1376,7 @@ router.route('/projects/:projectid/refs/:refid/artifacts')
   authenticate,
   logRoute,
   utils.addHeaders,
-  APIController.postArtifacts,
+  APIController.postArtifact,
   logResponse,
   respond
 )
@@ -1552,7 +1552,7 @@ router.route('/commit/orgs/:orgid/projects/:projectid/branches/:branchid')
 
 // For all other routes that get hit, return an error stating "Not Implemented"
 app.use('*', (req, res, next) => {
-  console.log(`Request for route not implemented: ${req.method}: ${req.originalUrl}`);
+  M.log.info(`Request for route not implemented: ${req.method}: ${req.originalUrl}`);
   return res.status(501).send('Not Implemented');
 });
 

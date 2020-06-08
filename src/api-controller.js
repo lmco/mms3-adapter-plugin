@@ -3,7 +3,7 @@
  *
  * @module src.api-controller
  *
- * @copyright Copyright (C) 2019, Lockheed Martin Corporation
+ * @copyright Copyright (C) 2020, Lockheed Martin Corporation
  *
  * @license LMPI - Lockheed Martin Proprietary Information
  *
@@ -556,7 +556,7 @@ async function postElements(req, res, next) {
     let createdElements = [];
     let updatedElements = [];
     const individualUpdates = [];
-    const deletedChildViews = {};
+    const deletedChildViews = [];
     const addedChildViews = {};
 
     // Create elements if there are any elements to be created
@@ -594,25 +594,25 @@ async function postElements(req, res, next) {
           }
           // Check if a child view is being added or removed by comparing existing and
           // updated ownedAttributeIds
+          let oldIDs = [];
           if (existing.custom[namespace] && existing.custom[namespace].ownedAttributeIds) {
-            const oldIDs = existing.custom[namespace].ownedAttributeIds;
-            const newIDs = update.custom[namespace].ownedAttributeIds;
+            oldIDs = existing.custom[namespace].ownedAttributeIds
+          }
+          const newIDs = update.custom[namespace].ownedAttributeIds;
 
-            // If not every new id is in the list of old ids, an old id has been deleted
-            if (!oldIDs.every((id) => newIDs.includes(id))) {
-              const deletedIDs = oldIDs.filter((id) => !newIDs.includes(id));
-              deletedIDs.forEach((id) => {
-                // Associate the existing element with the deleted childView; it will be used later
-                deletedChildViews[id] = existing;
-              });
-            }
-            // If not every old id is in the list of new ids, a new id has been added
-            if (!newIDs.every((id) => oldIDs.includes(id))) {
-              const addedIDs = newIDs.filter((id) => !oldIDs.includes(id));
-              addedIDs.forEach((id) => {
-                addedChildViews[id] = update.id;
-              });
-            }
+          // If not every new id is in the list of old ids, an old id has been deleted
+          if (!oldIDs.every((id) => newIDs.includes(id))) {
+            const deletedIDs = oldIDs.filter((id) => !newIDs.includes(id));
+            deletedIDs.forEach((id) => {
+              deletedChildViews.push(id);
+            });
+          }
+          // If not every old id is in the list of new ids, a new id has been added
+          if (!newIDs.every((id) => oldIDs.includes(id))) {
+            const addedIDs = newIDs.filter((id) => !oldIDs.includes(id));
+            addedIDs.forEach((id) => {
+              addedChildViews[id] = update.id;
+            });
           }
         }
 
@@ -628,7 +628,8 @@ async function postElements(req, res, next) {
           });
         }
 
-        // Updates to elements' parents cannot be made in bulk
+        // Updates to elements' parents cannot be made in bulk so we'll make those updates on
+        // an individual basis
         if (update.hasOwnProperty('parent')) {
           individualUpdates.push(update);
         }
@@ -639,7 +640,7 @@ async function postElements(req, res, next) {
       if (Object.keys(addedChildViews).length > 0) {
         await utils.asyncForEach(Object.keys(addedChildViews), async (key) => {
           // If a view was added that was also deleted, additional updates must be made
-          if (Object.keys(deletedChildViews).includes(key)) {
+          if (deletedChildViews.includes(key)) {
             // First find the child view element
             const cvElems = await ElementController.find(req.user, req.params.orgid,
               req.params.projectid, req.params.refid, key);
@@ -650,6 +651,7 @@ async function postElements(req, res, next) {
             const ownedEnds = await ElementController.find(req.user, req.params.orgid,
               req.params.projectid, req.params.refid,
               associations[0].custom[namespace].ownedEndIds);
+            const ownedEnd = ownedEnds[0];
             // Initialize the update to the ownedEnd element.  The typeId of this element needs to
             // point to the id of the new view element that the child view has been added to.
             const update = {
@@ -660,12 +662,11 @@ async function postElements(req, res, next) {
                 }
               }
             };
-            const oldView = deletedChildViews[key];
             // Make sure to save the custom data of the element
-            Object.keys(oldView.custom[namespace]).forEach((field) => {
+            Object.keys(ownedEnd.custom[namespace]).forEach((field) => {
               if (!Object.keys(update.custom[namespace]).includes(field)
                 && !(update.hasOwnProperty('name') && key === 'name')) {
-                update.custom[namespace][field] = oldView.custom[namespace][field];
+                update.custom[namespace][field] = ownedEnd.custom[namespace][field];
               }
             });
             // Add the update to a list of updates to be made
@@ -1063,7 +1064,7 @@ async function getCommits(req, res, next) {
  * @param {object} res - The Express response object.
  * @param {Function} next - Middleware callback to trigger the next function.
  */
-async function postArtifacts(req, res, next) {
+async function postArtifact(req, res, next) {
   // Grabs the org id from the session user
   await utils.getOrgId(req);
 
@@ -1178,10 +1179,11 @@ async function getBlob(req, res, next) {
 
 /**
  * @description This function converts a html document into a PDF.
+ * @async
  *
  * @param {object} req - The Express request object.
  * @param {object} res - The Express response object.
- * @param {Function} next - Middleware callback to trigger the next function
+ * @param {Function} next - Middleware callback to trigger the next function.
  *
  * @returns {Promise}
  */
@@ -1191,7 +1193,7 @@ async function postHtml2Pdf(req, res, next) {
     await utils.getOrgId(req);
 
     // Get plugin configuration
-    const pluginCfg =  M.config.server.plugins.plugins['mms3-adapter'];
+    const pluginCfg = M.config.server.plugins.plugins['mms3-adapter'];
     const filename = pluginCfg.pdf.filename;
     const directory = pluginCfg.pdf.directory;
 
@@ -1199,24 +1201,24 @@ async function postHtml2Pdf(req, res, next) {
     const exportObj = req.body;
 
     // Get HTML body and remove comment tags
-    let removedTagsHTML = exportObj.body.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '');
-    
+    const removedTagsHTML = exportObj.body.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '');
+
     // Generate refresh token with extended time
     // Compute token expiration time 24 hours
-    const timeDelta = 24 * mcfUtils.timeConversions['HOURS'];
-    let userTokenData = {
+    const timeDelta = 24 * mcfUtils.timeConversions.HOURS;
+    const userTokenData = {
       type: 'temporary_user',
       username: req.user._id,
       created: (new Date(Date.now())),
       expires: (new Date(Date.now() + timeDelta))
-    }
+    };
 
     // Generate the bearer token and encode it
-    let userBearerToken = encodeURIComponent(mbeeCrypto.generateToken(userTokenData));
-  
+    const userBearerToken = encodeURIComponent(mbeeCrypto.generateToken(userTokenData));
+
     // Replace token with newly generated tmp user token
-    const tokenizedHTML = removedTagsHTML.replace(/alf_ticket=[a-zA-Z0-9%]*\"/g, `alf_ticket=${userBearerToken}\"`)
-    
+    const tokenizedHTML = removedTagsHTML.replace(/alf_ticket=[a-zA-Z0-9%]*\"/g, `alf_ticket=${userBearerToken}\"`);
+
     // Define HTML/PDF file paths
     const tempHtmlFileName = `${filename}_${Date.now()}.html`;
     const tempPdfFileName = `${filename}_${Date.now()}.pdf`;
@@ -1224,7 +1226,7 @@ async function postHtml2Pdf(req, res, next) {
     const fullPdfFilePath = path.join(directory, tempPdfFileName);
 
     // Write the HTML file to storage
-    fs.writeFile(fullHtmlFilePath, tokenizedHTML, async(err) => {
+    fs.writeFile(fullHtmlFilePath, tokenizedHTML, async (err) => {
       // Check for error
       if (err) throw new M.OperationError(`Could not export PDF: ${err} `, 'warn');
 
@@ -1243,22 +1245,22 @@ async function postHtml2Pdf(req, res, next) {
 
       // Store the artifact blob
       await ArtifactController.postBlob(req.user, req.params.orgid,
-          req.params.projectid, artifactMetadata, pdfBlob);
+        req.params.projectid, artifactMetadata, pdfBlob);
 
       // Get server url
-      let serverUrl = req.headers.host;
+      const serverUrl = req.headers.host;
 
       // Create artifact link
-      let link = `http://${serverUrl}/api/orgs/${req.params.orgid}/projects/${req.params.projectid}/artifacts/blob` +
-                  `?location=${artifactMetadata.location}&filename=${artifactMetadata.filename}`;
-      
+      const link = `http://${serverUrl}/api/orgs/${req.params.orgid}/projects/${req.params.projectid}/artifacts/blob`
+                  + `?location=${artifactMetadata.location}&filename=${artifactMetadata.filename}`;
+
       // Check user email
-      if (req.user.email){
+      if (req.user.email) {
         // Email user
-        await utils.emailBlobLink(req.user.email,link);
+        await utils.emailBlobLink(req.user.email, link);
       }
     });
-    
+
     // Set status code
     res.locals.statusCode = 200;
   }
@@ -1294,7 +1296,7 @@ module.exports = {
   getElementCfids,
   getDocuments,
   getCommits,
-  postArtifacts,
+  postArtifact,
   putArtifacts,
   getBlob,
   postHtml2Pdf

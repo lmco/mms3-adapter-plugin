@@ -3,7 +3,7 @@
  *
  * @module src.utils
  *
- * @copyright Copyright (C) 2019, Lockheed Martin Corporation
+ * @copyright Copyright (C) 2020, Lockheed Martin Corporation
  *
  * @license LMPI - Lockheed Martin Proprietary Information
  *
@@ -17,7 +17,7 @@
  */
 
 // NPM modules
-const nodemailer = require("nodemailer");
+const nodemailer = require('nodemailer');
 const { execSync } = require('child_process');
 
 // MBEE modules
@@ -200,19 +200,19 @@ async function generateChildViews(reqUser, orgID, projID, branchID, elements) {
 /**
  * @description Generate PDF file based on HTML file.
  *
- * @param fullHtmlFilePath - String path of the html file.
- * @param fullPdfFilePath - String path of the generated pdf file.
+ * @param {string} fullHtmlFilePath - String path of the html file.
+ * @param {string} fullPdfFilePath - String path of the generated pdf file.
  */
 async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath) {
   const config = M.config.server.plugins.plugins['mms3-adapter'];
   const exec = config.pdf.exec;
 
   // Generate the conversion command
-  //const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure`;
-  const command = `cp ${fullHtmlFilePath} ${fullPdfFilePath}`;
+  const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure`;
+
   // Execute and log command
   M.log.info(`Executing... ${command}`);
-	const stdout = execSync(command);
+  const stdout = execSync(command);
 
   // Log Results
   M.log.info(stdout.toString());
@@ -221,16 +221,16 @@ async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath) {
 /**
  * @description Emails user with an url link.
  *
- * @param userEmail - The requesting user's email.
- * @param link - The URL link to be included in the email.
+ * @param {string} userEmail - The requesting user's email.
+ * @param {string} link - The URL link to be included in the email.
  */
 async function emailBlobLink(userEmail, link) {
   try {
     // Get adapter configuration
-    const config =  M.config.server.plugins.plugins['mms3-adapter'];
+    const config = M.config.server.plugins.plugins['mms3-adapter'];
 
     // Create mail transporter
-    let transporter = nodemailer.createTransport({
+    const transporter = nodemailer.createTransport({
       host: config.emailServerUrl,
       port: config.emailServerPort,
       secure: false,
@@ -240,14 +240,14 @@ async function emailBlobLink(userEmail, link) {
     });
 
     // Hard code user message
-    const message = 'HTML to .PDF generation succeeded.\n\n' +
-      `You can access the .PDF file at: ${link}`;
+    const message = 'HTML to .PDF generation succeeded.\n\n'
+      + `You can access the .PDF file at: ${link}`;
 
     // Create the transporter and send the email
     await transporter.sendMail({
       from: '"mbee support" <mbee-support.fc-space@lmco.com>', // sender address
       to: userEmail,
-      subject: "HTML to .pdf generation completed.",           // Subject line
+      subject: 'HTML to .pdf generation completed.',           // Subject line
       text: message                                            // plain text body
     });
 
