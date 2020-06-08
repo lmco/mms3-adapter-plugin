@@ -3,9 +3,20 @@
  *
  * @module app
  *
- * @copyright Copyright (C) 2020, Lockheed Martin Corporation
+ * @license
+ * Copyright 2020 Lockheed Martin Corporation
  *
- * @license LMPI - Lockheed Martin Proprietary Information
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  * @owner Connor Doyle
  *
@@ -28,6 +39,7 @@ const { version, login, whoami, getUser } = M.require('controllers.api-controlle
 
 // Adapter modules
 const APIController = require('./src/api-controller');
+const CommitController = require('./src/commit-controller');
 const utils = require('./src/utils.js');
 
 // We do this because MDK automatically appends '/alfresco/service' to the base MMS url.
@@ -1206,8 +1218,9 @@ router.route('/projects/:projectid/refs/:refid/elements/:elementid/cfids')
  *     tags:
  *       - elements
  *     description: Returns all documents on a specified branch. Searches for all elements that
- *                  have the field "_appliedStereotypeIds" which contain the id "_17_0_2_3_87b0275_1371477871400_792964_43374".
- *                  Returns all elements that meet the search criteria.
+ *                  have the field "_appliedStereotypeIds" which contain the id
+ *                  "_17_0_2_3_87b0275_1371477871400_792964_43374". Returns all elements that
+ *                  meet the search criteria.
  *     produces:
  *       - application/json
  *     parameters:
@@ -1503,6 +1516,47 @@ router.route('/projects/:projectid/refs/:refid/convert')
 .options(
   logRoute,
   utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
+
+/**
+ * @swagger
+ * /commit/orgs/:orgid/projects/:projectid/branches/:branchid:
+ *   put:
+ *     tags:
+ *       - general
+ *     description: Handles the commit.
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal Server Error
+ *   options:
+ *     tags:
+ *       - general
+ *     description: Returns the org, project, branch, and element that was committed.
+ *     responses:
+ *       200:
+ *         description: OK
+ */
+router.route('/commit/orgs/:orgid/projects/:projectid/branches/:branchid')
+.put(
+  authenticate,
+  logRoute,
+  doLogin,
+  APIController.postLogin,
+  CommitController.handleCommit,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
   APIController.optionsDefault,
   logResponse,
   respond
