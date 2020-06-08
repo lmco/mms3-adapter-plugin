@@ -16,7 +16,7 @@ It is important that you provide as much information as possible to help us repr
 and fix the bug. The following information will be expected in all bug reports:
 
 - A detailed description of the issue
-- MBEE Version (found in [package.json](./package.json))
+- MBEE Version (found in the package.json file of your MBEE directory)
 - MMS3 Adapter Version (found in [package.json](./package.json))
 - Node Version (found by running `node -v`)
 - Database Version
@@ -31,10 +31,6 @@ GitHub.** Instead, email the same information above to
 see more information about security vulnerability reporting, see the 
 [SECURITY.md](./SECURITY.md).
 
-With any bug or vulnerability reported, the Lockheed Martin MBEE team will make
-an effort to address the issue within 1 business day, and provide a detailed
-follow-up within 5 business days.
-
 ### Pull Requests
 As an open-sourced project, this plugin is open to contributions from community members
 who wish to enhance or fix portions of the software. Below are some guidelines
@@ -42,10 +38,24 @@ to follow which will help your pull request be approved and ultimately keep the
 code base clean, readable, and maintainable.
 
 #### Linter
-TBD
+Currently, this plugin does not have an eslint file of its own. It relies on using the 
+`.eslintrc` within an existing MCF configuration. To run the linter, execute the following 
+command in a terminal within the mcf project directory:
+
+```bash
+ node mbee lint ./plugins/src/*
+```
 
 #### Tests
-TBD
+The current tests included with this plugin are not comprehensive, but intended to provide 
+testing of essential functionality for proper handling of model data.  The PDF generation 
+and SDVC commit features do not have any tests as of yet.  
+
+The tests in this plugin must be run via the MCF script using the following command:
+ 
+```bash
+ node mbee test --plugin mms3-adapter
+```
 
 #### Errors
 Throughout the code, the plugin leverages the global `M` object with custom 
