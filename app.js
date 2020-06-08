@@ -3,7 +3,7 @@
  *
  * @module app
  *
- * @copyright Copyright (C) 2019, Lockheed Martin Corporation
+ * @copyright Copyright (C) 2020, Lockheed Martin Corporation
  *
  * @license LMPI - Lockheed Martin Proprietary Information
  *
@@ -1375,7 +1375,7 @@ router.route('/projects/:projectid/refs/:refid/artifacts')
   authenticate,
   logRoute,
   utils.addHeaders,
-  APIController.postArtifacts,
+  APIController.postArtifact,
   logResponse,
   respond
 )
