@@ -3,7 +3,7 @@
  *
  * @module test.init
  *
- * @copyright Copyright (C) 2018, Lockheed Martin Corporation
+ * @copyright Copyright (C) 2020, Lockheed Martin Corporation
  *
  * @license MIT
  *

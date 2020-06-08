@@ -1,7 +1,7 @@
 /**
  * Classification: UNCLASSIFIED
  *
- * @module test.11-utils-tests.js
+ * @module test.101-utils-tests.js
  *
  * @copyright Copyright (C) 2019, Lockheed Martin Corporation
  *

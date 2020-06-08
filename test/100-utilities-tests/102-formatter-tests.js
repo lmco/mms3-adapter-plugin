@@ -11,23 +11,17 @@
  *
  * @author Connor Doyle
  *
- * @description Tests the utils.js file
+ * @description Tests the formatter.js file.
  */
 
-// Node modules
-const fs = require('fs');
-const path = require('path');
 
 // NPM modules
 const chai = require('chai');
 
 // MBEE modules
-const OrgController = M.require('controllers.organization-controller');
-const ProjectController = M.require('controllers.project-controller');
 const BranchController = M.require('controllers.branch-controller');
 const ElementController = M.require('controllers.element-controller');
 const mcfTestUtils = M.require('lib.test-utils');
-const mcfTestData = mcfTestUtils.importTestData('test_data.json');
 const mcfUtils = M.require('lib.utils');
 
 // Plugin modules

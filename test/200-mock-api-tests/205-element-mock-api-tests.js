@@ -3,7 +3,7 @@
  *
  * @module test.205-element-mock-api-tests
  *
- * @copyright Copyright (C) 2018, Lockheed Martin Corporation
+ * @copyright Copyright (C) 2020, Lockheed Martin Corporation
  *
  * @license MIT
  *
@@ -197,7 +197,7 @@ describe(M.getModuleName(module.filename), () => {
     'same element', updateChildViewOrder);
   it('should handle a move of a _childView from one element to another by searching for the ' +
     'ownedEnd element referenced by the association element referenced by the _childView element' +
-    'and changing its typeId to point at the new parent of the _childView', childViewShenanigans);
+    'and changing its typeId to point at the new parent of the _childView', childViewRelationship);
   it('should search for elements based on the ids provided in the body of the request',
     putElements);
   it('should delete elements', deleteElements);
@@ -479,7 +479,7 @@ function updateChildViewOrder(done) {
  *
  * @param {Function} done - The Mocha callback.
  */
-function childViewShenanigans(done) {
+function childViewRelationship(done) {
   const params = {
     orgid: org._id,
     projectid: projectID,

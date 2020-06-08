@@ -3,7 +3,7 @@
  *
  * @module test.200-general-mock-api-tests
  *
- * @copyright Copyright (C) 2018, Lockheed Martin Corporation
+ * @copyright Copyright (C) 2020, Lockheed Martin Corporation
  *
  * @license MIT
  *
@@ -11,7 +11,7 @@
  *
  * @author Connor Doyle
  *
- * @description
+ * @description This tests general api endpoints of the plugin.
  */
 
 // NPM modules

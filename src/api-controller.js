@@ -3,7 +3,7 @@
  *
  * @module src.api-controller
  *
- * @copyright Copyright (C) 2019, Lockheed Martin Corporation
+ * @copyright Copyright (C) 2020, Lockheed Martin Corporation
  *
  * @license LMPI - Lockheed Martin Proprietary Information
  *
