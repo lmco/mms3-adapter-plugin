@@ -28,6 +28,7 @@ const { version, login, whoami, getUser } = M.require('controllers.api-controlle
 
 // Adapter modules
 const APIController = require('./src/api-controller');
+const CommitController = require('./src/commit-controller');
 const utils = require('./src/utils.js');
 
 // We do this because MDK automatically appends '/alfresco/service' to the base MMS url.
@@ -1503,6 +1504,47 @@ router.route('/projects/:projectid/refs/:refid/convert')
 .options(
   logRoute,
   utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
+
+/**
+ * @swagger
+ * /commit/orgs/:orgid/projects/:projectid/branches/:branchid:
+ *   put:
+ *     tags:
+ *       - general
+ *     description: Handles the commit.
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal Server Error
+ *   options:
+ *     tags:
+ *       - general
+ *     description: Returns the org, project, branch, and element that was committed.
+ *     responses:
+ *       200:
+ *         description: OK
+ */
+router.route('/commit/orgs/:orgid/projects/:projectid/branches/:branchid')
+.put(
+  authenticate,
+  logRoute,
+  doLogin,
+  APIController.postLogin,
+  CommitController.handleCommit,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
   APIController.optionsDefault,
   logResponse,
   respond
