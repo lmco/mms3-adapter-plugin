@@ -3,9 +3,20 @@
  *
  * @module src.api-controller
  *
- * @copyright Copyright (C) 2020, Lockheed Martin Corporation
+ * @license
+ * Copyright 2020 Lockheed Martin Corporation
  *
- * @license LMPI - Lockheed Martin Proprietary Information
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  * @owner Connor Doyle
  *
@@ -61,9 +72,9 @@ function postLogin(req, res, next) {
 }
 
 /**
- * @description Responds with a 200 status code, used for OPTIONS requests. For some reason,
- * View Editor needs OPTIONS endpoints to be available for most of the endpoints it makes
- * requests to.
+ * @description Responds with a 200 status code, used for OPTIONS requests. For some
+ * reason, View Editor needs OPTIONS endpoints to be available for most of the endpoints
+ * it makes requests to.
  *
  * @param {object} req - Request express object.
  * @param {object} res - Response express object.
@@ -596,7 +607,7 @@ async function postElements(req, res, next) {
           // updated ownedAttributeIds
           let oldIDs = [];
           if (existing.custom[namespace] && existing.custom[namespace].ownedAttributeIds) {
-            oldIDs = existing.custom[namespace].ownedAttributeIds
+            oldIDs = existing.custom[namespace].ownedAttributeIds;
           }
           const newIDs = update.custom[namespace].ownedAttributeIds;
 
@@ -729,9 +740,6 @@ async function putElements(req, res, next) {
     // Grabs the org id from the session user
     await utils.getOrgId(req);
 
-    // Define options and ids
-    let options;
-
     // Define valid option and its parsed type
     const validOptions = {
       alf_ticket: 'string',
@@ -748,22 +756,15 @@ async function putElements(req, res, next) {
       });
     }
 
-    // Attempt to parse query options
-    try {
-      // Extract options from request query
-      options = mcfUtils.parseOptions(req.query, validOptions);
-      // Remove MMS3 ticket from find
-      delete options.alf_ticket;
-      // Convert MMS3 depth to MCF
-      if (options.depth !== 0) {
-        options.subtree = true;
-      }
-      delete options.depth;
+    // Extract options from request query
+    const options = mcfUtils.parseOptions(req.query, validOptions);
+    // Remove MMS3 ticket from find
+    delete options.alf_ticket;
+    // Convert MMS3 depth to MCF
+    if (options.depth !== 0) {
+      options.subtree = true;
     }
-    catch (error) {
-      // Error occurred with options, report it
-      return mcfUtils.formatResponse(req, res, error.message, errors.getStatusCode(error), next);
-    }
+    delete options.depth;
 
     const elements = req.body.elements;
     // .filter because sometimes VE sends { id: null } and this will cause an error
@@ -827,10 +828,10 @@ async function deleteElements(req, res, next) {
 
 /**
  * @description This function is a work in progress. It is expected to mirror the MMS search
- * endpoint which accepts a formatted ElasticSearch query, runs that query on its own
- * ElasticSearch database, and then returns the results of that query. This function is
- * awaiting a small re-write of View Editor's search function to send a more generic query
- * format than specifically formatted ElasticSearch queries.
+ * endpoint which accepts a formatted ElasticSearch query, runs that query on its own ElasticSearch
+ * database, and then returns the results of that query. This function is awaiting a small re-write
+ * of View Editor's search function to send a more generic query format than specifically
+ * formatted ElasticSearch queries.
  * @async
  *
  * @param {object} req - Request express object.
@@ -1184,8 +1185,6 @@ async function getBlob(req, res, next) {
  * @param {object} req - The Express request object.
  * @param {object} res - The Express response object.
  * @param {Function} next - Middleware callback to trigger the next function.
- *
- * @returns {Promise}
  */
 async function postHtml2Pdf(req, res, next) {
   try {
@@ -1201,6 +1200,7 @@ async function postHtml2Pdf(req, res, next) {
     const exportObj = req.body;
 
     // Get HTML body and remove comment tags
+    // eslint-disable-next-line
     const removedTagsHTML = exportObj.body.replace(/(?!<\")\<\!\-\- [^\<]+ \-\-\>(?!\")/g, '');
 
     // Generate refresh token with extended time
@@ -1217,7 +1217,10 @@ async function postHtml2Pdf(req, res, next) {
     const userBearerToken = encodeURIComponent(mbeeCrypto.generateToken(userTokenData));
 
     // Replace token with newly generated tmp user token
-    const tokenizedHTML = removedTagsHTML.replace(/alf_ticket=[a-zA-Z0-9%]*\"/g, `alf_ticket=${userBearerToken}\"`);
+    // eslint-disable-next-line
+    const tokenizedHTML = removedTagsHTML.replace(/alf_ticket=[a-zA-Z0-9%]*\"/g,
+    // eslint-disable-next-line
+      `alf_ticket=${userBearerToken}\"`);
 
     // Define HTML/PDF file paths
     const tempHtmlFileName = `${filename}_${Date.now()}.html`;

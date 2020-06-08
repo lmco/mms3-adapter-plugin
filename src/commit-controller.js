@@ -2,10 +2,21 @@
  * @classification UNCLASSIFIED
  *
  * @module src.commit-controller
- * 
- * @copyright Copyright (C) 2020, Lockheed Martin Corporation
  *
- * @license MIT
+ * @license
+ * Copyright 2020 Lockheed Martin Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  *
  * @owner Donte McDaniel
  *
@@ -15,7 +26,6 @@
  * commiting elements to SDVC. Also sets up routes.
  */
 
-'use strict';
 
 // NPM Modules
 const axios = require('axios');
@@ -32,7 +42,7 @@ const errors = M.require('lib.errors');
 // MMS3 Adapter Modules
 const mms3Formatter = require('./formatter.js');
 const validUpdateFields = ['name', 'documentation', 'custom', 'archived', 'parent', 'type',
-'source', 'target', 'artifact'];
+  'source', 'target', 'artifact'];
 
 /**
  * @description Returns the org, project, branch, and element that was committed.
@@ -42,114 +52,116 @@ const validUpdateFields = ['name', 'documentation', 'custom', 'archived', 'paren
  * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function handleCommit(req, res, next) {
-    try {
-        // Test that the field exists.
-        if (config === undefined) {
-            throw new Error('Configuration file is not defined. Please reference README.md');
-        }
-        // Setting variables
-        const organization = req.params.orgid;
-        const project = req.params.projectid;
-        const branch = req.params.branchid;
-
-        // Check if body exists
-        if (Object.keys(req.body).length === 0) {
-            throw new M.DataFormatError('No element to commit');
-        }
-
-        // Check if organization exists in MCF
-        const orgMCF = await orgController.find(req.user, organization);
-        if (orgMCF.length === 0) {
-            throw new M.NotFoundError(`Organization ${organization} does not exist`);
-        }
-
-        // Check if project exists in MCF
-        const projMCF = await projectController.find(req.user, organization, project);
-        if (projMCF.length === 0) {
-            throw new M.NotFoundError(`Project ${project} does not exist`);
-        }
-
-        // Check if branch exists in MCF
-        const branchMCF = await branchController.find(req.user, organization, project, branch);
-        if (branchMCF.length === 0) {
-            throw new M.NotFoundError(`Branch ${branch} does not exist`);
-        }
-
-        const updatedElement = req.body;
-        if (!updatedElement._id) {
-            updatedElement._id = updatedElement.id;
-        }
-        const id = mcfUtils.parseID(updatedElement._id).pop();
-
-        // Getting the current element from the mcf database
-        const currentElement = await elementController.find(req.user, organization, project, branch, id);
-        if (!currentElement) {
-            throw new M.NotFoundError(`Element ${updatedElement._id} does not exist in mcf database`);
-        }
-
-        // Check if organization exist in MMS3 SDVC
-        let sdvcOrg = await getSDVCOrganization(organization);
-        if (!sdvcOrg) {
-            sdvcOrg = await createSDVCOrganization(req.user, orgMCF[0]);
-        }
-
-        // Check if project exists in MMS3 SDVC
-        let sdvcProj = await getSDVCProject(project);
-        if (!sdvcProj) {
-            sdvcProj = await createSDVCProject(req.user, projMCF[0]);
-        }
-
-        // Check if branch exists in MMS3 SDVC
-        let sdvcBranch = await getSDVCBranch(project, branch);
-        if (!sdvcBranch) {
-            sdvcBranch = await createSDVCBranch(req.user, project, branchMCF[0]);
-        }
-
-        const formattedUpdatedElement = mms3Formatter.mmsElement(req.user, updatedElement); // the element object being updated
-
-        // Add all valid updated fields to formattedUpdatedElement
-        for (const [key, value] of Object.entries(updatedElement)) {
-            if (validUpdateFields.includes(key)) {
-                formattedUpdatedElement[key] = updatedElement[key];
-            }
-        }
-
-        // Remove properties that are not needed.
-        // If these properties get updated, the element gets deleted
-        // WARNING/NOTE: This is a limitation of SDVC and we are constrained to this implementation...    
-        delete formattedUpdatedElement.ownerId;
-        delete formattedUpdatedElement._projectId;
-        delete formattedUpdatedElement._refId;
-        delete formattedUpdatedElement._creator;
-        delete formattedUpdatedElement._created;
-        delete formattedUpdatedElement._modifier;
-        delete formattedUpdatedElement._modified;
-        delete formattedUpdatedElement._editable;
-
-        // Create or update the element
-        const sdvcElement = await createUpdateSDVCElement(project, branch, formattedUpdatedElement);
-        
-        if (!sdvcElement) {
-            throw new M.ServerError('Error creating mms3 sdvc element. Element probably never changed.');
-        }
-
-        res.locals.statusCode = 200;
-        res.locals.message = JSON.stringify({
-            org: sdvcOrg,
-            proj: sdvcProj,
-            branch: sdvcBranch,
-            element: sdvcElement
-        });
-        next();
+  try {
+    // Test that the field exists.
+    if (config === undefined) {
+      throw new Error('Configuration file is not defined. Please reference README.md');
     }
-    catch (error) {
-        return mcfUtils.formatResponse(req, res, error.message, errors.getStatusCode(error), next);
+
+    // Setting variables
+    const organization = req.params.orgid;
+    const project = req.params.projectid;
+    const branch = req.params.branchid;
+
+    // Check if body exists
+    if (Object.keys(req.body).length === 0) {
+      throw new M.DataFormatError('No element to commit');
     }
+
+    // Check if organization exists in MCF
+    const orgMCF = await orgController.find(req.user, organization);
+    if (orgMCF.length === 0) {
+      throw new M.NotFoundError(`Organization ${organization} does not exist`);
+    }
+
+    // Check if project exists in MCF
+    const projMCF = await projectController.find(req.user, organization, project);
+    if (projMCF.length === 0) {
+      throw new M.NotFoundError(`Project ${project} does not exist`);
+    }
+
+    // Check if branch exists in MCF
+    const branchMCF = await branchController.find(req.user, organization, project, branch);
+    if (branchMCF.length === 0) {
+      throw new M.NotFoundError(`Branch ${branch} does not exist`);
+    }
+
+    const updatedElement = req.body;
+    if (!updatedElement._id) {
+      updatedElement._id = updatedElement.id;
+    }
+    const id = mcfUtils.parseID(updatedElement._id).pop();
+
+    // Getting the current element from the mcf database
+    const currentElement = await elementController.find(req.user, organization, project, branch,
+      id);
+    if (!currentElement) {
+      throw new M.NotFoundError(`Element ${updatedElement._id} does not exist in mcf database`);
+    }
+
+    // Check if organization exist in MMS3 SDVC
+    let sdvcOrg = await getSDVCOrganization(organization);
+    if (!sdvcOrg) {
+      sdvcOrg = await createSDVCOrganization(req.user, orgMCF[0]);
+    }
+
+    // Check if project exists in MMS3 SDVC
+    let sdvcProj = await getSDVCProject(project);
+    if (!sdvcProj) {
+      sdvcProj = await createSDVCProject(req.user, projMCF[0]);
+    }
+
+    // Check if branch exists in MMS3 SDVC
+    let sdvcBranch = await getSDVCBranch(project, branch);
+    if (!sdvcBranch) {
+      sdvcBranch = await createSDVCBranch(req.user, project, branchMCF[0]);
+    }
+
+    // the element object being updated
+    const formattedUpdatedElement = mms3Formatter.mmsElement(req.user, updatedElement);
+
+    // Add all valid updated fields to formattedUpdatedElement
+    // eslint-disable-next-line
+    for (const [key, value] of Object.entries(updatedElement)) {
+      if (validUpdateFields.includes(key)) {
+        formattedUpdatedElement[key] = updatedElement[key];
+      }
+    }
+
+    // Remove properties that are not needed.
+    // If these properties get updated, the element gets deleted
+    // WARNING/NOTE: This is a limitation of SDVC and we are constrained to this implementation...
+    delete formattedUpdatedElement.ownerId;
+    delete formattedUpdatedElement._projectId;
+    delete formattedUpdatedElement._refId;
+    delete formattedUpdatedElement._creator;
+    delete formattedUpdatedElement._created;
+    delete formattedUpdatedElement._modifier;
+    delete formattedUpdatedElement._modified;
+    delete formattedUpdatedElement._editable;
+
+    // Create or update the element
+    const sdvcElement = await createUpdateSDVCElement(project, branch, formattedUpdatedElement);
+
+    res.locals.statusCode = 200;
+    res.locals.message = JSON.stringify({
+      org: sdvcOrg,
+      proj: sdvcProj,
+      branch: sdvcBranch,
+      element: sdvcElement
+    });
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = errors.getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
 }
-  
-/*************************************************/
-/****************** GET FUNCTIONS ****************/
-/*************************************************/
+
+// *********************************************** //
+// ***************** GET FUNCTIONS *************** //
+// *********************************************** //
 
 /**
  * @description GETs an MMS3 organization.
@@ -159,25 +171,25 @@ async function handleCommit(req, res, next) {
  * @returns {object} An MMS3 formatted organization.
  */
 async function getSDVCOrganization(orgId) {
-    try {
-        const org = await axios({
-            method: 'get',
-            url: `${config.url}:${config.port}/orgs/${orgId}`,
-            auth: {
-                username: config.auth.username,
-                password: config.auth.password
-            },
-        });
-        if (org.data.orgs.length < 1) {
-            return false;
-        }
-        else {
-            return org.data.orgs[0];
-        }
+  try {
+    const org = await axios({
+      method: 'get',
+      url: `${config.url}:${config.port}/orgs/${orgId}`,
+      auth: {
+        username: config.auth.username,
+        password: config.auth.password
+      }
+    });
+    if (org.data.orgs.length < 1) {
+      return false;
     }
-    catch(error) {
-        return false;
+    else {
+      return org.data.orgs[0];
     }
+  }
+  catch (error) {
+    throw new M.ServerError('Error getting organization from SDVC');
+  }
 }
 
 /**
@@ -188,25 +200,25 @@ async function getSDVCOrganization(orgId) {
  * @returns {object} An MMS3 formatted project.
  */
 async function getSDVCProject(projectId) {
-    try {
-        const project = await axios({
-            method: 'get',
-            url: `${config.url}:${config.port}/projects/${projectId}`,
-            auth: {
-                username: config.auth.username,
-                password: config.auth.password
-            },
-        });
-        if (project.data.projects.length < 1) {
-            return false;
-        }
-        else {
-            return project.data.projects[0];
-        }
+  try {
+    const project = await axios({
+      method: 'get',
+      url: `${config.url}:${config.port}/projects/${projectId}`,
+      auth: {
+        username: config.auth.username,
+        password: config.auth.password
+      }
+    });
+    if (project.data.projects.length < 1) {
+      return false;
     }
-    catch(error) {
-        return false;
+    else {
+      return project.data.projects[0];
     }
+  }
+  catch (error) {
+    throw new M.ServerError('Error getting project from SDVC');
+  }
 }
 
 /**
@@ -218,61 +230,31 @@ async function getSDVCProject(projectId) {
  * @returns {object} An MMS3 formatted ref/branch.
  */
 async function getSDVCBranch(projectId, branchId) {
-    try {
-        const branch = await axios({
-            method: 'get',
-            url: `${config.url}:${config.port}/projects/${projectId}/refs/${branchId}`,
-            auth: {
-                username: config.auth.username,
-                password: config.auth.password
-            },
-        });
-        if (branch.data.refs.length < 1) {
-            return false;
-        }
-        else {
-            return branch.data.refs[0];
-        }
+  try {
+    const branch = await axios({
+      method: 'get',
+      url: `${config.url}:${config.port}/projects/${projectId}/refs/${branchId}`,
+      auth: {
+        username: config.auth.username,
+        password: config.auth.password
+      }
+    });
+    if (branch.data.refs.length < 1) {
+      return false;
     }
-    catch(error) {
-        return false;
+    else {
+      return branch.data.refs[0];
     }
+  }
+  catch (error) {
+    throw new M.ServerError('Error getting branch from SDVC');
+  }
 }
 
-/**
- * @description GETs an MMS3 element.
- *
- * @param {string} projectId - The project id.
- * @param {string} branchId - The ref/branch id.
- * @param {string} elementId - The element id.
- *
- * @returns {object} An MMS3 formatted element.
- */
-async function getSDVCElement(projectId, branchId, elementId) {
-    try {
-        const element = await axios({
-            method: 'get',
-            url: `${config.url}:${config.port}/projects/${projectId}/refs/${branchId}/elements/${elementId}`,
-            auth: {
-                username: config.auth.username,
-                password: config.auth.password
-            },
-        });
-        if (element.data.elements.length < 1) {
-            return false;
-        }
-        else {
-            return element.data.elements[0];
-        }
-    }
-    catch(error) {
-        return false;
-    }
-}
 
-/*************************************************/
-/***************** CREATE FUNCTIONS **************/
-/*************************************************/
+// *********************************************** //
+// *************** CREATE FUNCTIONS ************** //
+// *********************************************** //
 
 /**
  * @description CREATES an MMS3 organization.
@@ -283,29 +265,29 @@ async function getSDVCElement(projectId, branchId, elementId) {
  * @returns {object} An MMS3 organization.
  */
 async function createSDVCOrganization(user, orgObj) {
-    try {
-        // formatting organization
-        const formattedOrg = mms3Formatter.mmsOrg(user, orgObj);
-        formattedOrg.type = 'org';
-        // creating the organization
-        const org = await axios({
-            method: 'post',
-            url: `${config.url}:${config.port}/orgs`,
-            auth: {
-                username: config.auth.username,
-                password: config.auth.password
-            },
-            data: {
-                orgs: [
-                    formattedOrg
-                ]
-            }
-        });
-        return org.data.orgs[0];
-    }
-    catch(error) {
-        throw new M.ServerError('Error creating mms3 sdvc organization');
-    }
+  try {
+    // formatting organization
+    const formattedOrg = mms3Formatter.mmsOrg(user, orgObj);
+    formattedOrg.type = 'org';
+    // creating the organization
+    const org = await axios({
+      method: 'post',
+      url: `${config.url}:${config.port}/orgs`,
+      auth: {
+        username: config.auth.username,
+        password: config.auth.password
+      },
+      data: {
+        orgs: [
+          formattedOrg
+        ]
+      }
+    });
+    return org.data.orgs[0];
+  }
+  catch (error) {
+    throw new M.ServerError('Error creating MMS3 SDVC organization');
+  }
 }
 
 /**
@@ -317,29 +299,29 @@ async function createSDVCOrganization(user, orgObj) {
  * @returns {object} An MMS3 project.
  */
 async function createSDVCProject(user, projectObj) {
-    try {
-        // formatting project
-        const formattedProj = mms3Formatter.mmsProject(user, projectObj);
-        formattedProj.type = 'project';
-        // creating the project
-        const proj = await axios({
-            method: 'post',
-            url: `${config.url}:${config.port}/projects`,
-            auth: {
-                username: config.auth.username,
-                password: config.auth.password
-            },
-            data: {
-                projects: [
-                    formattedProj
-                ]
-            }
-        });
-        return proj.data.projects[0];
-    }
-    catch(error) {
-        throw new M.ServerError('Error creating mms3 sdvc project');
-    }
+  try {
+    // formatting project
+    const formattedProj = mms3Formatter.mmsProject(user, projectObj);
+    formattedProj.type = 'project';
+    // creating the project
+    const proj = await axios({
+      method: 'post',
+      url: `${config.url}:${config.port}/projects`,
+      auth: {
+        username: config.auth.username,
+        password: config.auth.password
+      },
+      data: {
+        projects: [
+          formattedProj
+        ]
+      }
+    });
+    return proj.data.projects[0];
+  }
+  catch (error) {
+    throw new M.ServerError('Error creating MMS3 SDVC project');
+  }
 }
 
 /**
@@ -352,29 +334,29 @@ async function createSDVCProject(user, projectObj) {
  * @returns {object} An MMS3 ref/branch.
  */
 async function createSDVCBranch(user, projectId, branchObj) {
-    try {
-        // formatting organization
-        const formattedBranch = mms3Formatter.mmsRef(user, branchObj);
-        formattedBranch.type = 'branch';
-        // creating the organization
-        const branch = await axios({
-            method: 'post',
-            url: `${config.url}:${config.port}/projects/${projectId}/refs`,
-            auth: {
-                username: config.auth.username,
-                password: config.auth.password
-            },
-            data: {
-                refs: [
-                    formattedBranch
-                ]
-            }
-        });
-        return branch.data.refs[0];
-    }
-    catch(error) {
-        throw new M.ServerError('Error creating mms3 sdvc ref/branch');
-    }
+  try {
+    // formatting organization
+    const formattedBranch = mms3Formatter.mmsRef(user, branchObj);
+    formattedBranch.type = 'branch';
+    // creating the organization
+    const branch = await axios({
+      method: 'post',
+      url: `${config.url}:${config.port}/projects/${projectId}/refs`,
+      auth: {
+        username: config.auth.username,
+        password: config.auth.password
+      },
+      data: {
+        refs: [
+          formattedBranch
+        ]
+      }
+    });
+    return branch.data.refs[0];
+  }
+  catch (error) {
+    throw new M.ServerError('Error creating mms3 sdvc ref/branch');
+  }
 }
 
 /**
@@ -387,28 +369,28 @@ async function createSDVCBranch(user, projectId, branchObj) {
  * @returns {object} An MMS3 element.
  */
 async function createUpdateSDVCElement(projectId, branchId, mmsFormattedElementObj) {
-    try {
-        // creating the element
-        const element = await axios({
-            method: 'post',
-            url: `${config.url}:${config.port}/projects/${projectId}/refs/${branchId}/elements`,
-            auth: {
-                username: config.auth.username,
-                password: config.auth.password
-            },
-            data: {
-                elements: [
-                    mmsFormattedElementObj
-                ]
-            }
-        });
-        return element.data.elements[0];
-    }
-    catch(error) {
-        return false;
-    } 
+  try {
+    // creating the element
+    const element = await axios({
+      method: 'post',
+      url: `${config.url}:${config.port}/projects/${projectId}/refs/${branchId}/elements`,
+      auth: {
+        username: config.auth.username,
+        password: config.auth.password
+      },
+      data: {
+        elements: [
+          mmsFormattedElementObj
+        ]
+      }
+    });
+    return element.data.elements[0];
+  }
+  catch (error) {
+    throw new M.ServerError('Error creating mms3 sdvc element. Element probably never changed.');
+  }
 }
 
 module.exports = {
-    handleCommit
+  handleCommit
 };
