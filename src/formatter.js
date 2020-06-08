@@ -3,7 +3,7 @@
  *
  * @module src.formatter
  *
- * @copyright Copyright (C) 2019, Lockheed Martin Corporation
+ * @copyright Copyright (C) 2020, Lockheed Martin Corporation
  *
  * @license LMPI - Lockheed Martin Proprietary Information
  *
@@ -13,8 +13,7 @@
  * @author Leah De Laurell
  *
  * @description Exports functions which format MDK requests into MCF-friendly objects
- * and MCF objects into MMS3 objects
- * format.
+ * and MCF objects into MMS3 objects.
  */
 
 // MCF Modules
