@@ -6,7 +6,7 @@
 - [Known Gaps and Issues](#known-gaps-and-issues)
 
 ## Reporting Security Vulnerabilities
-If a security related  issue is identified in the open source version MBEE,
+If a security related issue is identified in the open source version MBEE,
 please email
 [mbee-software.fc-space@lmco.com](mailto:mbee-software.fc-space@lmco.com).
 This will notify the Lockheed Martin MBEE Software Engineering team of the
@@ -35,7 +35,7 @@ PrincePDF is used to generate PDFs. The MMS3 Adapter plugin
 receives html from the [View Editor](https://github.com/Open-MBEE/ve) application which
 historically has included links to retrieve artifacts from MMS with an `alf_ticket` included. 
 MMS would then send the html to Prince.  The issue arises with the handling of the `alf_ticket` in the MMS3
-Adaptor Plugin.  Because the intention was to avoid using Alfresco while maintaining
+Adapter Plugin.  Because the intention was to avoid using Alfresco while maintaining
 backwards API compatibility, we kept support for the `alf_ticket` query parameter but
 re-purposed it into a bearer token.  When sending html to Prince for PDF generation,
 we currently create a new bearer token with an expiry time of 24 hours, because of
@@ -48,7 +48,7 @@ and destroy, all currently active bearer tokens.  Until then, this plugin will
 generate an indestructible 24hr token every time a PDF generation is requested.
 
 ### PDF Email 
-Intended to leverage an SMTP relay. Currently no support for TLS/SSL.
+Intended to leverage an SMTP relay. Currently no TLS/SSL support.
 
 ### SDVC Connection
 The current plugin configuration does not allow for TLS/SSL support.

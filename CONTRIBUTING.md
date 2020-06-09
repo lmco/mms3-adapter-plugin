@@ -6,7 +6,6 @@
   - [Linter](#linter)
   - [Tests](#tests)
   - [Errors](#errors)
-  - [Commenting](#commenting)
 - [Contributors](#contributors)
 
 ### Reporting Bugs
