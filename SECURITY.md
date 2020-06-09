@@ -4,10 +4,6 @@
 - [Reporting Security Vulnerabilities](#reporting-security-vulnerabilities)
 - [Disclosure and Security Update Policy](#disclosure-and-security-update-policy)
 - [Known Gaps and Issues](#known-gaps-and-issues)
-- [Security Related Configuration](#security-related-configuration)
-  - [Ports](#ports)
-  - [Configuration JSON File](#configuration-json-file)
-
 
 ## Reporting Security Vulnerabilities
 If a security related  issue is identified in the open source version MBEE,
@@ -51,8 +47,8 @@ future release of MCF, we plan to implement a way for admins to manage, i.e. vie
 and destroy, all currently active bearer tokens.  Until then, this plugin will
 generate an indestructible 24hr token every time a PDF generation is requested.
 
-## Security Related Configuration
+### PDF Email 
+Intended to leverage an SMTP relay. Currently no support for TLS/SSL.
 
-### Ports
-
-### Configuration JSON File
+### SDVC Connection
+The current plugin configuration does not allow for TLS/SSL support.
