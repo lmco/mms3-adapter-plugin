@@ -1,0 +1,10 @@
+{
+  "name": "mms3-adapter",
+  "version": "0.0.0",
+  "description": "MMS3 Adapter Plugin for MBEE Core Framework",
+  "main": "app.js",
+  "repository": "https://github.com/lmco/mms3-adapter-plugin",
+  "author": "Lockheed Martin",
+  "license": "Apache-2.0",
+  "private": true
+}
