@@ -90,7 +90,7 @@ function postLogin(done) {
     locals: {}
   };
   const token = 'abc';
-  req.session.token=token;
+  req.session.token = token;
   testUtils.createResponse(res);
   res.send = function send(body) {
     chai.expect(body.hasOwnProperty('data')).to.equal(true);

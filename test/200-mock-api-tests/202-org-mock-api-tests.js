@@ -71,7 +71,7 @@ describe(M.getModuleName(module.filename), () => {
   after(async () => {
     try {
       await testUtils.removeTestOrg();
-      await Org.deleteMany({ _id: testData.orgs[2].id});
+      await Org.deleteMany({ _id: testData.orgs[2].id });
       await testUtils.removeTestAdmin();
     }
     catch (error) {
@@ -105,8 +105,8 @@ function getOrgs(done) {
 
   testUtils.createResponse(res);
 
-  res.send = function send(body) {
-    const orgs = body.orgs;
+  res.send = function send(responseBody) {
+    const orgs = responseBody.orgs;
     chai.expect(orgs.length).to.be.at.least(2);
     chai.expect(orgs.some((o) => o.id === 'default')).to.equal(true);
     chai.expect(orgs.some((o) => o.id === org._id));
