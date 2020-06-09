@@ -63,10 +63,11 @@ to the **plugins.plugins** section of the running MCF configuration, ensure
   },
   "emailServerUrl": "email.server.com",
   "emailServerPort": "25",
+  "senderAddress": "pdf_sender@server.com",
   "pdf": {
     "directory": "/tmp",
     "filename": "tmp.output",
-    "exec": "/usr/local/bin/prince"
+    "exec": "/path/to/prince/executable"
   }
 }
 ```
@@ -103,10 +104,11 @@ To set up PDF export, supply the configuration with the following information:
 "mms3-adapter": {
   "emailServerUrl": "MAIL_SERVER",
   "emailServerPort": "MAIL_PORT",
+  "senderAddress": "SENDER_EMAIL",
   "pdf": {
     "directory": "/tmp",             # Location to store the documents. (HTML, PDF) 
     "filename": "tmp.output",        # Filename template prepended to each file.
-    "exec": "/usr/local/bin/prince"  # Prince executable path.
+    "exec": "PRINCE_PATH"            # Prince executable path.
   }
 }
 ```
@@ -179,6 +181,9 @@ root element of your model in Cameo the “MMS url”. This should be:
 http://{your-mcf-host}:{your-mcf-port}/plugins/mms3-adapter
 ```
 
+There is some small modification needed to be made to the MDK in order to parse the
+url correctly as MDK by default cuts off everything after the port.
+
 ### Known Issues
 
 See `SECURITY.md` for Known Issues.
@@ -187,5 +192,5 @@ See `SECURITY.md` for Known Issues.
 
 If an issue is identified in MBEE, please email
 [mbee-software.fc-space@lmco.com](mailto:mbee-software.fc-space@lmco.com).
-Refer to **SECURITY.md** for more information as well as the PGP encryption key.
+Refer to **SECURITY.md** for more information.
 
