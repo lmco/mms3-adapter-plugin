@@ -47,12 +47,12 @@ const next = testUtils.next;
 let adminUser = null;
 let org = null;
 let projectID = null;
-let branchID = 'master';
+const branchID = 'master';
 const mountedProjectData = {
   id: 'mounted_test_project',
   name: 'mounted_test_project'
 };
-const testElements =  [
+const testElements = [
   {
     id: 'test_elem_001',
     parent: 'model',
@@ -172,9 +172,10 @@ describe(M.getModuleName(module.filename), () => {
       // Create second project to test the mounted element search capability
       await ProjectController.create(adminUser, org._id, mountedProjectData);
       // Create test element data
-      await ElementController.create(adminUser, org._id, projectID, branchID, testElements.slice(0, 9));
-      await ElementController.create(adminUser, org._id, mountedProjectData.id, branchID, testElements.slice(9));
-
+      await ElementController.create(adminUser, org._id, projectID, branchID,
+        testElements.slice(0, 9));
+      await ElementController.create(adminUser, org._id, mountedProjectData.id, branchID,
+        testElements.slice(9));
     }
     catch (error) {
       M.log.error(error);
@@ -203,12 +204,13 @@ describe(M.getModuleName(module.filename), () => {
   it('should find an element on a mounted project', getMountedElement);
   it('should create elements', createElements);
   it('should update elements', updateElements);
-  it('should update multiple elements simultaneously including updates to the parent field', updateParent);
-  it('should handle a re-ordering of _childViews by re-ordering the ownedAttributeIds on the ' +
-    'same element', updateChildViewOrder);
-  it('should handle a move of a _childView from one element to another by searching for the ' +
-    'ownedEnd element referenced by the association element referenced by the _childView element' +
-    'and changing its typeId to point at the new parent of the _childView', childViewRelationship);
+  it('should update multiple elements simultaneously including updates to the parent field',
+    updateParent);
+  it('should handle a re-ordering of _childViews by re-ordering the ownedAttributeIds on the '
+    + 'same element', updateChildViewOrder);
+  it('should handle a move of a _childView from one element to another by searching for the '
+    + 'ownedEnd element referenced by the association element referenced by the _childView element'
+    + 'and changing its typeId to point at the new parent of the _childView', childViewRelationship);
   it('should search for elements based on the ids provided in the body of the request',
     putElements);
   it('should delete elements', deleteElements);
@@ -310,7 +312,7 @@ function createElements(done) {
   };
   const params = {
     projectid: projectID,
-    refid: branchID,
+    refid: branchID
   };
   const body = { elements: [elemData] };
   const method = 'POST';
@@ -350,7 +352,7 @@ function updateElements(done) {
   };
   const params = {
     projectid: projectID,
-    refid: branchID,
+    refid: branchID
   };
   const body = { elements: [elemData] };
   const method = 'POST';
@@ -397,7 +399,7 @@ function updateParent(done) {
     }];
   const params = {
     projectid: projectID,
-    refid: branchID,
+    refid: branchID
   };
   const body = { elements: elemData };
   const method = 'POST';
@@ -436,7 +438,8 @@ function updateChildViewOrder(done) {
     projectid: projectID,
     refid: branchID
   };
-  const body = { elements: [
+  const body = {
+    elements: [
       {
         id: 'test_elem_001',
         _childViews: [
@@ -470,7 +473,8 @@ function updateChildViewOrder(done) {
     const updatedElements = _data.elements;
     const updatedElement = updatedElements[0];
 
-    const elements = await ElementController.find(adminUser, org._id, projectID, branchID, updatedElement.id);
+    const elements = await ElementController.find(adminUser, org._id, projectID, branchID,
+      updatedElement.id);
     const element = elements[0];
 
     chai.expect(element.custom[namespace].ownedAttributeIds[0]).to.equal('test_oa_elem_004');
@@ -557,11 +561,13 @@ function childViewRelationship(done) {
     const cv = cvs[0];
     const associationID = cv.custom[namespace].associationId;
 
-    const associations = await ElementController.find(adminUser, org._id, projectID, branchID, associationID);
+    const associations = await ElementController.find(adminUser, org._id, projectID, branchID,
+      associationID);
     const association = associations[0];
     const ownedEndID = association.custom[namespace].ownedEndIds;
 
-    const ownedEnds = await ElementController.find(adminUser, org._id, projectID, branchID, ownedEndID);
+    const ownedEnds = await ElementController.find(adminUser, org._id, projectID, branchID,
+      ownedEndID);
     const ownedEnd = ownedEnds[0];
 
     chai.expect(ownedEnd.custom[namespace].typeId).to.equal(newParent.id);
@@ -579,10 +585,10 @@ function childViewRelationship(done) {
  * @param {Function} done - The Mocha callback.
  */
 function putElements(done) {
-  const elemData = testElements.slice(0,3);
+  const elemData = testElements.slice(0, 3);
   const params = {
     projectid: projectID,
-    refid: branchID,
+    refid: branchID
   };
   const body = {
     elements: [
@@ -626,7 +632,7 @@ function putElements(done) {
 function deleteElements(done) {
   const params = {
     projectid: projectID,
-    refid: branchID,
+    refid: branchID
   };
   const body = {
     elements: [
@@ -644,7 +650,8 @@ function deleteElements(done) {
 
   res.send = async function(_data) {
     const elements = _data.elements;
-    const foundElements = await ElementController.find(adminUser, org._id, projectID, branchID, elements);
+    const foundElements = await ElementController.find(adminUser, org._id, projectID,
+      branchID, elements);
     chai.expect(foundElements.length).to.equal(0);
 
     done();
@@ -664,7 +671,7 @@ function deleteElements(done) {
 function searchElements(done) {
   const params = {
     projectid: projectID,
-    refid: branchID,
+    refid: branchID
   };
   const body = {
     query: {
@@ -712,7 +719,7 @@ function searchElements(done) {
 function getMounts(done) {
   const params = {
     projectid: projectID,
-    refid: branchID,
+    refid: branchID
   };
   const body = {};
   const method = 'GET';
@@ -744,7 +751,7 @@ function getGroups(done) {
   const elemData = testElements[7];
   const params = {
     projectid: projectID,
-    refid: branchID,
+    refid: branchID
   };
   const body = {};
   const method = 'GET';
@@ -774,10 +781,10 @@ function getGroups(done) {
  * @param {Function} done - The Mocha callback.
  */
 function getDocuments(done) {
-  const elemData = testElements.slice(0,2);
+  const elemData = testElements.slice(0, 2);
   const params = {
     projectid: projectID,
-    refid: branchID,
+    refid: branchID
   };
   const body = {};
   const method = 'GET';

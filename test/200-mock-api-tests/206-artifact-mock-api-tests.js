@@ -47,7 +47,7 @@ const next = testUtils.next;
 let adminUser = null;
 let org = null;
 let projectID = null;
-let branchID = 'master';
+const branchID = 'master';
 
 
 /* --------------------( Main )-------------------- */
@@ -111,7 +111,7 @@ function postArtifact(done) {
   const artData = testData.artifacts[0];
   const params = {
     projectid: projectID,
-    refid: branchID,
+    refid: branchID
   };
   const body = {
     id: artData.id
@@ -151,7 +151,7 @@ function putArtifacts(done) {
   const artData = testData.artifacts[0];
   const params = {
     projectid: projectID,
-    refid: branchID,
+    refid: branchID
   };
   const body = {
     artifacts: [
@@ -213,7 +213,7 @@ function getBlob(done) {
 
   // Get the blob for comparison
   const artifactPath = path.join(M.root, artData.location, artData.filename);
-  const actualBlob =  fs.readFileSync(artifactPath);
+  const actualBlob = fs.readFileSync(artifactPath);
 
   res.send = async function(_data) {
     chai.expect(_data).to.deep.equal(actualBlob);

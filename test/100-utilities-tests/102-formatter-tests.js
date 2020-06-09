@@ -1,5 +1,5 @@
 /**
- * Classification: UNCLASSIFIED
+ * @classification UNCLASSIFIED
  *
  * @module test.102-formatter-tests.js
  *
@@ -58,9 +58,8 @@ const elemID = 'model';
  * name of the current file.
  */
 describe(M.getModuleName(module.filename), () => {
-
   /**
-   * Before: Create admin user.
+   * Before: Create admin user, test org, project, branch, and element.
    */
   before(async () => {
     try {
@@ -85,14 +84,18 @@ describe(M.getModuleName(module.filename), () => {
     }
   });
 
+  /**
+   * After: Delete admin user and test org.
+   */
   after(async () => {
     try {
-      // Remove organization
       await mcfTestUtils.removeTestOrg();
       await mcfTestUtils.removeTestAdmin();
     }
     catch (error) {
-
+      M.log.error(error);
+      // Expect no error
+      chai.expect(error).to.equal(null);
     }
   });
 
@@ -109,7 +112,7 @@ describe(M.getModuleName(module.filename), () => {
 
 /* --------------------( Tests )-------------------- */
 /**
- * @description Verifies that formatter.js can take an MCF org and convert it into an MMS org
+ * @description Verifies that formatter.js can take an MCF org and convert it into an MMS org.
  */
 async function mcfOrg() {
   const mdkOrg = {
@@ -120,17 +123,18 @@ async function mcfOrg() {
     property3: 'test3'
   };
 
-  const org = format.mcfOrg(mdkOrg);
+  const formattedOrg = format.mcfOrg(mdkOrg);
 
-  chai.expect(org.id).to.equal('test-id');
-  chai.expect(org.name).to.equal('test-org');
-  chai.expect(org.custom[namespace].property1).to.equal('test1');
-  chai.expect(org.custom[namespace].property2).to.equal('test2');
-  chai.expect(org.custom[namespace].property3).to.equal('test3');
+  chai.expect(formattedOrg.id).to.equal('test-id');
+  chai.expect(formattedOrg.name).to.equal('test-org');
+  chai.expect(formattedOrg.custom[namespace].property1).to.equal('test1');
+  chai.expect(formattedOrg.custom[namespace].property2).to.equal('test2');
+  chai.expect(formattedOrg.custom[namespace].property3).to.equal('test3');
 }
 
 /**
- * @description Verifies that formatter.js can take an MMS project and convert it into an MCF project
+ * @description Verifies that formatter.js can take an MMS project and convert it into
+ * an MCF project.
  */
 async function mcfProject() {
   const mdkProj = {
@@ -150,7 +154,7 @@ async function mcfProject() {
 }
 
 /**
- * @description Verifies that formatter.js can take an MMS ref and convert it into an MCF branch
+ * @description Verifies that formatter.js can take an MMS ref and convert it into an MCF branch.
  */
 async function mcfBranch() {
   const mdkRef = {
@@ -171,7 +175,8 @@ async function mcfBranch() {
 }
 
 /**
- * @description Verifies that formatter.js can take an array of MMS elements and convert them into MCF elements
+ * @description Verifies that formatter.js can take an array of MMS elements and convert them
+ * into MCF elements.
  */
 async function mcfElements() {
   const req = {
@@ -202,7 +207,7 @@ async function mcfElements() {
 }
 
 /**
- * @description Verifies that formatter.js can take an MCF org and convert it into an MMS org
+ * @description Verifies that formatter.js can take an MCF org and convert it into an MMS org.
  */
 async function mmsOrg() {
   const convertedOrg = await format.mmsOrg(adminUser, org);
@@ -212,7 +217,8 @@ async function mmsOrg() {
 }
 
 /**
- * @description Verifies that formatter.js can take an MCF project and convert it into an MMS project
+ * @description Verifies that formatter.js can take an MCF project and convert it into
+ * an MMS project.
  */
 async function mmsProject() {
   project.custom = {
@@ -228,7 +234,6 @@ async function mmsProject() {
   chai.expect(convertedProject.id).to.equal(projID);
   chai.expect(convertedProject.name).to.equal(project.name);
   chai.expect(convertedProject._creator).to.equal(project.createdBy);
-  //chai.expect(convertedProject._created).to.equal(project.createdOn);
   chai.expect(convertedProject._modifier).to.equal(null);
   chai.expect(convertedProject._modified).to.equal(undefined);
   chai.expect(convertedProject._projectId).to.equal(projID);
@@ -243,7 +248,8 @@ async function mmsProject() {
 }
 
 /**
- * @description Verifies that formatter.js can take an MCF branch and convert it into an MMS ref
+ * @description Verifies that formatter.js can take an MCF branch and convert it into
+ * an MMS ref.
  */
 async function mmsRef() {
   branch.custom = {
@@ -265,7 +271,8 @@ async function mmsRef() {
 }
 
 /**
- * @description Verifies that formatter.js can take an MCF element and convert it into an MMS element
+ * @description Verifies that formatter.js can take an MCF element and convert it into
+ * an MMS element.
  */
 async function mmsElement() {
   element.custom = {
@@ -293,7 +300,8 @@ async function mmsElement() {
 }
 
 /**
- * @description Verifies that formatter.js can take an MCF artifact and convert it into an MMS artifact
+ * @description Verifies that formatter.js can take an MCF artifact and convert it into
+ * an MMS artifact.
  */
 async function mmsArtifact() {
   const artObj = {
@@ -319,7 +327,9 @@ async function mmsArtifact() {
   chai.expect(convertedArtifact.id).to.equal(artObj.id);
   chai.expect(convertedArtifact._projectId).to.equal(projID);
   chai.expect(convertedArtifact._refId).to.equal(branchID);
-  chai.expect(convertedArtifact.artifactLocation).to.equal(`/projects/${projID}/refs/${branchID}/artifacts/blob/${artObj.id}`);
+  chai.expect(convertedArtifact.artifactLocation).to.equal(
+    `/projects/${projID}/refs/${branchID}/artifacts/blob/${artObj.id}`
+  );
   chai.expect(convertedArtifact._creator).to.equal(artObj.createdBy);
   chai.expect(convertedArtifact._modifier).to.equal(null);
   chai.expect(convertedArtifact._editable).to.equal(true);

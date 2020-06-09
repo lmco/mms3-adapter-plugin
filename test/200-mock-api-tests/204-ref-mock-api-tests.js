@@ -165,7 +165,7 @@ function getRef(done) {
 function getRefs(done) {
   const params = {
     orgid: org._id,
-    projectid: projectID,
+    projectid: projectID
   };
   const body = {};
   const method = 'GET';

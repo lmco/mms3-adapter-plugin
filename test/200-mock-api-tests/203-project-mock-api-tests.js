@@ -41,7 +41,7 @@ const next = testUtils.next;
 let adminUser = null;
 let org = null;
 let projectID = null;
-let project2ID = 'test_project_2';
+const project2ID = 'test_project_2';
 
 /* --------------------( Main )-------------------- */
 /**
@@ -164,7 +164,7 @@ function getProject(done) {
  */
 function getProjects(done) {
   const params = {
-    orgid: org._id,
+    orgid: org._id
   };
   const body = {};
   const method = 'GET';

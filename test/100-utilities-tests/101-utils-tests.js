@@ -1,5 +1,5 @@
 /**
- * Classification: UNCLASSIFIED
+ * @classification UNCLASSIFIED
  *
  * @module test.101-utils-tests.js
  *
@@ -22,7 +22,7 @@
  *
  * @author Connor Doyle
  *
- * @description Tests the utils.js file
+ * @description Tests the utils.js file.
  */
 
 // NPM modules
@@ -100,7 +100,6 @@ const elements = [
  * name of the current file.
  */
 describe(M.getModuleName(module.filename), () => {
-
   /**
    * Before: Create admin user, test org, test project, and test elements.
    */
@@ -131,12 +130,13 @@ describe(M.getModuleName(module.filename), () => {
    */
   after(async () => {
     try {
-      // Remove organization
       await mcfTestUtils.removeTestOrg();
       await mcfTestUtils.removeTestAdmin();
     }
     catch (error) {
-
+      M.log.error(error);
+      // Expect no error
+      chai.expect(error).to.equal(null);
     }
   });
 
@@ -190,7 +190,8 @@ async function responseHeaders() {
 }
 
 /**
- * @description
+ * @description Verifies that the handleTicket function can properly retrieve and interpret
+ * a token sent in the parameters.
  */
 async function handleTicket() {
   const req = {
@@ -202,13 +203,14 @@ async function handleTicket() {
     }
   };
   const next = function() {
-    chai.expect(req.headers.authorization).to.equal('Bearer test auth')
+    chai.expect(req.headers.authorization).to.equal('Bearer test auth');
   };
   utils.handleTicket(req, null, next);
 }
 
 /**
- * @description
+ * @description Verifies that the formatTicketRequest function can properly retrieve and interpret
+ * a token sent in the parameters.
  */
 async function formatTicketRequest() {
   const req = {
@@ -218,13 +220,14 @@ async function formatTicketRequest() {
     params: ['test%20auth']
   };
   const next = function() {
-    chai.expect(req.headers.authorization).to.equal('Bearer test auth')
+    chai.expect(req.headers.authorization).to.equal('Bearer test auth');
   };
   utils.formatTicketRequest(req, null, next);
 }
 
 /**
- * @description
+ * @description Verifies that the generateChildViews function can correctly generate the child
+ * views of a document or view element.
  */
 async function generateChildViews() {
   // Initialize variables to validate found child views against
@@ -245,7 +248,7 @@ async function generateChildViews() {
         chai.expect(ids.includes(cv.id)).to.equal(true);
         chai.expect(aggregations.includes(cv.aggregation)).to.equal(true);
         chai.expect(propertyIds.includes(cv.propertyId)).to.equal(true);
-      })
+      });
     }
-  })
+  });
 }
