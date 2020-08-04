@@ -35,7 +35,7 @@ const router = express.Router();
 // MBEE modules
 const { authenticate, doLogin } = M.require('lib.auth');
 const { logRoute, logResponse, respond, disableUserAPI } = M.require('lib.middleware');
-const { version, login, whoami, getUser } = M.require('controllers.api-controller');
+const { version, login, whoami, getUsers } = M.require('controllers.api-controller');
 
 // Adapter modules
 const APIController = require('./src/api-controller');
@@ -324,7 +324,14 @@ router.route('/api/users/:username')
   logRoute,
   disableUserAPI,
   utils.addHeaders,
-  getUser,
+  getUsers,
+  (req, res, next) => {
+    // Put the message into object format
+    const users = JSON.parse(res.locals.message);
+    const user = users[0];
+    res.locals.message = JSON.stringify(user);
+    next();
+  },
   logResponse,
   respond
 )
