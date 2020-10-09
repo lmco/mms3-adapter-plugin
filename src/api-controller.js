@@ -38,6 +38,7 @@ const upload = multer().single('file');
 const OrgController = M.require('controllers.organization-controller');
 const ProjectController = M.require('controllers.project-controller');
 const BranchController = M.require('controllers.branch-controller');
+const commitController = require('./commit-controller.js');
 const Branch = M.require('models.branch');
 const ElementController = M.require('controllers.element-controller');
 const ArtifactController = M.require('controllers.artifact-controller');
@@ -1275,6 +1276,45 @@ async function postHtml2Pdf(req, res, next) {
   next();
 }
 
+/**
+ * @description Gets element commits
+ * @async
+ *
+ * @param {object} req - The Express request object.
+ * @param {object} res - The Express response object.
+ * @param {Function} next - Middleware callback to trigger the next function.
+ */
+async function getElementCommits(req, res, next) {
+  try {
+    // Add valiation for params
+    const projectid = req.params.projectid;
+    const branchid = req.params.refid;
+    const elementid = req.params.elementid;
+
+    if (!projectid) {
+      res.locals.statusCode = 400;
+      res.locals.message = 'please provide project id';
+      next();
+    }
+    if (!branchid) {
+      res.locals.statusCode = 400;
+      res.locals.message = 'please branch project id';
+      next();
+    }
+    if (!elementid) {
+      res.locals.statusCode = 400;
+      res.locals.message = 'please element project id';
+      next();
+    }
+    await commitController.getCommitsByElement(res, next, projectid, branchid, elementid);
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+}
+
 module.exports = {
   postLogin,
   optionsDefault,
@@ -1302,5 +1342,6 @@ module.exports = {
   postArtifact,
   putArtifacts,
   getBlob,
-  postHtml2Pdf
+  postHtml2Pdf,
+  getElementCommits
 };

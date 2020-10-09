@@ -864,6 +864,72 @@ router.route('/projects/:projectid/refs/:refid/groups')
 
 /**
  * @swagger
+ * /projects/{projectid}/refs/{refid}/elements/{elementid}/commits:
+ *   get:
+ *     tags:
+ *       - elements
+ *       - projects
+ *     description: Finds all commits for a given element.
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project which contains the searched
+ *                      branch/ref.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: refid
+ *         description: The ID of the ref to find.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: elementid
+ *         description: The ID of the searched element.
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ *   
+ */
+router.route('/projects/:projectid/refs/:refid/elements/:elementid/commits')
+.get(
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getElementCommits,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
+
+
+
+
+
+
+
+/**
+ * @swagger
  * /projects/{projectid}/refs/{refid}/elements:
  *   post:
  *     tags:
@@ -1037,6 +1103,11 @@ router.route('/projects/:projectid/refs/:refid/elements')
   logResponse,
   respond
 );
+
+
+
+
+
 
 /**
  * @swagger
