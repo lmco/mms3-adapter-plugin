@@ -370,7 +370,6 @@ async function createSDVCProject(user, projectObj) {
       orgId: formattedProj.orgId,
       name: formattedProj.name
     }
-    formattedProj.type = 'project';
     // creating the project
     const proj = await axios({
       method: 'post',

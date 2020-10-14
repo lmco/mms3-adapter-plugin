@@ -922,12 +922,6 @@ router.route('/projects/:projectid/refs/:refid/elements/:elementid/commits')
   respond
 );
 
-
-
-
-
-
-
 /**
  * @swagger
  * /projects/{projectid}/refs/{refid}/elements:
@@ -1103,11 +1097,6 @@ router.route('/projects/:projectid/refs/:refid/elements')
   logResponse,
   respond
 );
-
-
-
-
-
 
 /**
  * @swagger

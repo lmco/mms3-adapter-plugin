@@ -1306,7 +1306,7 @@ async function getElementCommits(req, res, next) {
       res.locals.message = 'please element project id';
       next();
     }
-    await commitController.getCommitsByElement(res, next, projectid, branchid, elementid);
+    return await commitController.getCommitsByElement(res, next, projectid, branchid, elementid);
   }
   catch (error) {
     M.log.warn(error.message);
