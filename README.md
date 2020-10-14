@@ -63,6 +63,7 @@ to the **plugins.plugins** section of the running MCF configuration, ensure
   },
   "emailServerUrl": "email.server.com",
   "emailServerPort": "25",
+  "supportEmail": "example-support@mail.com",
   "pdf": {
     "directory": "/tmp",
     "filename": "tmp.output",

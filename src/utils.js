@@ -29,7 +29,7 @@
 
 // NPM modules
 const nodemailer = require('nodemailer');
-const { execSync } = require('child_process');
+const { exec } = require('child_process');
 
 // MBEE modules
 const Project = M.require('models.project');
@@ -216,17 +216,23 @@ async function generateChildViews(reqUser, orgID, projID, branchID, elements) {
  */
 async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath) {
   const config = M.config.server.plugins.plugins['mms3-adapter'];
-  const exec = config.pdf.exec;
+  const execCmd = config.pdf.exec;
 
   // Generate the conversion command
-  const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure`;
+  const command = `${execCmd} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure`;
 
   // Execute and log command
   M.log.info(`Executing... ${command}`);
-  const stdout = execSync(command);
-
-  // Log Results
-  M.log.info(stdout.toString());
+  return new Promise((resolve, reject) => {
+    exec(command, (err, stdout, stderr) => {
+      if (err) {
+        M.log.error(stdout.toString());
+        M.log.error(stderr.toString());
+        return reject(`exec error: ${err}`);
+      }
+      return resolve();
+    });
+  });
 }
 
 /**
@@ -256,7 +262,7 @@ async function emailBlobLink(userEmail, link) {
 
     // Create the transporter and send the email
     await transporter.sendMail({
-      from: '"mbee support" <mbee-support.fc-space@lmco.com>', // sender address
+      from: ` "mbee support" <${config.supportEmail}>`, // sender address
       to: userEmail,
       subject: 'HTML to .pdf generation completed.',           // Subject line
       text: message                                            // plain text body
