@@ -286,6 +286,8 @@ function translateElasticSearchQuery(query) {
     }
   }
 
+  // TODO: handle the project metatypes query
+
   // There are 5 options unless it's an advanced search:
   // "all"                    bool: { should: [ { id: { value: VALUE } }, { multi_match: { query: VALUE, fields: FIELDS } } }
   // "name or documentation"  match: { [name or documentation]: { query: VALUE } }
@@ -297,22 +299,31 @@ function translateElasticSearchQuery(query) {
   // OR:                      bool: { should: [ CLAUSE_1, CLAUSE_2 ], minimum_should_match: 1 }
   // AND NOT:                 bool: { must: [ CLAUSE_1, { bool: { must_not: CLAUSE_2 } } ] }
   if (query.bool) {
-    // Test whether it's an AND
-    if (query.bool.must && !(query.bool.must[1].bool && query.bool.must[1].bool.must_not)) {
-      const q1 = translateElasticSearchQuery(query.bool.must[0]);
-      const q2 = translateElasticSearchQuery(query.bool.must[1]);
-      const q = { q1, q2 };
-      return q;
-    }
-    // Test if it's an AND NOT
-    else if (query.bool.must && query.bool.must[1].bool && query.bool.must[1].bool.must_not) {
-      const q1 = translateElasticSearchQuery(query.bool.must[0]);
-      const q2 = translateElasticSearchQuery(query.bool.must[1].bool.must_not);
-      const q = { q1, '$nin': q2 };
-      return q;
+    // Test whether it's an AND or AND NOT
+    if (query.bool.must) {
+      if (Array.isArray(query.bool.must)) {
+        // Test if AND
+        if (!(query.bool.must[1].bool && query.bool.must[1].bool.must_not)) {
+          const q1 = translateElasticSearchQuery(query.bool.must[0]);
+          const q2 = translateElasticSearchQuery(query.bool.must[1]);
+          const q = { q1, q2 };
+          return q;
+        }
+        // Test if AND NOT
+        else if (query.bool.must[1].bool && query.bool.must[1].bool.must_not) {
+          const q1 = translateElasticSearchQuery(query.bool.must[0]);
+          const q2 = translateElasticSearchQuery(query.bool.must[1].bool.must_not);
+          const q = { q1, '$nin': q2 };
+          return q;
+        }
+      }
+      // otherwise it would be query.bool.must.bool; just start translating from there
+      else {
+        return translateElasticSearchQuery(query.bool.must)
+      }
     }
     // Test if it's an OR
-    else if (query.bool.should) {
+    else if (query.bool.should && !((query.bool.should[0].id && query.bool.should[1].multi_match) || (query.bool.should[0].terms && query.bool.should[1].terms))) {
       const q1 = translateElasticSearchQuery(query.bool.should[0]);
       const q2 = translateElasticSearchQuery(query.bool.should[1]);
       const q = { '$or': [q1, q2] };
