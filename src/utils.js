@@ -271,6 +271,139 @@ async function emailBlobLink(userEmail, link) {
   }
 }
 
+function translateElasticSearchQuery(query) {
+  if (query.bool.filter) {
+    // Easiest scenario: filtering for a single element
+    if (query.bool.filter[0].term && query.bool.filter[0].term.id) {
+      return {
+        elemID: req.body.query.bool.filter[0].term.id,
+        projID: req.body.query.bool.filter[1].term._projectId
+      };
+    }
+    // Otherwise, process the filter
+    else if (query.bool.filter) {
+
+    }
+  }
+
+  // There are 5 options unless it's an advanced search:
+  // "all"                    bool: { should: [ { id: { value: VALUE } }, { multi_match: { query: VALUE, fields: FIELDS } } }
+  // "name or documentation"  match: { [name or documentation]: { query: VALUE } }
+  // "id"                     term: { id: VALUE }
+  // "values"                 multi_match: { query: VALUE, fields: FIELDS }
+  // "metatypes"              bool: { should: [ { terms: { _appliedStereotypeIds: VALUE_1 } }, { terms: { type: VALUE_2 } } ], minimum_should_match: 1 }
+  // *** If it's an advanced search, it will look like this:
+  // AND:                     bool: { must: [ CLAUSE_1, CLAUSE_2 ] }
+  // OR:                      bool: { should: [ CLAUSE_1, CLAUSE_2 ], minimum_should_match: 1 }
+  // AND NOT:                 bool: { must: [ CLAUSE_1, { bool: { must_not: CLAUSE_2 } } ] }
+  if (query.bool) {
+    // Test whether it's an AND
+    if (query.bool.must && !(query.bool.must[1].bool && query.bool.must[1].bool.must_not)) {
+      const q1 = translateElasticSearchQuery(query.bool.must[0]);
+      const q2 = translateElasticSearchQuery(query.bool.must[1]);
+      const q = { q1, q2 };
+      return q;
+    }
+    // Test if it's an AND NOT
+    else if (query.bool.must && query.bool.must[1].bool && query.bool.must[1].bool.must_not) {
+      const q1 = translateElasticSearchQuery(query.bool.must[0]);
+      const q2 = translateElasticSearchQuery(query.bool.must[1].bool.must_not);
+      const q = { q1, '$nin': q2 };
+      return q;
+    }
+    // Test if it's an OR
+    else if (query.bool.should) {
+      const q1 = translateElasticSearchQuery(query.bool.should[0]);
+      const q2 = translateElasticSearchQuery(query.bool.should[1]);
+      const q = { '$or': [q1, q2] };
+      return q;
+    }
+    // Treat it like a normal query
+    else {
+      // Determine if "all" or "metatypes" query
+      if (query.bool.should) {
+        // All scenario
+        if (query.bool.should[0].id && query.bool.should[1].multi_match) {
+          const searchTerm = query.bool.should[0].id;
+          // const fields = ['_id', 'name', 'documentation',
+          //   `custom[${customDataNamespace}].defaultValue`, `custom[${customDataNamespace}].value`,
+          //   `custom[${customDataNamespace}].specification`];
+          // TODO: determine if different fields can be given different weights with MongoDB
+          const q = { '$or': [
+            { _id: searchTerm },
+            { name: searchTerm },
+            { documentation: searchTerm},
+            { [`custom[${customDataNamespace}].defaultValue`]: searchTerm },
+            { [`custom[${customDataNamespace}].value`]: searchTerm },
+            { [`custom[${customDataNamespace}].specification`]: searchTerm }
+          ]};
+          return q;
+        }
+        // Metatypes scenario
+        else if (query.bool.should[0].terms && query.bool.should[1].terms) {
+          const searchTerm1 = query.bool.should[0].terms._appliedStereotypeIds;
+          // const fields1 = `custom[${customDataNamespace}]._appliedStereotypeIds`;
+          const searchTerm2 = query.bool.should[1].terms.type;
+          // const fields2 = ['type', `custom[${customDataNamespace}].type`];
+          const q = { '$or': [
+              { [`custom[${customDataNamespace}]._appliedStereotypeIds`]: searchTerm1 },
+              { type: searchTerm2 }
+          ]};
+          return q;
+        }
+      }
+      // Determine if "name" or "documentation query
+      else if (query.match) {
+        let searchTerm;
+        let field;
+        if (query.match.name) {
+          searchTerm = query.match.name;
+          field = 'name';
+          const q = { name: searchTerm };
+          return q;
+        }
+        else if (query.match.documentation) {
+          searchTerm = query.match.documentation;
+          field = 'documentation';
+          const q = { documentation: searchTerm };
+          return q;
+        }
+      }
+      // Determine if "id" query
+      else if (query.term) {
+        const searchTerm = query.term.id;
+        // const field = '_id';
+        const q = { _id: searchTerm };
+        return q;
+      }
+      // Determine if "values" query
+      else if (query.multi_match) {
+        const searchTerm = query.multi_match.query;
+        // const fields = [`custom[${customDataNamespace}].defaultValue`, `custom[${customDataNamespace}].value`,
+        //   `custom[${customDataNamespace}].specification`];
+        const q = { '$or': [
+          { [`custom[${customDataNamespace}].defaultValue`]: searchTerm },
+          { [`custom[${customDataNamespace}].value`]: searchTerm },
+          { [`custom[${customDataNamespace}].specification`]: searchTerm }
+        ]};
+        return q;
+      }
+    }
+  }
+}
+
+/**
+ * @description
+ *
+ *
+ *
+ * @param user
+ * @param query
+ */
+function mmsSearch(user, query) {
+
+}
+
 // Export the module
 module.exports = {
   getOrgId,
@@ -281,5 +414,6 @@ module.exports = {
   generateChildViews,
   customDataNamespace,
   convertHtml2Pdf,
-  emailBlobLink
+  emailBlobLink,
+  translateElasticSearchQuery
 };

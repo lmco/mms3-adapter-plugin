@@ -847,22 +847,26 @@ async function putElementSearch(req, res, next) {
     let elemID;
 
     if (req.body.query) {
-      elemID = req.body.query.bool.filter[0].term.id;
-      projID = req.body.query.bool.filter[1].term._projectId;
+      const query = utils.translateElasticSearchQuery(req.body.query);
+
+      // Make the query
+      const elements = await Element.find(query);
+
+      // Generate the child views of the element if there are any
+      await utils.generateChildViews(req.user, req.params.orgid, projID, branchID, elements);
+
+      // Return the public data of the elements in MMS format
+      const data = elements.map((e) => format.mmsElement(req.user, e));
+
+      // Set the status code and response message
+      res.locals.statusCode = 200;
+      res.locals.message = { elements: data };
     }
-
-    const elements = await ElementController.find(req.user, req.params.orgid, projID, branchID,
-      elemID);
-
-    // Generate the child views of the element if there are any
-    await utils.generateChildViews(req.user, req.params.orgid, projID, branchID, elements);
-
-    // Return the public data of the elements in MMS format
-    const data = elements.map((e) => format.mmsElement(req.user, e));
-
-    // Set the status code and response message
-    res.locals.statusCode = 200;
-    res.locals.message = { elements: data };
+    else {
+      throw new M.DataFormatError('Invalid request: query not found in request body.');
+    }
+    // const elements = await ElementController.find(req.user, req.params.orgid, projID, branchID,
+    //   elemID);
   }
   catch (error) {
     M.log.warn(error.message);
