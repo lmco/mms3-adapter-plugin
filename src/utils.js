@@ -272,6 +272,8 @@ async function emailBlobLink(userEmail, link) {
 }
 
 function translateElasticSearchQuery(query) {
+  console.log('Initial ES query')
+  console.log(query)
   if (query.bool && query.bool.filter) {
     // Easiest scenario: filtering for a single element
     if (query.bool.filter[0].term && query.bool.filter[0].term.id) {

@@ -849,7 +849,7 @@ async function putElementSearch(req, res, next) {
 
     if (req.body.query) {
       const query = utils.translateElasticSearchQuery(req.body.query);
-
+      console.log(query)
       // Make the query
       const elements = await Element.find(query);
 
