@@ -272,12 +272,12 @@ async function emailBlobLink(userEmail, link) {
 }
 
 function translateElasticSearchQuery(query) {
-  if (query.bool.filter) {
+  if (query.bool && query.bool.filter) {
     // Easiest scenario: filtering for a single element
     if (query.bool.filter[0].term && query.bool.filter[0].term.id) {
       return {
-        elemID: req.body.query.bool.filter[0].term.id,
-        projID: req.body.query.bool.filter[1].term._projectId
+        elemID: query.bool.filter[0].term.id,
+        projID: query.bool.filter[1].term._projectId
       };
     }
     // Otherwise, process the filter
