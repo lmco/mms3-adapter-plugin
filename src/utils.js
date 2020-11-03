@@ -325,7 +325,8 @@ function translateElasticSearchQuery(query) {
       }
     }
     // Test if it's an OR
-    else if (query.bool.should) {
+    else if (query.bool.should
+      && !(Array.isArray(query.bool.should) && ((query.bool.should[0].id && query.bool.should[1].multi_match) || (query.bool.should[0].terms && query.bool.should[1].terms)))) {
       // Test if array
       if (Array.isArray(query.bool.should) && !((query.bool.should[0].id && query.bool.should[1].multi_match) || (query.bool.should[0].terms && query.bool.should[1].terms))) {
         const q1 = translateElasticSearchQuery(query.bool.should[0]);
