@@ -326,10 +326,10 @@ function translateElasticSearchQuery(query) {
     }
     // Test if it's an OR
     else if (query.bool.should
-      && !(Array.isArray(query.bool.should) && ((query.bool.should[0].id && query.bool.should[1].multi_match) || (query.bool.should[0].terms && query.bool.should[1].terms)))) {
+      && !(Array.isArray(query.bool.should) && ((query.bool.should[0].term && query.bool.should[1].multi_match) || (query.bool.should[0].terms && query.bool.should[1].terms)))) {
       // Test if array
       console.log('OR')
-      if (Array.isArray(query.bool.should) && !((query.bool.should[0].id && query.bool.should[1].multi_match) || (query.bool.should[0].terms && query.bool.should[1].terms))) {
+      if (Array.isArray(query.bool.should) && !((query.bool.should[0].term && query.bool.should[1].multi_match) || (query.bool.should[0].terms && query.bool.should[1].terms))) {
         console.log('OR array')
         const q1 = translateElasticSearchQuery(query.bool.should[0]);
         const q2 = translateElasticSearchQuery(query.bool.should[1]);
