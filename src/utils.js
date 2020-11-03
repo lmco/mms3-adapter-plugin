@@ -328,7 +328,9 @@ function translateElasticSearchQuery(query) {
     else if (query.bool.should
       && !(Array.isArray(query.bool.should) && ((query.bool.should[0].id && query.bool.should[1].multi_match) || (query.bool.should[0].terms && query.bool.should[1].terms)))) {
       // Test if array
+      console.log('OR')
       if (Array.isArray(query.bool.should) && !((query.bool.should[0].id && query.bool.should[1].multi_match) || (query.bool.should[0].terms && query.bool.should[1].terms))) {
+        console.log('OR array')
         const q1 = translateElasticSearchQuery(query.bool.should[0]);
         const q2 = translateElasticSearchQuery(query.bool.should[1]);
         const q = { '$or': [q1, q2] };
@@ -336,11 +338,13 @@ function translateElasticSearchQuery(query) {
       }
       // run query on value if not an array
       else {
+        console.log('OR object')
         return translateElasticSearchQuery(query.bool.should)
       }
     }
     // Treat it like a normal query
     else {
+      console.log('normal query')
       // Determine if "all" or "metatypes" query
       if (query.bool.should) {
         // All scenario
