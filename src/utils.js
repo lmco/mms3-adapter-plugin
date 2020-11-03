@@ -325,11 +325,18 @@ function translateElasticSearchQuery(query) {
       }
     }
     // Test if it's an OR
-    else if (query.bool.should && !((query.bool.should[0].id && query.bool.should[1].multi_match) || (query.bool.should[0].terms && query.bool.should[1].terms))) {
-      const q1 = translateElasticSearchQuery(query.bool.should[0]);
-      const q2 = translateElasticSearchQuery(query.bool.should[1]);
-      const q = { '$or': [q1, q2] };
-      return q;
+    else if (query.bool.should) {
+      // Test if array
+      if (Array.isArray(query.bool.should) && !((query.bool.should[0].id && query.bool.should[1].multi_match) || (query.bool.should[0].terms && query.bool.should[1].terms))) {
+        const q1 = translateElasticSearchQuery(query.bool.should[0]);
+        const q2 = translateElasticSearchQuery(query.bool.should[1]);
+        const q = { '$or': [q1, q2] };
+        return q;
+      }
+      // run query on value if not an array
+      else {
+        return translateElasticSearchQuery(query.bool.should)
+      }
     }
     // Treat it like a normal query
     else {
@@ -399,6 +406,8 @@ function translateElasticSearchQuery(query) {
           { [`custom[${customDataNamespace}].value`]: searchTerm },
           { [`custom[${customDataNamespace}].specification`]: searchTerm }
         ]};
+        console.log('multi_match');
+        console.log(q.$or[0])
         return q;
       }
     }
