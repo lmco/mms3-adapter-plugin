@@ -348,8 +348,8 @@ function translateElasticSearchQuery(query) {
       // Determine if "all" or "metatypes" query
       if (query.bool.should) {
         // All scenario
-        if (query.bool.should[0].id && query.bool.should[1].multi_match) {
-          const searchTerm = query.bool.should[0].id;
+        if ((query.bool.should[0].term.id || query.bool.should[0].term.id) && query.bool.should[1].multi_match) {
+          const searchTerm = query.bool.should[0].id ? searchTerm = query.bool.should[0].id : searchTerm = query.bool.should[0].term.id;
           // const fields = ['_id', 'name', 'documentation',
           //   `custom[${customDataNamespace}].defaultValue`, `custom[${customDataNamespace}].value`,
           //   `custom[${customDataNamespace}].specification`];
