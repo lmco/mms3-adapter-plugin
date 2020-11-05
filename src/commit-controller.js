@@ -172,19 +172,26 @@ async function handleCommit(req, res, next) {
  */
 async function getSDVCOrganization(orgId) {
   try {
+    let url = `${config.url}:${config.port}/orgs`;
+    if (!config.port) {
+      url = `${config.url}/orgs`;
+    }
+    
     const org = await axios({
       method: 'get',
-      url: `${config.url}:${config.port}/orgs/${orgId}`,
+      url: url,
       auth: {
         username: config.auth.username,
         password: config.auth.password
       }
     });
-    if (org.data.orgs.length < 1) {
+
+    const organization = org.data.orgs.find(org => org.id === orgId);
+    if ([organization].length < 1) {
       return false;
     }
     else {
-      return org.data.orgs[0];
+      return organization;
     }
   }
   catch (error) {
@@ -201,19 +208,26 @@ async function getSDVCOrganization(orgId) {
  */
 async function getSDVCProject(projectId) {
   try {
+    let url = `${config.url}:${config.port}/projects`;
+    if (!config.port) {
+      url = `${config.url}/projects`;
+    }
+
     const project = await axios({
       method: 'get',
-      url: `${config.url}:${config.port}/projects/${projectId}`,
+      url: url,
       auth: {
         username: config.auth.username,
         password: config.auth.password
       }
     });
-    if (project.data.projects.length < 1) {
+    const proj = project.data.projects.find(proj => proj.id === projectId);
+    
+    if ([proj].length < 1) {
       return false;
     }
     else {
-      return project.data.projects[0];
+      return proj;
     }
   }
   catch (error) {
@@ -231,23 +245,64 @@ async function getSDVCProject(projectId) {
  */
 async function getSDVCBranch(projectId, branchId) {
   try {
+    let url = `${config.url}:${config.port}/projects/${projectId}/refs/${branchId}`;
+    if (!config.port) {
+      url = `${config.url}/projects/${projectId}/refs/${branchId}`;
+    }
     const branch = await axios({
       method: 'get',
-      url: `${config.url}:${config.port}/projects/${projectId}/refs/${branchId}`,
+      url: url,
       auth: {
         username: config.auth.username,
         password: config.auth.password
       }
     });
-    if (branch.data.refs.length < 1) {
+    const ref = branch.data.refs.find(branch => branch.id === branchId);
+    
+    if ([ref].length < 1) {
       return false;
     }
     else {
-      return branch.data.refs[0];
+      return ref;
     }
   }
   catch (error) {
     throw new M.ServerError('Error getting branch from SDVC');
+  }
+}
+
+/**
+ * @description GETs an MMS3 elements.
+ *
+ * @param {string} projectId - The project id.
+ * @param {string} branchId - The ref/branch id.
+ *
+ * @returns {object} An MMS3 formatted element.
+ */
+async function getSDVCElements(projectId, branchId) {
+  try {
+    let url = `${config.url}:${config.port}/projects/${projectId}/refs/${branchId}/elements`;
+    if (!config.port) {
+      url = `${config.url}/projects/${projectId}/refs/${branchId}/elements`;
+    }
+    const elements = await axios({
+      method: 'get',
+      url: url,
+      auth: {
+        username: config.auth.username,
+        password: config.auth.password
+      }
+    });
+    
+    if (elements.data.elements.length < 1) {
+      return false;
+    }
+    else {
+      return elements.data.elements;
+    }
+  }
+  catch (error) {
+    throw new M.ServerError('Error getting elements from SDVC');
   }
 }
 
@@ -266,13 +321,17 @@ async function getSDVCBranch(projectId, branchId) {
  */
 async function createSDVCOrganization(user, orgObj) {
   try {
+    let url = `${config.url}:${config.port}/orgs`;
+    if (!config.port) {
+      url = `${config.url}/orgs`;
+    }
     // formatting organization
     const formattedOrg = mms3Formatter.mmsOrg(user, orgObj);
     formattedOrg.type = 'org';
     // creating the organization
     const org = await axios({
       method: 'post',
-      url: `${config.url}:${config.port}/orgs`,
+      url: url,
       auth: {
         username: config.auth.username,
         password: config.auth.password
@@ -300,20 +359,28 @@ async function createSDVCOrganization(user, orgObj) {
  */
 async function createSDVCProject(user, projectObj) {
   try {
+    let url = `${config.url}:${config.port}/projects`;
+    if (!config.port) {
+      url = `${config.url}/projects`;
+    }
     // formatting project
     const formattedProj = mms3Formatter.mmsProject(user, projectObj);
-    formattedProj.type = 'project';
+    const project = {
+      id: formattedProj.id,
+      orgId: formattedProj.orgId,
+      name: formattedProj.name
+    }
     // creating the project
     const proj = await axios({
       method: 'post',
-      url: `${config.url}:${config.port}/projects`,
+      url: url,
       auth: {
         username: config.auth.username,
         password: config.auth.password
       },
       data: {
         projects: [
-          formattedProj
+          project
         ]
       }
     });
@@ -335,13 +402,17 @@ async function createSDVCProject(user, projectObj) {
  */
 async function createSDVCBranch(user, projectId, branchObj) {
   try {
+    let url = `${config.url}:${config.port}/projects/${projectId}/refs`;
+    if (!config.port) {
+      url = `${config.url}/projects/${projectId}/refs`;
+    }
     // formatting organization
     const formattedBranch = mms3Formatter.mmsRef(user, branchObj);
     formattedBranch.type = 'branch';
     // creating the organization
     const branch = await axios({
       method: 'post',
-      url: `${config.url}:${config.port}/projects/${projectId}/refs`,
+      url: url,
       auth: {
         username: config.auth.username,
         password: config.auth.password
@@ -370,10 +441,14 @@ async function createSDVCBranch(user, projectId, branchObj) {
  */
 async function createUpdateSDVCElement(projectId, branchId, mmsFormattedElementObj) {
   try {
+    let url = `${config.url}:${config.port}/projects/${projectId}/refs/${branchId}/elements`;
+    if (!config.port) {
+      url = `${config.url}/projects/${projectId}/refs/${branchId}/elements`;
+    }
     // creating the element
     const element = await axios({
       method: 'post',
-      url: `${config.url}:${config.port}/projects/${projectId}/refs/${branchId}/elements`,
+      url: url,
       auth: {
         username: config.auth.username,
         password: config.auth.password
@@ -391,6 +466,61 @@ async function createUpdateSDVCElement(projectId, branchId, mmsFormattedElementO
   }
 }
 
+/**
+ * @description Gets element commits
+ * @async
+ *
+ * @param {object} res - Response express object.
+ * @param {Function} next - Middleware callback to trigger the next function.
+ * @param {string} projectid - The project id.
+ * @param {string} branchid - The ref/branch id.
+ * @param {string} elementid - The element id.
+ */
+async function getCommitsByElement(res, next, projectid, branchid, elementid) {
+  try {
+    let url = `${config.url}:${config.port}/projects/${projectid}/refs/${branchid}/elements/${elementid}/commits`;
+    if (!config.port) {
+      url = `${config.url}/projects/${projectid}/refs/${branchid}/elements/${elementid}/commits`;
+    }
+
+    const sdvcProj = await getSDVCProject(projectid);
+    if (!sdvcProj) {
+      res.locals.statusCode = 404;
+      res.locals.message = 'Project does not exist in SDVC';
+    }
+
+    const sdvcBranch = await getSDVCBranch(projectid, branchid);
+    if (!sdvcBranch) {
+      res.locals.statusCode = 404;
+      res.locals.message = 'Branch does not exist in SDVC';
+    }
+
+    const sdvcElements = await getSDVCElements(projectid, branchid);
+    const foundElement = sdvcElements.find(ele => ele.id === elementid);
+
+    if (!foundElement) {
+      res.locals.statusCode = 404;
+      res.locals.message = 'Element does not exist in SDVC';
+    }
+
+    const commits = await axios({
+      method: 'get',
+      url: url,
+      auth: {
+        username: config.auth.username,
+        password: config.auth.password
+      }
+    });
+    res.locals.statusCode = 200;
+    res.locals.message = JSON.stringify(commits.data.commits);
+  }
+  catch (error) {
+    throw new M.ServerError('Error getting commits from SDVC for element '+elementid);
+  }
+  next();
+}
+
 module.exports = {
-  handleCommit
+  handleCommit,
+  getCommitsByElement
 };
