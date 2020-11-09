@@ -390,7 +390,7 @@ function translateElasticSearchQuery(query) {
             ? query.bool.should[0].id.value
             : query.bool.should[0].term.id.value;
           // TODO: determine if different fields can be given different weights with MongoDB
-          const q = {
+          q = {
             ...q,
             '$or': [
             { _id: searchTerm },
@@ -406,7 +406,7 @@ function translateElasticSearchQuery(query) {
         else if (query.bool.should[0].terms && query.bool.should[1].terms) {
           const searchTerm1 = query.bool.should[0].terms._appliedStereotypeIds;
           const searchTerm2 = query.bool.should[1].terms.type;
-          const q = {
+          q = {
             ...q,
             '$or': [
               { [`custom[${customDataNamespace}]._appliedStereotypeIds`]: searchTerm1 },
@@ -420,7 +420,7 @@ function translateElasticSearchQuery(query) {
         let searchTerm;
         if (query.match.name) {
           searchTerm = query.match.name;
-          const q = {
+          q = {
             ...q,
             name: searchTerm
           };
@@ -428,7 +428,7 @@ function translateElasticSearchQuery(query) {
         }
         else if (query.match.documentation) {
           searchTerm = query.match.documentation;
-          const q = {
+          q = {
             ...q,
             documentation: searchTerm
           };
@@ -438,7 +438,7 @@ function translateElasticSearchQuery(query) {
       // Determine if "id" query
       else if (query.term) {
         const searchTerm = query.term.id;
-        const q = {
+        q = {
           ...q,
           _id: searchTerm
         };
@@ -447,7 +447,7 @@ function translateElasticSearchQuery(query) {
       // Determine if "values" query
       else if (query.multi_match) {
         const searchTerm = query.multi_match.query;
-        const q = {
+        q = {
           ...q,
           '$or': [
           { [`custom[${customDataNamespace}].defaultValue`]: searchTerm },
@@ -560,7 +560,7 @@ async function viewEditorMetatypesQuery(query){
     }
   };
 
-  const distinctTypes = await Element.distinct('type', eQ);
+  const distinctTypes = await Element.find().distinct('type', eQ);
   console.log(distinctTypes);
 
   // const elemResults = await Element.aggregate([
