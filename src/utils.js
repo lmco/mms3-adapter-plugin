@@ -277,15 +277,25 @@ async function emailBlobLink(userEmail, link) {
   }
 }
 
+/**
+ * @description Translates an ElasticSearch query into a MongoDB query.
+ *
+ * @param {Object} query - The ElasticSearch query.
+ * @returns MongoDB query.
+ */
 function translateElasticSearchQuery(query) {
   console.log('Initial ES query')
   console.log(query)
+  // Initialize MongoDB query object
+  let q = {};
+
+  // Check for filter
   if (query.bool && query.bool.filter) {
     // Easiest scenario: filtering for a single element
     if (query.bool.filter[0].term && query.bool.filter[0].term.id) {
-      return {
-        elemID: query.bool.filter[0].term.id,
-        projID: query.bool.filter[1].term._projectId
+      q = {
+        _id: new RegExp(query.bool.filter[0].term.id),
+        project: new RegExp(query.bool.filter[1].term._projectId)
       };
     }
     // Otherwise, process the filter
@@ -297,7 +307,7 @@ function translateElasticSearchQuery(query) {
   // TODO: handle the project metatypes query
 
   // There are 5 options unless it's an advanced search:
-  // "all"                    bool: { should: [ { id: { value: VALUE } }, { multi_match: { query: VALUE, fields: FIELDS } } }
+  // "all"                    bool: { should: [ { term: { id: { value: VALUE } } }, { multi_match: { query: VALUE, fields: FIELDS } } }
   // "name or documentation"  match: { [name or documentation]: { query: VALUE } }
   // "id"                     term: { id: VALUE }
   // "values"                 multi_match: { query: VALUE, fields: FIELDS }
@@ -314,20 +324,33 @@ function translateElasticSearchQuery(query) {
         if (!(query.bool.must[1].bool && query.bool.must[1].bool.must_not)) {
           const q1 = translateElasticSearchQuery(query.bool.must[0]);
           const q2 = translateElasticSearchQuery(query.bool.must[1]);
-          const q = { q1, q2 };
+          q = {
+            ...q,
+            q1,
+            q2
+          };
           return q;
         }
         // Test if AND NOT
         else if (query.bool.must[1].bool && query.bool.must[1].bool.must_not) {
           const q1 = translateElasticSearchQuery(query.bool.must[0]);
           const q2 = translateElasticSearchQuery(query.bool.must[1].bool.must_not);
-          const q = { q1, '$nin': q2 };
+          q = {
+            ...q,
+            q1,
+            '$nin': q2
+          };
           return q;
         }
       }
       // otherwise it would be query.bool.must.bool; just start translating from there
       else {
-        return translateElasticSearchQuery(query.bool.must)
+        const q1 = translateElasticSearchQuery(query.bool.must);
+        q = {
+          ...q,
+          q1
+        };
+        return q;
       }
     }
     // Test if it's an OR
@@ -339,13 +362,21 @@ function translateElasticSearchQuery(query) {
         console.log('OR array')
         const q1 = translateElasticSearchQuery(query.bool.should[0]);
         const q2 = translateElasticSearchQuery(query.bool.should[1]);
-        const q = { '$or': [q1, q2] };
+        q = {
+          ...q,
+          '$or': [q1, q2]
+        };
         return q;
       }
       // run query on value if not an array
       else {
         console.log('OR object')
-        return translateElasticSearchQuery(query.bool.should)
+        const q1 = translateElasticSearchQuery(query.bool.should);
+        q = {
+          ...q,
+          q1
+        };
+        return q
       }
     }
     // Treat it like a normal query
@@ -358,14 +389,13 @@ function translateElasticSearchQuery(query) {
           const searchTerm = query.bool.should[0].id && query.bool.should[0].id.value
             ? query.bool.should[0].id.value
             : query.bool.should[0].term.id.value;
-          // const fields = ['_id', 'name', 'documentation',
-          //   `custom[${customDataNamespace}].defaultValue`, `custom[${customDataNamespace}].value`,
-          //   `custom[${customDataNamespace}].specification`];
           // TODO: determine if different fields can be given different weights with MongoDB
-          const q = { '$or': [
+          const q = {
+            ...q,
+            '$or': [
             { _id: searchTerm },
             { name: searchTerm },
-            { documentation: searchTerm},
+            { documentation: searchTerm },
             { [`custom[${customDataNamespace}].defaultValue`]: searchTerm },
             { [`custom[${customDataNamespace}].value`]: searchTerm },
             { [`custom[${customDataNamespace}].specification`]: searchTerm }
@@ -375,10 +405,10 @@ function translateElasticSearchQuery(query) {
         // Metatypes scenario
         else if (query.bool.should[0].terms && query.bool.should[1].terms) {
           const searchTerm1 = query.bool.should[0].terms._appliedStereotypeIds;
-          // const fields1 = `custom[${customDataNamespace}]._appliedStereotypeIds`;
           const searchTerm2 = query.bool.should[1].terms.type;
-          // const fields2 = ['type', `custom[${customDataNamespace}].type`];
-          const q = { '$or': [
+          const q = {
+            ...q,
+            '$or': [
               { [`custom[${customDataNamespace}]._appliedStereotypeIds`]: searchTerm1 },
               { type: searchTerm2 }
           ]};
@@ -388,39 +418,42 @@ function translateElasticSearchQuery(query) {
       // Determine if "name" or "documentation query
       else if (query.match) {
         let searchTerm;
-        let field;
         if (query.match.name) {
           searchTerm = query.match.name;
-          field = 'name';
-          const q = { name: searchTerm };
+          const q = {
+            ...q,
+            name: searchTerm
+          };
           return q;
         }
         else if (query.match.documentation) {
           searchTerm = query.match.documentation;
-          field = 'documentation';
-          const q = { documentation: searchTerm };
+          const q = {
+            ...q,
+            documentation: searchTerm
+          };
           return q;
         }
       }
       // Determine if "id" query
       else if (query.term) {
         const searchTerm = query.term.id;
-        // const field = '_id';
-        const q = { _id: searchTerm };
+        const q = {
+          ...q,
+          _id: searchTerm
+        };
         return q;
       }
       // Determine if "values" query
       else if (query.multi_match) {
         const searchTerm = query.multi_match.query;
-        // const fields = [`custom[${customDataNamespace}].defaultValue`, `custom[${customDataNamespace}].value`,
-        //   `custom[${customDataNamespace}].specification`];
-        const q = { '$or': [
+        const q = {
+          ...q,
+          '$or': [
           { [`custom[${customDataNamespace}].defaultValue`]: searchTerm },
           { [`custom[${customDataNamespace}].value`]: searchTerm },
           { [`custom[${customDataNamespace}].specification`]: searchTerm }
         ]};
-        console.log('multi_match');
-        console.log(q.$or[0])
         return q;
       }
     }
@@ -430,12 +463,115 @@ function translateElasticSearchQuery(query) {
 /**
  * @description
  *
- *
- *
- * @param user
  * @param query
  */
-function mmsSearch(user, query) {
+async function viewEditorMetatypesQuery(query){
+  let eQ = {};
+  let sQ = {};
+
+  let elemField;
+  let elemFieldSize;
+  let elemProjId;
+  let elemRefId;
+  let elemStereotypeFilter;
+  let elemTypeFilter;
+
+  let stereotypeField;
+  let stereotypeFieldSize;
+  let stereotypeProjId;
+  let stereotypeRefId;
+  let stereotypeExistsField;
+  let stereotypeStereotypeFilter;
+  let stereotypeTypeFilter;
+
+  if (query.elements) {
+    // ----- Handle the aggs field ----- //
+    if (query.elements.aggs) {
+      // ----- These variables determine which field to run the aggregate on, and how many results to return ---- //
+      if (query.elements.aggs.types && query.elements.aggs.types.terms && query.elements.aggs.types.terms.field) {
+        elemField = query.elements.aggs.types.terms.field;
+        elemFieldSize = query.elements.aggs.types.terms.size
+      }
+    }
+
+    // ----- Handle the filters ----- //
+    if (query.elements.filter && query.elements.filter.bool) {
+      // ----- These variables will store values that the query MUST match ----- //
+      if (query.elements.filter.bool.must) {
+        elemProjId = query.elements.filter.bool.must[0].term._projectId;
+        elemRefId = query.elements.filter.bool.must[1].term._refId;
+      }
+      // ----- These variables will store values that the query MUST NOT match ----- //
+      if (query.elements.filter.bool.must_not) {
+        elemStereotypeFilter = query.elements.filter.bool.must_not[0].terms._appliedStereotypeIds;
+        elemTypeFilter = query.elements.filter.bool.must_not[1].terms.type;
+      }
+    }
+  }
+  if (query.stereotypedElements) {
+    // ----- Handle the aggs field ----- //
+    if (query.stereotypedElements.aggs) {
+      // ----- These variables determine which field to run the aggregate on, and how many results to return ---- //
+      if (query.stereotypedElements.aggs.stereotypeIds && query.stereotypedElements.aggs.stereotypeIds.terms) {
+        stereotypeField = query.stereotypedElements.aggs.stereotypeIds.terms.field;
+        stereotypeFieldSize = query.stereotypedElements.aggs.stereotypeIds.terms.size
+      }
+    }
+
+    // ----- Handle the filters ----- //
+    if (query.stereotypedElements.filter && query.stereotypedElements.filter.bool) {
+      // ----- These variables will store values that the query MUST match ----- //
+      if (query.stereotypedElements.filter.bool.must) {
+        stereotypeProjId = query.stereotypedElements.filter.bool.must[0].term._projectId;
+        stereotypeRefId = query.stereotypedElements.filter.bool.must[1].term._refId;
+        stereotypeExistsField = query.stereotypedElements.filter.bool.must[2].exists.field;
+      }
+      // ----- These variables will store values that the query MUST NOT match ----- //
+      if (query.stereotypedElements.filter.bool.must_not) {
+        stereotypeStereotypeFilter = query.stereotypedElements.filter.bool.must_not[0].terms._appliedStereotypeIds;
+        stereotypeTypeFilter = query.stereotypedElements.filter.bool.must_not[1].terms.type;
+      }
+    }
+  }
+
+  // Note - the elemField should be 'type' and the elemFieldSize should be 20
+  // Construct a query that will take the top 20 types among elements on a certain project, excluding elements
+  //  that match the values
+  eQ = {
+    project: elemProjId,
+    branch: elemRefId,
+    type: {
+      '$nin': elemTypeFilter
+    },
+    [`custom[${customDataNamespace}]._appliedStereotypeIds`]: {
+      '$nin': elemStereotypeFilter
+    }
+  };
+
+  sQ = {
+    project: stereotypeProjId,
+    branch: stereotypeRefId,
+    type: {
+      '$nin': stereotypeTypeFilter
+    },
+    [`custom[${customDataNamespace}]._appliedStereotypeIds`]: { '$exists': true },
+    [`custom[${customDataNamespace}]._appliedStereotypeIds`]: {
+      '$nin': stereotypeStereotypeFilter
+    }
+  };
+
+  const distinctTypes = await Element.distinct('type', eQ);
+  console.log(distinctTypes);
+
+  // const elemResults = await Element.aggregate([
+  //   { $match: eQ },
+  //   { $group: {
+  //     _id: 'type', count:
+  //     } }
+  // ])
+
+  //const elemResutls = await Element.mapReduce()
+
 
 }
 
@@ -450,5 +586,6 @@ module.exports = {
   customDataNamespace,
   convertHtml2Pdf,
   emailBlobLink,
-  translateElasticSearchQuery
+  translateElasticSearchQuery,
+  viewEditorMetatypesQuery
 };

@@ -846,7 +846,6 @@ async function putElementSearch(req, res, next) {
     await utils.getOrgId(req);
     let projID = req.params.projectid;
     const branchID = req.params.refid;
-    let elemID;
 
     if (req.body.query) {
       const query = utils.translateElasticSearchQuery(req.body.query);
@@ -864,8 +863,21 @@ async function putElementSearch(req, res, next) {
       res.locals.statusCode = 200;
       res.locals.message = { elements: data };
     }
+    else if (req.body.aggs) {
+      const query = utils.viewEditorMetatypesQuery(req.body.aggs)
+
+      // TODO: process aggs query
+      console.log('original aggs query')
+      console.log(req.body.aggs)
+      console.log('aggs translated')
+      console.log(query)
+
+      // Set the status code and response message
+      res.locals.statusCode = 400;
+      res.locals.message = { aggregate: 'testing' };
+    }
     else {
-      throw new M.DataFormatError('Invalid request: query not found in request body.');
+      throw new M.DataFormatError('Invalid request: No query or aggs found in request body.');
     }
     // const elements = await ElementController.find(req.user, req.params.orgid, projID, branchID,
     //   elemID);
