@@ -1629,6 +1629,184 @@ router.route('/commit/orgs/:orgid/projects/:projectid/branches/:branchid')
   respond
 );
 
+/**
+ * @swagger
+ * /sdvc-org:
+ *   post:
+ *     tags:
+ *       - sdvc organizations
+ *     description: Creates sdvc organization from the data provided in
+ *                  the request body. Returns the organization.
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/sdvc-org')
+.post(
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  CommitController.postOrg,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
+
+/**
+ * @swagger
+ * /sdvc-project:
+ *   post:
+ *     tags:
+ *       - sdvc organizations
+ *     description: Creates sdvc organization from the data provided in
+ *                  the request body. Returns the organization.
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/sdvc-project')
+.post(
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  CommitController.postProj,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
+
+/**
+ * @swagger
+ * /sdvc-user:
+ *   get:
+ *     tags:
+ *       - sdvc user
+ *     description: Gets an sdvc user. Returns sdvc user
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: username
+ *         description: The username of the user.
+ *         required: true
+ *         type: string
+ *   post:
+ *     tags:
+ *       - sdvc user
+ *     description: Creates sdvc user. Returns user.
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/sdvc-user/:username')
+.get(
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getSdvcUser,
+  logResponse,
+  respond
+)
+.post(
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.postSdvcUser,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
+
+/**
+ * @swagger
+ * /sdvc-token:
+ *   post:
+ *     tags:
+ *       - sdvc user token
+ *     description: Authenticate with SDVC. Returns user token.
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/sdvc-token/:username')
+.post(
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getSdvcAuthToken,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
+
 // For all other routes that get hit, return an error stating "Not Implemented"
 app.use('*', (req, res, next) => {
   M.log.info(`Request for route not implemented: ${req.method}: ${req.originalUrl}`);

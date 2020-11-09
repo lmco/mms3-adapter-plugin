@@ -38,6 +38,7 @@ const branchController = M.require('controllers.branch-controller');
 const config = M.config.server.plugins.plugins['mms3-adapter'].sdvc;
 const mcfUtils = M.require('lib.utils');
 const errors = M.require('lib.errors');
+const { getStatusCode } = M.require('lib.errors');
 
 // MMS3 Adapter Modules
 const mms3Formatter = require('./formatter.js');
@@ -154,6 +155,50 @@ async function handleCommit(req, res, next) {
   catch (error) {
     M.log.warn(error.message);
     res.locals.statusCode = errors.getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
+async function postOrg(req, res, next) {
+  try {
+    const org = await createSDVCOrganization(req.user, req.body);
+    res.locals.statusCode = 200;
+    res.locals.message = { org };
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
+async function postProj(req, res, next) {
+  try {
+    const proj = await createSDVCProject(req.user, req.body);
+    res.locals.statusCode = 200;
+    res.locals.message = { proj };
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
+async function postBranch(req, res, next) {
+  try {
+    const projId = req.body.projectId;
+    const branchObj = req.body.branchObj;
+    const branch = await createSDVCBranch(req.user, projId, branchObj);
+    res.locals.statusCode = 200;
+    res.locals.message = { branch };
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
     res.locals.message = error.message;
   }
   next();
@@ -345,7 +390,7 @@ async function createSDVCOrganization(user, orgObj) {
     return org.data.orgs[0];
   }
   catch (error) {
-    throw new M.ServerError('Error creating MMS3 SDVC organization');
+    throw new M.ServerError('Error creating MMS3 SDVC organization: '+error);
   }
 }
 
@@ -522,5 +567,8 @@ async function getCommitsByElement(res, next, projectid, branchid, elementid) {
 
 module.exports = {
   handleCommit,
-  getCommitsByElement
+  getCommitsByElement,
+  postOrg,
+  postProj,
+  postBranch
 };
