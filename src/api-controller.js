@@ -864,13 +864,13 @@ async function putElementSearch(req, res, next) {
       res.locals.message = { elements: data };
     }
     else if (req.body.aggs) {
-      const query = utils.viewEditorMetatypesQuery(req.body.aggs)
+      const result = await utils.viewEditorMetatypesQuery(req.body.aggs)
 
       // TODO: process aggs query
-      console.log('original aggs query')
-      console.log(req.body.aggs)
-      console.log('aggs translated')
-      console.log(query)
+      // console.log('original aggs query')
+      // console.log(req.body.aggs)
+      // console.log('aggs translated')
+      // console.log(query)
 
       // Set the status code and response message
       res.locals.statusCode = 400;

@@ -570,15 +570,19 @@ async function viewEditorMetatypesQuery(query){
   // const distinctTypes = await Element.find().distinct('type', eQ);
   // console.log(distinctTypes);
 
+  const elemMatchResults = await Element.find(eQ);
+  console.log('element aggregate match results')
+  console.log(elemMatchResults);
+
+
   const elemResults = await Element.aggregate([
     { $match: eQ },
     { $group: {
       _id: 'type',
       count: { $sum : 1 }
       } },
-    { $sort: { count: 1 } }
   ])
-
+  console.log('element actual aggregate results');
   console.log(elemResults)
   return elemResults;
 
