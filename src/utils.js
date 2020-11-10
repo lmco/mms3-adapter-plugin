@@ -382,8 +382,10 @@ function translateElasticSearchQuery(query) {
     // Treat it like a normal query
     else {
       console.log('normal query')
+      console.log(JSON.stringify(query.bool))
       // Determine if "all" or "metatypes" query
       if (query.bool.should) {
+        console.log('all')
         // All scenario
         if ((query.bool.should[0].term.id || query.bool.should[0].term.id) && query.bool.should[1].multi_match) {
           const searchTerm = query.bool.should[0].id && query.bool.should[0].id.value
@@ -400,11 +402,11 @@ function translateElasticSearchQuery(query) {
             { [`custom[${customDataNamespace}].value`]: searchTerm },
             { [`custom[${customDataNamespace}].specification`]: searchTerm }
           ]};
-          console.log('all')
           return q;
         }
         // Metatypes scenario
         else if (query.bool.should[0].terms && query.bool.should[1].terms) {
+          console.log('metatypes')
           const searchTerm1 = query.bool.should[0].terms._appliedStereotypeIds;
           const searchTerm2 = query.bool.should[1].terms.type;
           q = {
@@ -413,7 +415,6 @@ function translateElasticSearchQuery(query) {
               { [`custom[${customDataNamespace}]._appliedStereotypeIds`]: searchTerm1 },
               { type: searchTerm2 }
           ]};
-          console.log('metatypes')
           return q;
         }
       }
