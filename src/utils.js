@@ -566,33 +566,35 @@ async function viewEditorMetatypesQuery(query){
 
   // const distinctTypes = await Element.find().distinct('type', eQ);
   // console.log(distinctTypes);
-
+  console.log(eQ)
   const elemMatchResults = await Element.find(eQ);
-  console.log('element aggregate match results')
+  console.log('element aggregate query match results')
   console.log(elemMatchResults);
 
+  const types = elemMatchResults.map((e) => e.type);
 
-  const elemResults = await Element.aggregate([
-    { $match: eQ },
-    { $group: {
-      _id: 'type',
-      count: { $sum : 1 }
-      } },
-  ])
-  console.log('element actual aggregate results');
-  console.log(elemResults)
-  //return elemResults;
 
-  const elemResults2 = await Element.aggregate([
-    { $match: {} },
-    { $group: {
-        _id: 'type',
-        count: { $sum : 1 }
-      } },
-  ])
-  console.log('open query aggregate results');
-  console.log(elemResults2)
-  return elemResults;
+  // const elemResults = await Element.aggregate([
+  //   { $match: eQ },
+  //   { $group: {
+  //     _id: 'type',
+  //     count: { $sum : 1 }
+  //     } },
+  // ])
+  // console.log('element actual aggregate results');
+  // console.log(elemResults)
+  // //return elemResults;
+  //
+  // const elemResults2 = await Element.aggregate([
+  //   { $match: {} },
+  //   { $group: {
+  //       _id: 'type',
+  //       count: { $sum : 1 }
+  //     } },
+  // ])
+  // console.log('open query aggregate results');
+  // console.log(elemResults2)
+  // return elemResults;
 
   //const elemResutls = await Element.mapReduce()
 
