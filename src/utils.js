@@ -572,13 +572,13 @@ async function viewEditorMetatypesQuery(query){
   //console.log(elemMatchResults);
   const types = {};
   for (let i = 0; i < elemMatchResults.length; i++) {
-    types[elemMatchResults[i].type] = types[elemMatchResults[i].type] ? types[elemMatchResults[i].type] + 1 : 1;
+    if (elemMatchResults[i].type !== '') types[elemMatchResults[i].type] = types[elemMatchResults[i].type] ? types[elemMatchResults[i].type] + 1 : 1;
   }
   console.log(types)
 
   const typeList = [];
   for (let i = 0; i < 20; i++) {
-    const maxVal = Math.max(Object.values(types));
+    const maxVal = Math.max(...Object.values(types));
     const type = Object.keys(types)[Object.values(types).indexOf(maxVal)];
     typeList.push({ [type]: maxVal });
     delete types[type];
