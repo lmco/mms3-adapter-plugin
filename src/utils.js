@@ -576,6 +576,15 @@ async function viewEditorMetatypesQuery(query){
   }
   console.log(types)
 
+  const typeList = [];
+  for (let i = 0; i < 20; i++) {
+    const maxVal = Math.max(Object.values(types));
+    const type = Object.keys(types)[Object.values(types).indexOf(maxVal)];
+    typeList.push({ [type]: maxVal });
+    delete types[type];
+  }
+  console.log(typeList)
+
 
 
   // const elemResults = await Element.aggregate([
