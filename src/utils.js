@@ -297,6 +297,8 @@ function translateElasticSearchQuery(query) {
         _id: new RegExp(query.bool.filter[0].term.id),
         project: new RegExp(query.bool.filter[1].term._projectId)
       };
+      console.log('filter query')
+      console.log(q)
     }
     // Otherwise, process the filter
     else if (query.bool.filter) {
