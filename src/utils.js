@@ -340,7 +340,7 @@ function translateElasticSearchQuery(query) {
           q = {
             ...q,
             ...q1,
-            '$nin': ...q2
+            '$nin': { ...q2 }
           };
           return q;
         }
