@@ -467,6 +467,8 @@ function translateElasticSearchQuery(query) {
       }
     }
   }
+
+  return q;
 }
 
 /**
