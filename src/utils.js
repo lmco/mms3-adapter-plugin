@@ -542,8 +542,8 @@ async function viewEditorMetatypesQuery(query){
   // Construct a query that will take the top 20 types among elements on a certain project, excluding elements
   //  that match the values
   eQ = {
-    project: elemProjId,
-    branch: elemRefId,
+    project: new RegExp(elemProjId),
+    branch: new RegExp(elemRefId),
     type: {
       '$nin': elemTypeFilter
     },
@@ -553,8 +553,8 @@ async function viewEditorMetatypesQuery(query){
   };
 
   sQ = {
-    project: stereotypeProjId,
-    branch: stereotypeRefId,
+    project: new RegExp(stereotypeProjId),
+    branch: new RegExp(stereotypeRefId),
     type: {
       '$nin': stereotypeTypeFilter
     },
