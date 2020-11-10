@@ -400,6 +400,7 @@ function translateElasticSearchQuery(query) {
             { [`custom[${customDataNamespace}].value`]: searchTerm },
             { [`custom[${customDataNamespace}].specification`]: searchTerm }
           ]};
+          console.log('all')
           return q;
         }
         // Metatypes scenario
@@ -412,10 +413,11 @@ function translateElasticSearchQuery(query) {
               { [`custom[${customDataNamespace}]._appliedStereotypeIds`]: searchTerm1 },
               { type: searchTerm2 }
           ]};
+          console.log('metatypes')
           return q;
         }
       }
-      // Determine if "name" or "documentation query
+      // Determine if "name" or "documentation" query
       else if (query.match) {
         let searchTerm;
         if (query.match.name) {
@@ -424,6 +426,7 @@ function translateElasticSearchQuery(query) {
             ...q,
             name: searchTerm
           };
+          console.log('name')
           return q;
         }
         else if (query.match.documentation) {
@@ -432,6 +435,7 @@ function translateElasticSearchQuery(query) {
             ...q,
             documentation: searchTerm
           };
+          console.log('documentation')
           return q;
         }
       }
@@ -442,6 +446,7 @@ function translateElasticSearchQuery(query) {
           ...q,
           _id: searchTerm
         };
+        console.log('id')
         return q;
       }
       // Determine if "values" query
@@ -454,6 +459,7 @@ function translateElasticSearchQuery(query) {
           { [`custom[${customDataNamespace}].value`]: searchTerm },
           { [`custom[${customDataNamespace}].specification`]: searchTerm }
         ]};
+        console.log('values')
         return q;
       }
     }
