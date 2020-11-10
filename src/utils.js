@@ -586,6 +586,17 @@ async function viewEditorMetatypesQuery(query){
   ])
   console.log('element actual aggregate results');
   console.log(elemResults)
+  //return elemResults;
+
+  const elemResults2 = await Element.aggregate([
+    { $match: {} },
+    { $group: {
+        _id: 'type',
+        count: { $sum : 1 }
+      } },
+  ])
+  console.log('open query aggregate results');
+  console.log(elemResults2)
   return elemResults;
 
   //const elemResutls = await Element.mapReduce()
