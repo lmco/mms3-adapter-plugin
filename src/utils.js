@@ -569,9 +569,13 @@ async function viewEditorMetatypesQuery(query){
   console.log(JSON.stringify(eQ))
   const elemMatchResults = await Element.find(eQ);
   console.log('element aggregate query match results')
-  console.log(elemMatchResults);
+  //console.log(elemMatchResults);
+  const types = {};
+  for (let i = 0; i < elemMatchResults.length; i++) {
+    types[elemMatchResults[i].type] = types[elemMatchResults[i].type] ? types[elemMatchResults[i].type] + 1 : 1;
+  }
+  console.log(types)
 
-  const types = elemMatchResults.map((e) => e.type);
 
 
   // const elemResults = await Element.aggregate([
