@@ -328,8 +328,8 @@ function translateElasticSearchQuery(query) {
           const q2 = translateElasticSearchQuery(query.bool.must[1]);
           q = {
             ...q,
-            q1,
-            q2
+            ...q1,
+            ...q2
           };
           return q;
         }
@@ -339,8 +339,8 @@ function translateElasticSearchQuery(query) {
           const q2 = translateElasticSearchQuery(query.bool.must[1].bool.must_not);
           q = {
             ...q,
-            q1,
-            '$nin': q2
+            ...q1,
+            '$nin': ...q2
           };
           return q;
         }
@@ -350,7 +350,7 @@ function translateElasticSearchQuery(query) {
         const q1 = translateElasticSearchQuery(query.bool.must);
         q = {
           ...q,
-          q1
+          ...q1
         };
         return q;
       }
@@ -366,7 +366,7 @@ function translateElasticSearchQuery(query) {
         const q2 = translateElasticSearchQuery(query.bool.should[1]);
         q = {
           ...q,
-          '$or': [q1, q2]
+          '$or': [...q1, ...q2]
         };
         return q;
       }
@@ -376,7 +376,7 @@ function translateElasticSearchQuery(query) {
         const q1 = translateElasticSearchQuery(query.bool.should);
         q = {
           ...q,
-          q1
+          ...q1
         };
         return q
       }
@@ -384,10 +384,8 @@ function translateElasticSearchQuery(query) {
     // Treat it like a normal query
     else {
       console.log('normal query')
-      console.log(JSON.stringify(query.bool))
       // Determine if "all" or "metatypes" query
       if (query.bool.should) {
-        console.log('all')
         // All scenario
         if ((query.bool.should[0].term.id || query.bool.should[0].term.id) && query.bool.should[1].multi_match) {
           const searchTerm = query.bool.should[0].id && query.bool.should[0].id.value
@@ -408,7 +406,6 @@ function translateElasticSearchQuery(query) {
         }
         // Metatypes scenario
         else if (query.bool.should[0].terms && query.bool.should[1].terms) {
-          console.log('metatypes')
           const searchTerm1 = query.bool.should[0].terms._appliedStereotypeIds;
           const searchTerm2 = query.bool.should[1].terms.type;
           q = {
@@ -429,7 +426,6 @@ function translateElasticSearchQuery(query) {
             ...q,
             name: searchTerm
           };
-          console.log('name')
           return q;
         }
         else if (query.match.documentation) {
@@ -438,7 +434,6 @@ function translateElasticSearchQuery(query) {
             ...q,
             documentation: searchTerm
           };
-          console.log('documentation')
           return q;
         }
       }
@@ -449,7 +444,6 @@ function translateElasticSearchQuery(query) {
           ...q,
           _id: searchTerm
         };
-        console.log('id')
         return q;
       }
       // Determine if "values" query
@@ -462,7 +456,6 @@ function translateElasticSearchQuery(query) {
           { [`custom[${customDataNamespace}].value`]: searchTerm },
           { [`custom[${customDataNamespace}].specification`]: searchTerm }
         ]};
-        console.log('values')
         return q;
       }
     }
