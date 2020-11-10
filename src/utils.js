@@ -578,8 +578,8 @@ async function viewEditorMetatypesQuery(query){
     { $sort: { count: 1 } }
   ])
 
-  console.log(elemResult)
-  return elemResult;
+  console.log(elemResults)
+  return elemResults;
 
   //const elemResutls = await Element.mapReduce()
 
