@@ -596,7 +596,7 @@ async function viewEditorMetatypesQuery(query){
     const maxVal = Math.max(...Object.values(stereoTypes));
     const _stereotypeId = Object.keys(stereoTypes)[Object.values(stereoTypes).indexOf(maxVal)];
     stereoBuckets.push({ key: _stereotypeId, doc_count: maxVal });
-    delete stereoTypes[type];
+    delete stereoTypes[_stereotypeId];
   }
 
 
