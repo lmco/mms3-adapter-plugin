@@ -564,54 +564,58 @@ async function viewEditorMetatypesQuery(query){
     }
   };
 
-  // const distinctTypes = await Element.find().distinct('type', eQ);
-  // console.log(distinctTypes);
-  console.log(JSON.stringify(eQ))
+
   const elemMatchResults = await Element.find(eQ);
-  console.log('element aggregate query match results')
-  //console.log(elemMatchResults);
-  const types = {};
+  const elemTypes = {};
   for (let i = 0; i < elemMatchResults.length; i++) {
-    if (elemMatchResults[i].type !== '') types[elemMatchResults[i].type] = types[elemMatchResults[i].type] ? types[elemMatchResults[i].type] + 1 : 1;
+    if (elemMatchResults[i].type !== '') {
+      elemTypes[elemMatchResults[i].type] = elemTypes[elemMatchResults[i].type]
+        ? elemTypes[elemMatchResults[i].type] + 1
+        : 1;
+    }
   }
-  console.log(types)
 
-  const typeList = [];
+  const elemBuckets = [];
   for (let i = 0; i < 20; i++) {
-    const maxVal = Math.max(...Object.values(types));
-    const type = Object.keys(types)[Object.values(types).indexOf(maxVal)];
-    typeList.push({ [type]: maxVal });
-    delete types[type];
+    const maxVal = Math.max(...Object.values(elemTypes));
+    const type = Object.keys(elemTypes)[Object.values(elemTypes).indexOf(maxVal)];
+    elemBuckets.push({ key: type, doc_count: maxVal });
+    delete elemTypes[type];
   }
-  console.log(typeList)
+
+  const stereotypeMatchResults = await Element.find(sQ);
+  const stereoTypes = {};
+  for (let i = 0; i < stereotypeMatchResults.length; i++) {
+    for (let j = 0; j < stereotypeMatchResults[i][customDataNamespace]._appliedStereotypeIds.length; j++) {
+      stereoTypes[stereotypeMatchResults[i][customDataNamespace]._appliedStereotypeIds[j]] = stereoTypes[stereotypeMatchResults[i][customDataNamespace]._appliedStereotypeIds[j]]
+        ? stereoTypes[stereotypeMatchResults[i][customDataNamespace]._appliedStereotypeIds[j]] + 1
+        : 1;
+    }
+  }
+
+  const stereoBuckets = [];
+  for (let i = 0; i < 20; i++) {
+    const maxVal = Math.max(...Object.values(stereoTypes));
+    const type = Object.keys(stereoTypes)[Object.values(stereoTypes).indexOf(maxVal)];
+    stereoBuckets.push({ key: type, doc_count: maxVal });
+    delete stereoTypes[type];
+  }
 
 
-
-  // const elemResults = await Element.aggregate([
-  //   { $match: eQ },
-  //   { $group: {
-  //     _id: 'type',
-  //     count: { $sum : 1 }
-  //     } },
-  // ])
-  // console.log('element actual aggregate results');
-  // console.log(elemResults)
-  // //return elemResults;
-  //
-  // const elemResults2 = await Element.aggregate([
-  //   { $match: {} },
-  //   { $group: {
-  //       _id: 'type',
-  //       count: { $sum : 1 }
-  //     } },
-  // ])
-  // console.log('open query aggregate results');
-  // console.log(elemResults2)
-  // return elemResults;
-
-  //const elemResutls = await Element.mapReduce()
-
-
+  return {
+    aggregations: {
+      elements: {
+        types: {
+          buckets: elemBuckets
+        }
+      },
+      stereotypedElements: {
+        stereotypeIds: {
+          buckets: stereoBuckets
+        }
+      }
+    }
+  };
 }
 
 // Export the module

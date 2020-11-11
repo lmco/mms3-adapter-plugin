@@ -864,17 +864,11 @@ async function putElementSearch(req, res, next) {
       res.locals.message = { elements: data };
     }
     else if (req.body.aggs) {
-      const result = await utils.viewEditorMetatypesQuery(req.body.aggs)
-
-      // TODO: process aggs query
-      // console.log('original aggs query')
-      // console.log(req.body.aggs)
-      // console.log('aggs translated')
-      // console.log(query)
+      const results = await utils.viewEditorMetatypesQuery(req.body.aggs);
 
       // Set the status code and response message
-      res.locals.statusCode = 400;
-      res.locals.message = { aggregate: 'testing' };
+      res.locals.statusCode = 200;
+      res.locals.message = results;
     }
     else {
       throw new M.DataFormatError('Invalid request: No query or aggs found in request body.');
