@@ -590,12 +590,12 @@ async function viewEditorMetatypesQuery(query){
         : 1;
     }
   }
-
+  console.log(stereoTypes)
   const stereoBuckets = [];
   for (let i = 0; i < 20; i++) {
     const maxVal = Math.max(...Object.values(stereoTypes));
-    const type = Object.keys(stereoTypes)[Object.values(stereoTypes).indexOf(maxVal)];
-    stereoBuckets.push({ key: type, doc_count: maxVal });
+    const _stereotypeId = Object.keys(stereoTypes)[Object.values(stereoTypes).indexOf(maxVal)];
+    stereoBuckets.push({ key: _stereotypeId, doc_count: maxVal });
     delete stereoTypes[type];
   }
 
