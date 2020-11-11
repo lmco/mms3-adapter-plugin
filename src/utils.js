@@ -553,9 +553,9 @@ async function viewEditorMetatypesQuery(query){
     type: {
       '$nin': stereotypeTypeFilter
     },
-    [`custom[${customDataNamespace}]._appliedStereotypeIds`]: { '$exists': true, '$nin': stereotypeStereotypeFilter }
+    [`custom.${customDataNamespace}._appliedStereotypeIds`]: { '$exists': true, '$nin': stereotypeStereotypeFilter }
   };
-  console.log(JSON.stringify(sQ));
+  console.log(sQ);
 
   // Query for the elements
   const elemMatchResults = await Element.find(eQ);
