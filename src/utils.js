@@ -586,9 +586,9 @@ async function viewEditorMetatypesQuery(query){
   const stereotypeMatchResults = await Element.find(sQ);
   const stereoTypes = {};
   for (let i = 0; i < stereotypeMatchResults.length; i++) {
-    for (let j = 0; j < stereotypeMatchResults[i][customDataNamespace]._appliedStereotypeIds.length; j++) {
-      stereoTypes[stereotypeMatchResults[i][customDataNamespace]._appliedStereotypeIds[j]] = stereoTypes[stereotypeMatchResults[i][customDataNamespace]._appliedStereotypeIds[j]]
-        ? stereoTypes[stereotypeMatchResults[i][customDataNamespace]._appliedStereotypeIds[j]] + 1
+    for (let j = 0; j < stereotypeMatchResults[i].custom[customDataNamespace]._appliedStereotypeIds.length; j++) {
+      stereoTypes[stereotypeMatchResults[i].custom[customDataNamespace]._appliedStereotypeIds[j]] = stereoTypes[stereotypeMatchResults[i].custom[customDataNamespace]._appliedStereotypeIds[j]]
+        ? stereoTypes[stereotypeMatchResults[i].custom[customDataNamespace]._appliedStereotypeIds[j]] + 1
         : 1;
     }
   }
