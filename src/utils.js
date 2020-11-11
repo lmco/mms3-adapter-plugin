@@ -519,7 +519,7 @@ async function viewEditorMetatypesQuery(query){
       if (query.stereotypedElements.filter.bool.must) {
         console.log(JSON.stringify(query.stereotypedElements.filter.bool.must))
         stereotypeProjId = query.stereotypedElements.filter.bool.must[0].term._projectId;
-        stereotypeRefId = query.stereotypedElements.filter.bool.must[1].term._refId;
+        stereotypeRefId = query.stereotypedElements.filter.bool.must[1].term._inRefIds;
         console.log(stereotypeProjId)
         console.log(stereotypeRefId)
       }
@@ -542,6 +542,9 @@ async function viewEditorMetatypesQuery(query){
       '$nin': elemStereotypeFilter
     }
   };
+
+  console.log(stereotypeProjId)
+  console.log(new RegExp(stereotypeProjId))
 
   // Construct the query for the stereotyped elements
   sQ = {
