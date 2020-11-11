@@ -558,10 +558,7 @@ async function viewEditorMetatypesQuery(query){
     type: {
       '$nin': stereotypeTypeFilter
     },
-    [`custom[${customDataNamespace}]._appliedStereotypeIds`]: { '$exists': true },
-    [`custom[${customDataNamespace}]._appliedStereotypeIds`]: {
-      '$nin': stereotypeStereotypeFilter
-    }
+    [`custom[${customDataNamespace}]._appliedStereotypeIds`]: { '$exists': true, '$nin': stereotypeStereotypeFilter }
   };
 
 
