@@ -562,17 +562,23 @@ async function viewEditorMetatypesQuery(query){
   };
 
 
+  // Query for the elements
   const elemMatchResults = await Element.find(eQ);
   const elemTypes = {};
+  let elemDocCount = 0;
+  const elemBuckets = [];
+
+  // Count the types
   for (let i = 0; i < elemMatchResults.length; i++) {
     if (elemMatchResults[i].type !== '') {
       elemTypes[elemMatchResults[i].type] = elemTypes[elemMatchResults[i].type]
         ? elemTypes[elemMatchResults[i].type] + 1
         : 1;
+      elemDocCount = elemDocCount + 1;
     }
   }
 
-  const elemBuckets = [];
+  // Format the types into the top 20 buckets
   for (let i = 0; i < 20; i++) {
     const maxVal = Math.max(...Object.values(elemTypes));
     const type = Object.keys(elemTypes)[Object.values(elemTypes).indexOf(maxVal)];
@@ -580,18 +586,25 @@ async function viewEditorMetatypesQuery(query){
     delete elemTypes[type];
   }
 
+  // Query for the stereotyped elements
   const stereotypeMatchResults = await Element.find(sQ);
   const stereoTypes = {};
+  let stereoDocCount = 0;
+  const stereoBuckets = [];
+  console.log('stereotype match results');
+  console.log(JSON.stringify(stereotypeMatchResults))
+
   for (let i = 0; i < stereotypeMatchResults.length; i++) {
     console.log(stereotypeMatchResults[i])
     for (let j = 0; j < stereotypeMatchResults[i].custom[customDataNamespace]._appliedStereotypeIds.length; j++) {
       stereoTypes[stereotypeMatchResults[i].custom[customDataNamespace]._appliedStereotypeIds[j]] = stereoTypes[stereotypeMatchResults[i].custom[customDataNamespace]._appliedStereotypeIds[j]]
         ? stereoTypes[stereotypeMatchResults[i].custom[customDataNamespace]._appliedStereotypeIds[j]] + 1
         : 1;
+      stereoDocCount = stereoDocCount + 1;
     }
   }
   console.log(stereoTypes)
-  const stereoBuckets = [];
+
   for (let i = 0; i < 20; i++) {
     const maxVal = Math.max(...Object.values(stereoTypes));
     const _stereotypeId = Object.keys(stereoTypes)[Object.values(stereoTypes).indexOf(maxVal)];
@@ -603,11 +616,13 @@ async function viewEditorMetatypesQuery(query){
   return {
     aggregations: {
       elements: {
+        doc_count: elemDocCount,
         types: {
           buckets: elemBuckets
         }
       },
       stereotypedElements: {
+        doc_count: stereoDocCount,
         stereotypeIds: {
           buckets: stereoBuckets
         }
