@@ -560,6 +560,7 @@ async function viewEditorMetatypesQuery(query){
     },
     [`custom[${customDataNamespace}]._appliedStereotypeIds`]: { '$exists': true, '$nin': stereotypeStereotypeFilter }
   };
+  console.log(JSON.stringify(sQ))
 
 
   // Query for the elements
