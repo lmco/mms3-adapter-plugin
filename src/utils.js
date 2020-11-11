@@ -513,22 +513,13 @@ async function viewEditorMetatypesQuery(query){
     }
   }
   if (query.stereotypedElements) {
-    // ----- Handle the aggs field ----- //
-    if (query.stereotypedElements.aggs) {
-      // ----- These variables determine which field to run the aggregate on, and how many results to return ---- //
-      if (query.stereotypedElements.aggs.stereotypeIds && query.stereotypedElements.aggs.stereotypeIds.terms) {
-        stereotypeField = query.stereotypedElements.aggs.stereotypeIds.terms.field;
-        stereotypeFieldSize = query.stereotypedElements.aggs.stereotypeIds.terms.size
-      }
-    }
-
     // ----- Handle the filters ----- //
     if (query.stereotypedElements.filter && query.stereotypedElements.filter.bool) {
       // ----- These variables will store values that the query MUST match ----- //
       if (query.stereotypedElements.filter.bool.must) {
+        console.log(JSON.stringify(query.stereotypedElements.filter.bool.must))
         stereotypeProjId = query.stereotypedElements.filter.bool.must[0].term._projectId;
         stereotypeRefId = query.stereotypedElements.filter.bool.must[1].term._refId;
-        stereotypeExistsField = query.stereotypedElements.filter.bool.must[2].exists.field;
       }
       // ----- These variables will store values that the query MUST NOT match ----- //
       if (query.stereotypedElements.filter.bool.must_not) {
@@ -560,7 +551,6 @@ async function viewEditorMetatypesQuery(query){
     },
     [`custom[${customDataNamespace}]._appliedStereotypeIds`]: { '$exists': true, '$nin': stereotypeStereotypeFilter }
   };
-  console.log(JSON.stringify(sQ))
 
 
   // Query for the elements
