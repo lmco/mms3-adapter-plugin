@@ -520,6 +520,8 @@ async function viewEditorMetatypesQuery(query){
         console.log(JSON.stringify(query.stereotypedElements.filter.bool.must))
         stereotypeProjId = query.stereotypedElements.filter.bool.must[0].term._projectId;
         stereotypeRefId = query.stereotypedElements.filter.bool.must[1].term._refId;
+        console.log(stereotypeProjId)
+        console.log(stereotypeRefId)
       }
       // ----- These variables will store values that the query MUST NOT match ----- //
       if (query.stereotypedElements.filter.bool.must_not) {
@@ -529,9 +531,7 @@ async function viewEditorMetatypesQuery(query){
     }
   }
 
-  // Note - the elemField should be 'type' and the elemFieldSize should be 20
-  // Construct a query that will take the top 20 types among elements on a certain project, excluding elements
-  //  that match the values
+  // Construct the query for the elements
   eQ = {
     project: new RegExp(elemProjId),
     branch: new RegExp(elemRefId),
@@ -543,6 +543,7 @@ async function viewEditorMetatypesQuery(query){
     }
   };
 
+  // Construct the query for the stereotyped elements
   sQ = {
     project: new RegExp(stereotypeProjId),
     branch: new RegExp(stereotypeRefId),
@@ -551,7 +552,7 @@ async function viewEditorMetatypesQuery(query){
     },
     [`custom[${customDataNamespace}]._appliedStereotypeIds`]: { '$exists': true, '$nin': stereotypeStereotypeFilter }
   };
-
+  console.log(JSON.stringify(sQ));
 
   // Query for the elements
   const elemMatchResults = await Element.find(eQ);
