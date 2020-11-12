@@ -605,6 +605,7 @@ async function postElements(req, res, next) {
             }
           }
           else {
+            console.log(JSON.stringify(update));
             throw new M.DataFormatError('Invalid update to _childViews field.', 'warn');
           }
           // Check if a child view is being added or removed by comparing existing and
