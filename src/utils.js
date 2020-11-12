@@ -465,9 +465,11 @@ function translateElasticSearchQuery(query) {
 }
 
 /**
- * @description
+ * @description Handles the aggregate query from View Editor.
  *
- * @param query
+ * @param query - The ElasticSearch aggregate query from View Editor.
+ * @returns The results of the aggregate query, after translating it from ElasticSearch to MongoDB
+ * and manually running the aggregate calculations.
  */
 async function viewEditorMetatypesQuery(query){
   let elemProjId;
