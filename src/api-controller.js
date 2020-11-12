@@ -589,11 +589,13 @@ async function postElements(req, res, next) {
         }
 
         // Additional processing for updates to child views
-        if (update.custom[namespace].hasOwnProperty('_childViews')) {
+        if (update.custom[namespace].hasOwnProperty('_childViews')
+          && Array.isArray(update.custom[namespace]._childViews)
+          && update.custom[namespace]._childViews.length !== 0) {
           const cvUpdate = update.custom[namespace]._childViews;
 
           // Verify that the _childViews update is valid
-          if (Array.isArray(cvUpdate) && cvUpdate.every((v) => typeof v.id === 'string'
+          if (cvUpdate.every((v) => typeof v.id === 'string'
             && typeof v.aggregation === 'string' && typeof v.propertyId === 'string')) {
             // Initialize the ownedAttributeIds field on the update
             update.custom[namespace].ownedAttributeIds = [];
