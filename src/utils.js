@@ -470,34 +470,17 @@ function translateElasticSearchQuery(query) {
  * @param query
  */
 async function viewEditorMetatypesQuery(query){
-  let eQ = {};
-  let sQ = {};
-
-  let elemField;
-  let elemFieldSize;
   let elemProjId;
   let elemRefId;
   let elemStereotypeFilter;
   let elemTypeFilter;
 
-  let stereotypeField;
-  let stereotypeFieldSize;
   let stereotypeProjId;
   let stereotypeRefId;
-  let stereotypeExistsField;
   let stereotypeStereotypeFilter;
   let stereotypeTypeFilter;
 
   if (query.elements) {
-    // ----- Handle the aggs field ----- //
-    if (query.elements.aggs) {
-      // ----- These variables determine which field to run the aggregate on, and how many results to return ---- //
-      if (query.elements.aggs.types && query.elements.aggs.types.terms && query.elements.aggs.types.terms.field) {
-        elemField = query.elements.aggs.types.terms.field;
-        elemFieldSize = query.elements.aggs.types.terms.size
-      }
-    }
-
     // ----- Handle the filters ----- //
     if (query.elements.filter && query.elements.filter.bool) {
       // ----- These variables will store values that the query MUST match ----- //
@@ -517,11 +500,8 @@ async function viewEditorMetatypesQuery(query){
     if (query.stereotypedElements.filter && query.stereotypedElements.filter.bool) {
       // ----- These variables will store values that the query MUST match ----- //
       if (query.stereotypedElements.filter.bool.must) {
-        console.log(JSON.stringify(query.stereotypedElements.filter.bool.must))
         stereotypeProjId = query.stereotypedElements.filter.bool.must[0].term._projectId;
         stereotypeRefId = query.stereotypedElements.filter.bool.must[1].term._inRefIds;
-        console.log(stereotypeProjId)
-        console.log(stereotypeRefId)
       }
       // ----- These variables will store values that the query MUST NOT match ----- //
       if (query.stereotypedElements.filter.bool.must_not) {
@@ -532,7 +512,7 @@ async function viewEditorMetatypesQuery(query){
   }
 
   // Construct the query for the elements
-  eQ = {
+  const eQ = {
     project: new RegExp(elemProjId),
     branch: new RegExp(elemRefId),
     type: {
@@ -543,11 +523,9 @@ async function viewEditorMetatypesQuery(query){
     }
   };
 
-  console.log(stereotypeProjId)
-  console.log(new RegExp(stereotypeProjId))
 
   // Construct the query for the stereotyped elements
-  sQ = {
+  const sQ = {
     project: new RegExp(stereotypeProjId),
     branch: new RegExp(stereotypeRefId),
     type: {
@@ -555,7 +533,6 @@ async function viewEditorMetatypesQuery(query){
     },
     [`custom.${customDataNamespace}._appliedStereotypeIds`]: { '$exists': true, '$nin': stereotypeStereotypeFilter }
   };
-  console.log(sQ);
 
   // Query for the elements
   const elemMatchResults = await Element.find(eQ);
@@ -586,11 +563,8 @@ async function viewEditorMetatypesQuery(query){
   const stereoTypes = {};
   let stereoDocCount = 0;
   const stereoBuckets = [];
-  console.log('stereotype match results');
-  console.log(JSON.stringify(stereotypeMatchResults))
 
   for (let i = 0; i < stereotypeMatchResults.length; i++) {
-    console.log(stereotypeMatchResults[i])
     for (let j = 0; j < stereotypeMatchResults[i].custom[customDataNamespace]._appliedStereotypeIds.length; j++) {
       stereoTypes[stereotypeMatchResults[i].custom[customDataNamespace]._appliedStereotypeIds[j]] = stereoTypes[stereotypeMatchResults[i].custom[customDataNamespace]._appliedStereotypeIds[j]]
         ? stereoTypes[stereotypeMatchResults[i].custom[customDataNamespace]._appliedStereotypeIds[j]] + 1
@@ -598,7 +572,6 @@ async function viewEditorMetatypesQuery(query){
       stereoDocCount = stereoDocCount + 1;
     }
   }
-  console.log(stereoTypes)
 
   for (let i = 0; i < 20; i++) {
     const maxVal = Math.max(...Object.values(stereoTypes));
