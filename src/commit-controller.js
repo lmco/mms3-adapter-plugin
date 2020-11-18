@@ -520,7 +520,41 @@ async function getCommitsByElement(res, next, projectid, branchid, elementid) {
   next();
 }
 
+/**
+ * @description Gets commit by Id.
+ * @async
+ *
+ * @param {object} res - Response express object.
+ * @param {Function} next - Middleware callback to trigger the next function.
+ */
+async function getCommitById(req, res, next) {
+  try {
+    const projectId = req.params.projectid;
+    const commitId = req.params.commitId;
+
+    let url = `${config.url}:${config.port}/projects/${projectId}/commits/${commitId}`;
+    if (!config.port) {
+      url = `${config.url}/projects/${projectId}/commits/${commitId}`;
+    }
+    // creating the element
+    const commit = await axios({
+      method: 'get',
+      url: url,
+      auth: {
+        username: config.auth.username,
+        password: config.auth.password
+      }
+    });
+    console.log(commit.data);
+    return commit.data.commit[0];
+  }
+  catch (error) {
+    throw new M.ServerError('Error getting commit by commitId');
+  }
+}
+
 module.exports = {
   handleCommit,
-  getCommitsByElement
+  getCommitsByElement,
+  getCommitById
 };
