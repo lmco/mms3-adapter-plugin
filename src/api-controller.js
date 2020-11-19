@@ -1224,8 +1224,9 @@ async function postHtml2Pdf(req, res, next) {
       `alf_ticket=${userBearerToken}\"`);
 
     // Define HTML/PDF file paths
-    const tempHtmlFileName = `${filename}_${Date.now()}.html`;
-    const tempPdfFileName = `${filename}_${Date.now()}.pdf`;
+    const date = Date.now();
+    const tempHtmlFileName = `${filename}_${date}.html`;
+    const tempPdfFileName = `${filename}_${date}.pdf`;
     const fullHtmlFilePath = path.join(directory, tempHtmlFileName);
     const fullPdfFilePath = path.join(directory, tempPdfFileName);
 
@@ -1263,8 +1264,18 @@ async function postHtml2Pdf(req, res, next) {
         // Email user
         await utils.emailBlobLink(req.user.email, link);
       }
+      
+      // Delete the temporary files
+      fs.unlink(fullPdfFilePath, (err) => {
+        if (err) throw err;
+        M.log.info(`${fullPdfFilePath} deleted.`);
+      });
+      fs.unlink(fullHtmlFilePath, (err) => {
+        if (err) throw err;
+        M.log.info(`${fullPdfFilePath} deleted.`);
+      });
     });
-
+    
     // Set status code
     res.locals.statusCode = 200;
   }
