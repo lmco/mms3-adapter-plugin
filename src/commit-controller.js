@@ -204,6 +204,24 @@ async function postBranch(req, res, next) {
   next();
 }
 
+async function postElement(req, res, next) {
+  try {
+    const projId = req.body.projectId;
+    const branchId = req.body.branchId;
+    const formattedUpdatedElement = mms3Formatter.mmsElement(req.user, req.body.element);
+    const sdvcElement = await createUpdateSDVCElement(projId, branchId, formattedUpdatedElement);
+    
+    res.locals.statusCode = 200;
+    res.locals.message = { sdvcElement };
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
 // *********************************************** //
 // ***************** GET FUNCTIONS *************** //
 // *********************************************** //
@@ -429,6 +447,7 @@ async function createSDVCProject(user, projectObj) {
         ]
       }
     });
+
     return proj.data.projects[0];
   }
   catch (error) {
@@ -570,5 +589,6 @@ module.exports = {
   getCommitsByElement,
   postOrg,
   postProj,
-  postBranch
+  postBranch,
+  postElement
 };

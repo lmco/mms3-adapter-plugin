@@ -1711,6 +1711,46 @@ router.route('/sdvc-project')
 
 /**
  * @swagger
+ * /sdvc-element:
+ *   post:
+ *     tags:
+ *       - sdvc element
+ *     description: Creates sdvc element from the data provided in
+ *                  the request body. Returns the element.
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/sdvc-element')
+.post(
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  CommitController.postElement,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
+
+/**
+ * @swagger
  * /sdvc-user:
  *   get:
  *     tags:
