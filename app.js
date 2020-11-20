@@ -1718,7 +1718,7 @@ router.route('/sdvc-org')
  * /sdvc-project:
  *   post:
  *     tags:
- *       - sdvc organizations
+ *       - sdvc project
  *     description: Creates sdvc organization from the data provided in
  *                  the request body. Returns the organization.
  *     produces:

@@ -408,7 +408,7 @@ async function createSDVCOrganization(user, orgObj) {
     return org.data.orgs[0];
   }
   catch (error) {
-    throw new M.ServerError('Error creating MMS3 SDVC organization: '+error);
+    throw new M.ServerError('Error creating MMS3 SDVC organization: ' + error);
   }
 }
 
