@@ -1652,7 +1652,7 @@ router.route('/commit/orgs/:orgid/projects/:projectid/branches/:branchid')
  *       200:
  *         description: OK
  */
-router.route('/project/:projectid/ref/:refid/commitId')
+router.route('/projects/:projectid/refs/:refid/elements/:elementid')
 .put(
   authenticate,
   logRoute,

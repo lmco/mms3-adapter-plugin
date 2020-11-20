@@ -530,16 +530,21 @@ async function getCommitsByElement(res, next, projectid, branchid, elementid) {
 async function getCommitById(req, res, next) {
   try {
     const projectId = req.params.projectid;
-    const commitId = req.params.commitId;
+    const refId = req.params.refid;
+    const elementId = req.params.elementid;
+    const commitId = req.query.commitId;
 
-    let url = `${config.url}:${config.port}/projects/${projectId}/commits/${commitId}`;
+    let url = `${config.url}:${config.port}/projects/${projectId}/refs/${refId}/elements`;
     if (!config.port) {
-      url = `${config.url}/projects/${projectId}/commits/${commitId}`;
+      url = `${config.url}/projects/${projectId}/refs/${refId}/elements`;
     }
     // creating the element
     const commit = await axios({
       method: 'get',
       url: url,
+      params: {
+        commitId: commitId
+      },
       auth: {
         username: config.auth.username,
         password: config.auth.password
