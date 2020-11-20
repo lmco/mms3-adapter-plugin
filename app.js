@@ -1630,8 +1630,13 @@ router.route('/commit/orgs/:orgid/projects/:projectid/branches/:branchid')
 
 /**
  * @swagger
- * /project/:projectid/ref/:refid/:commitId
+ * /projects/:projectid/refs/:refid/elements/:elementid
  *   get:
+ *     parameters:
+ *       - name: commitId
+ *         description: The ID of the commit.
+ *         required: true
+ *         type: string
  *     tags:
  *       - general
  *     description: get a commit by Id.
