@@ -1617,8 +1617,52 @@ router.route('/commit/orgs/:orgid/projects/:projectid/branches/:branchid')
   authenticate,
   logRoute,
   doLogin,
-  APIController.postLogin,
   CommitController.handleCommit,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
+
+/**
+ * @swagger
+ * /projects/:projectid/refs/:refid/elements/:elementid
+ *   get:
+ *     parameters:
+ *       - name: commitId
+ *         description: The ID of the commit.
+ *         required: true
+ *         type: string
+ *     tags:
+ *       - general
+ *     description: get a commit by Id.
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal Server Error
+ *   options:
+ *     tags:
+ *       - general
+ *     description: Returns the commit.
+ *     responses:
+ *       200:
+ *         description: OK
+ */
+router.route('/projects/:projectid/refs/:refid/elements/:elementid')
+.put(
+  authenticate,
+  logRoute,
+  doLogin,
+  CommitController.getCommitById,
   logResponse,
   respond
 )
