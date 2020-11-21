@@ -82,7 +82,7 @@ async function getSdvcUser(req, res, next) {
 
     // Set the status code and response message
     res.locals.statusCode = 200;
-    res.locals.message = user;
+    res.locals.message = user.data;
   }
   catch (error) {
     M.log.warn(error.message);
@@ -124,7 +124,7 @@ async function postSdvcUser(req, res, next) {
 
     // Set the status code and response message
     res.locals.statusCode = 200;
-    res.locals.message = { user: user.data };
+    res.locals.message = user.data;
   }
   catch (error) {
     M.log.warn(error.message);
