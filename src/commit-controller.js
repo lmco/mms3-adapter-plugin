@@ -38,6 +38,7 @@ const branchController = M.require('controllers.branch-controller');
 const config = M.config.server.plugins.plugins['mms3-adapter'].sdvc;
 const mcfUtils = M.require('lib.utils');
 const errors = M.require('lib.errors');
+const { getStatusCode } = M.require('lib.errors');
 
 // MMS3 Adapter Modules
 const mms3Formatter = require('./formatter.js');
@@ -154,6 +155,68 @@ async function handleCommit(req, res, next) {
   catch (error) {
     M.log.warn(error.message);
     res.locals.statusCode = errors.getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
+async function postOrg(req, res, next) {
+  try {
+    const org = await createSDVCOrganization(req.user, req.body);
+    res.locals.statusCode = 200;
+    res.locals.message = { org };
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
+async function postProj(req, res, next) {
+  try {
+    const proj = await createSDVCProject(req.user, req.body);
+    res.locals.statusCode = 200;
+    res.locals.message = { proj };
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
+async function postBranch(req, res, next) {
+  try {
+    const projId = req.body.projectId;
+    const branchObj = req.body.branchObj;
+    const branch = await createSDVCBranch(req.user, projId, branchObj);
+    res.locals.statusCode = 200;
+    res.locals.message = { branch };
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
+async function postElement(req, res, next) {
+  try {
+    const projId = req.body.projectId;
+    const branchId = req.body.branchId;
+    const formattedUpdatedElement = mms3Formatter.mmsElement(req.user, req.body.element);
+    const sdvcElement = await createUpdateSDVCElement(projId, branchId, formattedUpdatedElement);
+    
+    res.locals.statusCode = 200;
+    res.locals.message = { sdvcElement };
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
     res.locals.message = error.message;
   }
   next();
@@ -345,7 +408,7 @@ async function createSDVCOrganization(user, orgObj) {
     return org.data.orgs[0];
   }
   catch (error) {
-    throw new M.ServerError('Error creating MMS3 SDVC organization');
+    throw new M.ServerError('Error creating MMS3 SDVC organization: ' + error);
   }
 }
 
@@ -384,6 +447,7 @@ async function createSDVCProject(user, projectObj) {
         ]
       }
     });
+
     return proj.data.projects[0];
   }
   catch (error) {
@@ -520,7 +584,50 @@ async function getCommitsByElement(res, next, projectid, branchid, elementid) {
   next();
 }
 
+/**
+ * @description Gets commit by Id.
+ * @async
+ *
+ * @param {object} res - Response express object.
+ * @param {Function} next - Middleware callback to trigger the next function.
+ */
+async function getCommitById(req, res, next) {
+  try {
+    const projectId = req.params.projectid;
+    const refId = req.params.refid;
+    const elementId = req.params.elementid;
+    const commitId = req.query.commitId;
+
+    let url = `${config.url}:${config.port}/projects/${projectId}/refs/${refId}/elements`;
+    if (!config.port) {
+      url = `${config.url}/projects/${projectId}/refs/${refId}/elements`;
+    }
+    // creating the element
+    const commit = await axios({
+      method: 'get',
+      url: url,
+      params: {
+        commitId: commitId
+      },
+      auth: {
+        username: config.auth.username,
+        password: config.auth.password
+      }
+    });
+    console.log(commit.data);
+    return commit.data.commit[0];
+  }
+  catch (error) {
+    throw new M.ServerError('Error getting commit by commitId');
+  }
+}
+
 module.exports = {
   handleCommit,
-  getCommitsByElement
+  getCommitsByElement,
+  postOrg,
+  postProj,
+  postBranch,
+  postElement,
+  getCommitById
 };
