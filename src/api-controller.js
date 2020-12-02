@@ -851,10 +851,24 @@ async function putElementSearch(req, res, next) {
     const branchID = req.params.refid;
 
     if (req.body.query) {
-      const query = utils.translateElasticSearchQuery(req.body.query);
-      console.log(query)
+      //const searchQuery = utils.testSearchQuery(req.body.query);
+      const searchQuery = "Requirement Test";
+      const textSearchQuery = { '$text': '{ $search: ' + `${JSON.stringify(searchQuery)}`};
+      const textSearchElements = await Element.find(textSearchQuery);
+  
+      console.log('textSearchQuery: ', textSearchQuery);
+      console.log('textSearchElements: ', textSearchElements);
+      
+      
+      
+      
+      
       // Make the query
+      const query = utils.translateElasticSearchQuery(req.body.query);
       const elements = await Element.find(query);
+      console.log('Original Query: ', query);
+      console.log('Original elements: ', elements);
+  
 
       // Generate the child views of the element if there are any
       await utils.generateChildViews(req.user, req.params.orgid, projID, branchID, elements);

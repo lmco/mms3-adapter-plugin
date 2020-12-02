@@ -465,6 +465,60 @@ function translateElasticSearchQuery(query) {
 }
 
 /**
+ * @description Translates an ElasticSearch query into a MongoDB query.
+ *
+ * @param {Object} query - The ElasticSearch query.
+ * @returns MongoDB query.
+ */
+function testSearchQuery(query) {
+  // Determine if "all" or "metatypes" query
+  if (query.bool.should) {
+    // All scenario
+    if ((query.bool.should[0].term.id || query.bool.should[0].term.id) && query.bool.should[1].multi_match) {
+      const searchTerm = query.bool.should[0].id && query.bool.should[0].id.value
+        ? query.bool.should[0].id.value
+        : query.bool.should[0].term.id.value;
+      q = { '$text': { '$search': searchTerm } };
+      return q;
+    }
+  }
+  
+  // Test whether it's an AND or AND NOT
+  if (query.bool.must) {
+    if (Array.isArray(query.bool.must)) {
+      // Test if AND
+      if (!(query.bool.must[1].bool && query.bool.must[1].bool.must_not)) {
+        const q1 = translateElasticSearchQuery(query.bool.must[0]);
+        const q2 = translateElasticSearchQuery(query.bool.must[1]);
+        q = {
+          ...q,
+          ...q1,
+          ...q2
+        };
+        return q;
+      }
+      // Test if AND NOT
+      else if (query.bool.must[1].bool && query.bool.must[1].bool.must_not) {
+        const q1 = translateElasticSearchQuery(query.bool.must[0]);
+        const q2 = translateElasticSearchQuery(query.bool.must[1].bool.must_not);
+        q = {
+          ...q,
+          ...q1,
+          '$nin': { ...q2 }
+        };
+        
+        const searchTerm = query.bool.should[0].id && query.bool.should[0].id.value
+          ? query.bool.should[0].id.value
+          : query.bool.should[0].term.id.value;
+        q = { '$text': { '$search': searchTerm } };
+        
+        return q;
+      }
+    }
+  }
+}
+
+/**
  * @description Handles the aggregate query from View Editor.
  *
  * @param query - The ElasticSearch aggregate query from View Editor.
@@ -613,5 +667,6 @@ module.exports = {
   convertHtml2Pdf,
   emailBlobLink,
   translateElasticSearchQuery,
-  viewEditorMetatypesQuery
+  viewEditorMetatypesQuery,
+  testSearchQuery
 };
