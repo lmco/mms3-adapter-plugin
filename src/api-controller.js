@@ -33,6 +33,7 @@ const path = require('path');
 // NPM modules
 const multer = require('multer');
 const upload = multer().single('file');
+const axios = require('axios');
 
 // MBEE modules
 const OrgController = M.require('controllers.organization-controller');
@@ -55,6 +56,125 @@ const utils = require('./utils.js');
 const sjm = require('./sjm.js');
 const namespace = utils.customDataNamespace;
 
+/**
+ * @description Gets SDVC User.
+ * @async
+ *
+ * @param {object} req - Request express object.
+ * @param {object} res - Response express object.
+ * @param {Function} next - Middleware callback to trigger the next function.
+ */
+async function getSdvcUser(req, res, next) {
+  const config = M.config.server.plugins.plugins['mms3-adapter'].sdvc;
+  try {
+    let url = `${config.url}:${config.port}/checkAuth`;
+    if (!config.port) {
+      url = `${config.url}/checkAuth`;
+    }
+    
+    const user = await axios({
+      method: 'get',
+      url: url,
+      auth: {
+        username: config.auth.username,
+        password: config.auth.password
+      }
+    });
+
+    // Set the status code and response message
+    res.locals.statusCode = 200;
+    res.locals.message = user.data;
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
+/**
+ * @description Creates an MMS SDVC user. 
+ * @async
+ *
+ * @param {object} req - Request express object.
+ * @param {object} res - Response express object.
+ * @param {Function} next - Middleware callback to trigger the next function.
+ */
+async function postSdvcUser(req, res, next) {
+  const config = M.config.server.plugins.plugins['mms3-adapter'].sdvc;
+  try {
+    let url = `${config.url}:${config.port}/user`;
+    if (!config.port) {
+      url = `${config.url}/user`;
+    }
+    
+    const user = await axios({
+      method: 'post',
+      url: url,
+      auth: {
+        username: config.auth.username,
+        password: config.auth.password
+      },
+      data: {
+        username: req.params.username,
+        password: req.body.password,
+        admin: false
+      }
+    });
+
+    // Set the status code and response message
+    res.locals.statusCode = 200;
+    res.locals.message = user.data;
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
+/**
+ * @description Authenticates an MMS SDVC user. Returns token. 
+ * @async
+ *
+ * @param {object} req - Request express object.
+ * @param {object} res - Response express object.
+ * @param {Function} next - Middleware callback to trigger the next function.
+ */
+async function getSdvcAuthToken(req, res, next) {
+  const config = M.config.server.plugins.plugins['mms3-adapter'].sdvc;
+  try {
+    let url = `${config.url}:${config.port}/authentication`;
+    if (!config.port) {
+      url = `${config.url}/authentication`;
+    }
+    
+    const token = await axios({
+      method: 'post',
+      url: url,
+      auth: {
+        username: config.auth.username,
+        password: config.auth.password
+      },
+      data: {
+        username: req.params.username,
+        password: req.body.password
+      }
+    });
+
+    // Set the status code and response message
+    res.locals.statusCode = 200;
+    res.locals.message = { token: token.data };
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
 
 /**
  * @description Formats the session token so that it can be cleanly represented in URIS.
@@ -1382,5 +1502,8 @@ module.exports = {
   putArtifacts,
   getBlob,
   postHtml2Pdf,
-  getElementCommits
+  getElementCommits,
+  getSdvcUser,
+  postSdvcUser,
+  getSdvcAuthToken
 };
