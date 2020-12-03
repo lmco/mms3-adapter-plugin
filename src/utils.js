@@ -470,52 +470,267 @@ function translateElasticSearchQuery(query) {
  * @param {Object} query - The ElasticSearch query.
  * @returns MongoDB query.
  */
-function testSearchQuery(query) {
-  // Determine if "all" or "metatypes" query
-  if (query.bool.should) {
-    // All scenario
-    if ((query.bool.should[0].term.id || query.bool.should[0].term.id) && query.bool.should[1].multi_match) {
-      const searchTerm = query.bool.should[0].id && query.bool.should[0].id.value
-        ? query.bool.should[0].id.value
-        : query.bool.should[0].term.id.value;
-      q = { '$text': { '$search': searchTerm } };
-      return q;
+function translateSearchQuery(query) {
+  // let q = {};
+  //
+  // // Check for filter
+  // if (query.bool && query.bool.filter) {
+  //   // Easiest scenario: filtering for a single element
+  //   if (query.bool.filter[0].term && query.bool.filter[0].term.id) {
+  //     q = {
+  //       _id: new RegExp(query.bool.filter[0].term.id),
+  //       project: new RegExp(query.bool.filter[1].term._projectId)
+  //     };
+  //     console.log('filter query')
+  //     console.log(q)
+  //   }
+  //   // Otherwise, process the filter
+  //   else if (query.bool.filter) {
+  //
+  //   }
+  // }
+  //
+  // // Determine if "all" or "metatypes" query
+  // if (query.bool.should) {
+  //   // All scenario
+  //   if ((query.bool.should[0].term.id || query.bool.should[0].term.id) && query.bool.should[1].multi_match) {
+  //     const searchTerm = query.bool.should[0].id && query.bool.should[0].id.value
+  //       ? query.bool.should[0].id.value
+  //       : query.bool.should[0].term.id.value;
+  //
+  //     q = { '$text': '{ $search: "' + `${JSON.stringify(searchTerm)}` + '"'};
+  //     return q;
+  //   }
+  // }
+  //
+  // // Test whether it's an AND or AND NOT
+  // if (query.bool.must) {
+  //   if (Array.isArray(query.bool.must)) {
+  //     // Test if AND
+  //     if (!(query.bool.must[1].bool && query.bool.must[1].bool.must_not)) {
+  //       const q1 = testSearchQuery(query.bool.must[0]);
+  //       const q2 = testSearchQuery(query.bool.must[1]);
+  //       q = {
+  //         ...q,
+  //         ...q1,
+  //         ...q2
+  //       };
+  //       return q;
+  //     }
+  //     // Test if AND NOT
+  //     else if (query.bool.must[1].bool && query.bool.must[1].bool.must_not) {
+  //       const q1 = testSearchQuery(query.bool.must[0]);
+  //       const q2 = testSearchQuery(query.bool.must[1].bool.must_not);
+  //       q = {
+  //         ...q,
+  //         ...q1,
+  //         '$nin': { ...q2 }
+  //       };
+  //
+  //       const searchTerm = query.bool.should[0].id && query.bool.should[0].id.value
+  //         ? query.bool.should[0].id.value
+  //         : query.bool.should[0].term.id.value;
+  //       q = { '$text': '{ $search: "' + `${JSON.stringify(searchTerm)}` + '"'};
+  //
+  //       return q;
+  //     }
+  //   }
+  // }
+  
+  // Initialize MongoDB query object
+  let q = {};
+  
+  // Check for filter
+  if (query.bool && query.bool.filter) {
+    // Easiest scenario: filtering for a single element
+    if (query.bool.filter[0].term && query.bool.filter[0].term.id) {
+      q = {
+        _id: new RegExp(query.bool.filter[0].term.id),
+        project: new RegExp(query.bool.filter[1].term._projectId)
+      };
+      console.log('filter query')
+      console.log(q)
+    }
+    // Otherwise, process the filter
+    else if (query.bool.filter) {
+    
     }
   }
   
-  // Test whether it's an AND or AND NOT
-  if (query.bool.must) {
-    if (Array.isArray(query.bool.must)) {
-      // Test if AND
-      if (!(query.bool.must[1].bool && query.bool.must[1].bool.must_not)) {
-        const q1 = translateElasticSearchQuery(query.bool.must[0]);
-        const q2 = translateElasticSearchQuery(query.bool.must[1]);
+  // TODO: handle the project metatypes query
+  
+  // There are 5 options unless it's an advanced search:
+  // "all"                    bool: { should: [ { term: { id: { value: VALUE } } }, { multi_match: { query: VALUE, fields: FIELDS } } }
+  // "name or documentation"  match: { [name or documentation]: { query: VALUE } }
+  // "id"                     term: { id: VALUE }
+  // "values"                 multi_match: { query: VALUE, fields: FIELDS }
+  // "metatypes"              bool: { should: [ { terms: { _appliedStereotypeIds: VALUE_1 } }, { terms: { type: VALUE_2 } } ], minimum_should_match: 1 }
+  // *** If it's an advanced search, it will look like this:
+  // AND:                     bool: { must: [ CLAUSE_1, CLAUSE_2 ] }
+  // OR:                      bool: { should: [ CLAUSE_1, CLAUSE_2 ], minimum_should_match: 1 }
+  // AND NOT:                 bool: { must: [ CLAUSE_1, { bool: { must_not: CLAUSE_2 } } ] }
+  if (query.bool) {
+    // Test whether it's an AND or AND NOT
+    if (query.bool.must) {
+      if (Array.isArray(query.bool.must)) {
+        // Test if AND
+        if (!(query.bool.must[1].bool && query.bool.must[1].bool.must_not)) {
+          const q1 = translateSearchQuery(query.bool.must[0]);
+          const q2 = translateSearchQuery(query.bool.must[1]);
+          q = {
+            ...q,
+            ...q1,
+            ...q2
+          };
+          return q;
+        }
+        // Test if AND NOT
+        else if (query.bool.must[1].bool && query.bool.must[1].bool.must_not) {
+          const q1 = translateSearchQuery(query.bool.must[0]);
+          const q2 = translateSearchQuery(query.bool.must[1].bool.must_not);
+          q = {
+            ...q,
+            ...q1,
+            '$nin': { ...q2 }
+          };
+          return q;
+        }
+      }
+      // otherwise it would be query.bool.must.bool; just start translating from there
+      else {
+        const q1 = translateSearchQuery(query.bool.must);
         q = {
           ...q,
-          ...q1,
-          ...q2
+          ...q1
         };
         return q;
       }
-      // Test if AND NOT
-      else if (query.bool.must[1].bool && query.bool.must[1].bool.must_not) {
-        const q1 = translateElasticSearchQuery(query.bool.must[0]);
-        const q2 = translateElasticSearchQuery(query.bool.must[1].bool.must_not);
+    }
+    // Test if it's an OR
+    else if (query.bool.should
+      && !(Array.isArray(query.bool.should) && ((query.bool.should[0].term && query.bool.should[1].multi_match) || (query.bool.should[0].terms && query.bool.should[1].terms)))) {
+      // Test if array
+      console.log('OR')
+      if (Array.isArray(query.bool.should) && !((query.bool.should[0].term && query.bool.should[1].multi_match) || (query.bool.should[0].terms && query.bool.should[1].terms))) {
+        console.log('OR array')
+        const q1 = translateSearchQuery(query.bool.should[0]);
+        const q2 = translateSearchQuery(query.bool.should[1]);
         q = {
           ...q,
-          ...q1,
-          '$nin': { ...q2 }
+          '$or': [...q1, ...q2]
         };
-        
-        const searchTerm = query.bool.should[0].id && query.bool.should[0].id.value
-          ? query.bool.should[0].id.value
-          : query.bool.should[0].term.id.value;
-        q = { '$text': { '$search': searchTerm } };
-        
+        return q;
+      }
+      // run query on value if not an array
+      else {
+        console.log('OR object')
+        const q1 = translateSearchQuery(query.bool.should);
+        q = {
+          ...q,
+          ...q1
+        };
+        return q
+      }
+    }
+    // Treat it like a normal query
+    else {
+      console.log('normal query')
+      // Determine if "all" or "metatypes" query
+      if (query.bool.should) {
+        // All scenario
+        if ((query.bool.should[0].term.id || query.bool.should[0].term.id) && query.bool.should[1].multi_match) {
+          const searchTerm = query.bool.should[0].id && query.bool.should[0].id.value
+            ? query.bool.should[0].id.value
+            : query.bool.should[0].term.id.value;
+          // TODO: determine if different fields can be given different weights with MongoDB
+          // q = {
+          //   ...q,
+          //   '$or': [
+          //     { _id: searchTerm },
+          //     { name: searchTerm },
+          //     { documentation: searchTerm },
+          //     { [`custom[${customDataNamespace}].defaultValue`]: searchTerm },
+          //     { [`custom[${customDataNamespace}].value`]: searchTerm },
+          //     { [`custom[${customDataNamespace}].specification`]: searchTerm }
+          //   ]};
+  
+          q = { '$text': '{ $search: "' + `${JSON.stringify(searchTerm)}` + '"'};
+          return q;
+        }
+        // Metatypes scenario
+        else if (query.bool.should[0].terms && query.bool.should[1].terms) {
+          const searchTerm1 = query.bool.should[0].terms._appliedStereotypeIds;
+          const searchTerm2 = query.bool.should[1].terms.type;
+          // q = {
+          //   ...q,
+          //   '$or': [
+          //     { [`custom[${customDataNamespace}]._appliedStereotypeIds`]: searchTerm1 },
+          //     { type: searchTerm2 }
+          //   ]};
+          q = { '$text': '{ $search: "' + `${JSON.stringify(searchTerm)}` + '"'};
+          const q1 = { type: searchTerm2 };
+          q = {
+            ...q,
+            q1
+          
+          };
+          return q;
+        }
+      }
+      // Determine if "name" or "documentation" query
+      else if (query.match) {
+        let searchTerm;
+        if (query.match.name) {
+          searchTerm = query.match.name;
+          // q = {
+          //   ...q,
+          //   name: searchTerm
+          // };
+          const q1 = { name: query.match.name };
+          q = { '$text': '{ $search: "' + `${JSON.stringify(searchTerm)}` + '"'};
+          q = {
+            ...q,
+            q1
+          };
+          return q;
+        }
+        else if (query.match.documentation) {
+          searchTerm = query.match.documentation;
+          const q1 = { documentation: query.match.documentation };
+          q = { '$text': '{ $search: "' + `${JSON.stringify(searchTerm)}` + '"'};
+          q = {
+            ...q,
+            q1,
+          };
+          return q;
+        }
+      }
+      // Determine if "id" query
+      else if (query.term) {
+        const searchTerm = query.term.id;
+        q = {
+          ...q,
+          _id: searchTerm
+        };
+        return q;
+      }
+      // Determine if "values" query
+      else if (query.multi_match) {
+        const searchTerm = query.multi_match.query;
+        q = { '$text': '{ $search: "' + `${JSON.stringify(searchTerm)}` + '"'};
+        // q = {
+        //   ...q,
+        //   '$or': [
+        //     { [`custom[${customDataNamespace}].defaultValue`]: searchTerm },
+        //     { [`custom[${customDataNamespace}].value`]: searchTerm },
+        //     { [`custom[${customDataNamespace}].specification`]: searchTerm }
+        //   ]};
         return q;
       }
     }
   }
+  
+  return q;
 }
 
 /**
@@ -668,5 +883,5 @@ module.exports = {
   emailBlobLink,
   translateElasticSearchQuery,
   viewEditorMetatypesQuery,
-  testSearchQuery
+  translateSearchQuery
 };
