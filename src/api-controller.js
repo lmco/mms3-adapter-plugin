@@ -1403,12 +1403,12 @@ async function postHtml2Pdf(req, res, next) {
       }
       
       // Delete the temporary files
-      fs.unlink(fullPdfFilePath, (err) => {
-        if (err) throw err;
+      fs.unlink(fullPdfFilePath, (unlinkErr) => {
+        if (unlinkErr) throw unlinkErr;
         M.log.info(`${fullPdfFilePath} deleted.`);
       });
-      fs.unlink(fullHtmlFilePath, (err) => {
-        if (err) throw err;
+      fs.unlink(fullHtmlFilePath, (unlinkErr) => {
+        if (unlinkErr) throw unlinkErr;
         M.log.info(`${fullPdfFilePath} deleted.`);
       });
     });

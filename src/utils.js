@@ -302,7 +302,7 @@ function translateElasticSearchQuery(query) {
     }
     // Otherwise, process the filter
     else if (query.bool.filter) {
-
+      //TODO: Add filter if needed.
     }
   }
 
@@ -387,7 +387,7 @@ function translateElasticSearchQuery(query) {
       // Determine if "all" or "metatypes" query
       if (query.bool.should) {
         // All scenario
-        if ((query.bool.should[0].term.id || query.bool.should[0].term.id) && query.bool.should[1].multi_match) {
+        if ((query.bool.should[0].term.id ) && query.bool.should[1].multi_match) {
           const searchTerm = query.bool.should[0].id && query.bool.should[0].id.value
             ? query.bool.should[0].id.value
             : query.bool.should[0].term.id.value;
@@ -553,7 +553,7 @@ function translateSearchQuery(query) {
     }
     // Otherwise, process the filter
     else if (query.bool.filter) {
-    
+      // TODO: Add filter if needed
     }
   }
   
@@ -638,7 +638,7 @@ function translateSearchQuery(query) {
       // Determine if "all" or "metatypes" query
       if (query.bool.should) {
         // All scenario
-        if ((query.bool.should[0].term.id || query.bool.should[0].term.id) && query.bool.should[1].multi_match) {
+        if ((query.bool.should[0].term.id ) && query.bool.should[1].multi_match) {
           const searchTerm = query.bool.should[0].id && query.bool.should[0].id.value
             ? query.bool.should[0].id.value
             : query.bool.should[0].term.id.value;
@@ -661,19 +661,12 @@ function translateSearchQuery(query) {
         else if (query.bool.should[0].terms && query.bool.should[1].terms) {
           const searchTerm1 = query.bool.should[0].terms._appliedStereotypeIds;
           const searchTerm2 = query.bool.should[1].terms.type;
-          // q = {
-          //   ...q,
-          //   '$or': [
-          //     { [`custom[${customDataNamespace}]._appliedStereotypeIds`]: searchTerm1 },
-          //     { type: searchTerm2 }
-          //   ]};
-          q = { '$text': '{ $search: "' + `${JSON.stringify(searchTerm)}` + '"'};
-          const q1 = { type: searchTerm2 };
           q = {
             ...q,
-            q1
-          
-          };
+            '$or': [
+              { [`custom[${customDataNamespace}]._appliedStereotypeIds`]: searchTerm1 },
+              { type: searchTerm2 }
+            ]};
           return q;
         }
       }
