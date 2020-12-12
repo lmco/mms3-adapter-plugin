@@ -75,10 +75,7 @@ async function getSdvcUser(req, res, next) {
     const user = await axios({
       method: 'get',
       url: url,
-      auth: {
-        username: config.auth.username,
-        password: config.auth.password
-      }
+      headers: { Authorization: `Bearer ${token}` }
     });
 
     // Set the status code and response message
@@ -155,8 +152,8 @@ async function getSdvcAuthToken(req, res, next) {
       method: 'post',
       url: url,
       auth: {
-        username: config.auth.username,
-        password: config.auth.password
+        username: req.params.username,
+        password: req.body.password
       },
       data: {
         username: req.params.username,
