@@ -1719,8 +1719,8 @@ router.route('/sdvc-org')
  *   post:
  *     tags:
  *       - sdvc project
- *     description: Creates sdvc organization from the data provided in
- *                  the request body. Returns the organization.
+ *     description: Creates sdvc project from the data provided in
+ *                  the request body. Returns the project.
  *     produces:
  *       - application/json
  *     responses:
@@ -1742,6 +1742,46 @@ router.route('/sdvc-project')
   logRoute,
   utils.addHeaders,
   CommitController.postProj,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
+
+/**
+ * @swagger
+ * /sdvc-branch:
+ *   post:
+ *     tags:
+ *       - sdvc branch
+ *     description: Creates sdvc branch from the data provided in
+ *                  the request body. Returns the branch.
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/sdvc-branch')
+.post(
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  CommitController.postBranch,
   logResponse,
   respond
 )
@@ -1803,8 +1843,8 @@ router.route('/sdvc-element')
  *     produces:
  *       - application/json
  *     parameters:
- *       - name: username
- *         description: The username of the user.
+ *       - name: token
+ *         description: The token for the user.
  *         required: true
  *         type: string
  *   post:
@@ -1825,7 +1865,7 @@ router.route('/sdvc-element')
  *       500:
  *         description: Internal Server Error
  */
-router.route('/sdvc-user/:username')
+router.route('/sdvc-user/:token')
 .get(
   utils.handleTicket,
   authenticate,
