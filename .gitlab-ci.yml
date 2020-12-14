@@ -8,7 +8,7 @@ sast-scan:
   tags:
     - docker
   variables:
-    SCAN_RESULTS_REVIEWERS_NTIDS: "e309363" # Comma separated list of NtIds of employees who need to review scan results.
+    SCAN_RESULTS_REVIEWERS_NTIDS: "e309363, e315459, e359510" # Comma separated list of NtIds of employees who need to review scan results.
     BUSINESS_AREA: "Space" # Valid Values Aero, EO, MFC, RMS, Space
     ###########################################################################
     # By default SAST scan starts at the root of your GitLab project.
