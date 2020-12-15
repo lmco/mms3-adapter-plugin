@@ -43,6 +43,7 @@ const commitController = require('./commit-controller.js');
 const Branch = M.require('models.branch');
 const ElementController = M.require('controllers.element-controller');
 const ArtifactController = M.require('controllers.artifact-controller');
+const Element = M.require('models.element');
 const { getStatusCode } = M.require('lib.errors');
 const mcfUtils = M.require('lib.utils');
 const jmi = M.require('lib.jmi-conversions');
@@ -705,11 +706,13 @@ async function postElements(req, res, next) {
         }
 
         // Additional processing for updates to child views
-        if (update.custom[namespace].hasOwnProperty('_childViews')) {
+        if (update.custom[namespace].hasOwnProperty('_childViews')
+          && Array.isArray(update.custom[namespace]._childViews)
+          && update.custom[namespace]._childViews.length !== 0) {
           const cvUpdate = update.custom[namespace]._childViews;
 
           // Verify that the _childViews update is valid
-          if (Array.isArray(cvUpdate) && cvUpdate.every((v) => typeof v.id === 'string'
+          if (cvUpdate.every((v) => typeof v.id === 'string'
             && typeof v.aggregation === 'string' && typeof v.propertyId === 'string')) {
             // Initialize the ownedAttributeIds field on the update
             update.custom[namespace].ownedAttributeIds = [];
@@ -719,6 +722,7 @@ async function postElements(req, res, next) {
             }
           }
           else {
+            console.log(JSON.stringify(update));
             throw new M.DataFormatError('Invalid update to _childViews field.', 'warn');
           }
           // Check if a child view is being added or removed by comparing existing and
@@ -962,25 +966,38 @@ async function putElementSearch(req, res, next) {
     await utils.getOrgId(req);
     let projID = req.params.projectid;
     const branchID = req.params.refid;
-    let elemID;
 
     if (req.body.query) {
-      elemID = req.body.query.bool.filter[0].term.id;
-      projID = req.body.query.bool.filter[1].term._projectId;
+      const searchQuery = utils.translateSearchQuery(req.body.query);
+      //const searchQuery = "Requirement Test";
+      //const textSearchQuery = { '$text': '{ $search: "' + `${JSON.stringify(searchQuery)}` + '"'};
+      console.log('searchQuery: ', searchQuery);
+      const elements = await Element.find(searchQuery);
+      console.log('textSearchElements: ', elements);
+      
+      
+      // Generate the child views of the element if there are any
+      await utils.generateChildViews(req.user, req.params.orgid, projID, branchID, elements);
+
+      // Return the public data of the elements in MMS format
+      const data = elements.map((e) => format.mmsElement(req.user, e));
+
+      // Set the status code and response message
+      res.locals.statusCode = 200;
+      res.locals.message = { elements: data };
     }
+    else if (req.body.aggs) {
+      const results = await utils.viewEditorMetatypesQuery(req.body.aggs);
 
-    const elements = await ElementController.find(req.user, req.params.orgid, projID, branchID,
-      elemID);
-
-    // Generate the child views of the element if there are any
-    await utils.generateChildViews(req.user, req.params.orgid, projID, branchID, elements);
-
-    // Return the public data of the elements in MMS format
-    const data = elements.map((e) => format.mmsElement(req.user, e));
-
-    // Set the status code and response message
-    res.locals.statusCode = 200;
-    res.locals.message = { elements: data };
+      // Set the status code and response message
+      res.locals.statusCode = 200;
+      res.locals.message = results;
+    }
+    else {
+      throw new M.DataFormatError('Invalid request: No query or aggs found in request body.');
+    }
+    // const elements = await ElementController.find(req.user, req.params.orgid, projID, branchID,
+    //   elemID);
   }
   catch (error) {
     M.log.warn(error.message);
@@ -1383,12 +1400,12 @@ async function postHtml2Pdf(req, res, next) {
       }
       
       // Delete the temporary files
-      fs.unlink(fullPdfFilePath, (err) => {
-        if (err) throw err;
+      fs.unlink(fullPdfFilePath, (unlinkErr) => {
+        if (unlinkErr) throw unlinkErr;
         M.log.info(`${fullPdfFilePath} deleted.`);
       });
-      fs.unlink(fullHtmlFilePath, (err) => {
-        if (err) throw err;
+      fs.unlink(fullHtmlFilePath, (unlinkErr) => {
+        if (unlinkErr) throw unlinkErr;
         M.log.info(`${fullPdfFilePath} deleted.`);
       });
     });
