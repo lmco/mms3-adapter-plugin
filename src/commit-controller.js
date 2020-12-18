@@ -162,12 +162,18 @@ async function handleCommit(req, res, next) {
 
 async function postOrg(req, res, next) {
   try {
-    const org = await createSDVCOrganization(req.user, req.body);
-    res.locals.statusCode = 200;
-    res.locals.message = { org };
+    const sdvcToken = req.get('SDVC-TOKEN');
+    if (sdvcToken) {
+      const org = await createSDVCOrganization(req.user, req.body, sdvcToken);
+      res.locals.statusCode = 200;
+      res.locals.message = { org };
+    }
+    else {
+      throw new M.ServerError('sdvc_token does not exit in user session. Unable to create SDVC organization');
+    }
   }
   catch (error) {
-    M.log.warn(error.message);
+    M.log.error(error.message);
     res.locals.statusCode = getStatusCode(error);
     res.locals.message = error.message;
   }
@@ -176,12 +182,18 @@ async function postOrg(req, res, next) {
 
 async function postProj(req, res, next) {
   try {
-    const proj = await createSDVCProject(req.user, req.body);
-    res.locals.statusCode = 200;
-    res.locals.message = { proj };
+    const sdvcToken = req.get('SDVC-TOKEN');
+    if (sdvcToken) {
+      const proj = await createSDVCProject(req.user, req.body, sdvcToken);
+      res.locals.statusCode = 200;
+      res.locals.message = { proj };
+    }
+    else {
+      throw new M.ServerError('sdvc_token does not exit in user session. Unable to create SDVC project');
+    }
   }
   catch (error) {
-    M.log.warn(error.message);
+    M.log.error(error.message);
     res.locals.statusCode = getStatusCode(error);
     res.locals.message = error.message;
   }
@@ -190,14 +202,20 @@ async function postProj(req, res, next) {
 
 async function postBranch(req, res, next) {
   try {
-    const projId = req.body.projectId;
-    const branchObj = req.body.branchObj;
-    const branch = await createSDVCBranch(req.user, projId, branchObj);
-    res.locals.statusCode = 200;
-    res.locals.message = { branch };
+    const sdvcToken = req.get('SDVC-TOKEN');
+    if (sdvcToken) {
+      const projId = req.body.projectId;
+      const branchObj = req.body.branchObj;
+      const branch = await createSDVCBranch(req.user, projId, branchObj, sdvcToken);
+      res.locals.statusCode = 200;
+      res.locals.message = { branch };
+    }
+    else {
+      throw new M.ServerError('sdvc_token does not exit in user session. Unable to create SDVC branch');
+    }
   }
   catch (error) {
-    M.log.warn(error.message);
+    M.log.error(error.message);
     res.locals.statusCode = getStatusCode(error);
     res.locals.message = error.message;
   }
@@ -209,13 +227,19 @@ async function postElement(req, res, next) {
     const projId = req.body.projectId;
     const branchId = req.body.branchId;
     const formattedUpdatedElement = mms3Formatter.mmsElement(req.user, req.body.element);
-    const sdvcElement = await createUpdateSDVCElement(projId, branchId, formattedUpdatedElement);
+    const sdvcToken = req.get('SDVC-TOKEN');
     
-    res.locals.statusCode = 200;
-    res.locals.message = { sdvcElement };
+    if (sdvcToken) {
+      const sdvcElement = await createUpdateSDVCElement(projId, branchId, formattedUpdatedElement, sdvcToken);
+      res.locals.statusCode = 200;
+      res.locals.message = { sdvcElement };
+    }
+    else {
+      throw new M.ServerError('sdvc_token does not exit in user session. Unable to create SDVC project');
+    }
   }
   catch (error) {
-    M.log.warn(error.message);
+    M.log.error(error.message);
     res.locals.statusCode = getStatusCode(error);
     res.locals.message = error.message;
   }
@@ -258,6 +282,7 @@ async function getSDVCOrganization(orgId) {
     }
   }
   catch (error) {
+    M.log.error(error);
     throw new M.ServerError('Error getting organization from SDVC');
   }
 }
@@ -294,6 +319,7 @@ async function getSDVCProject(projectId) {
     }
   }
   catch (error) {
+    M.log.error(error);
     throw new M.ServerError('Error getting project from SDVC');
   }
 }
@@ -330,6 +356,7 @@ async function getSDVCBranch(projectId, branchId) {
     }
   }
   catch (error) {
+    M.log.error(error);
     throw new M.ServerError('Error getting branch from SDVC');
   }
 }
@@ -365,6 +392,7 @@ async function getSDVCElements(projectId, branchId) {
     }
   }
   catch (error) {
+    M.log.error(error);
     throw new M.ServerError('Error getting elements from SDVC');
   }
 }
@@ -379,10 +407,11 @@ async function getSDVCElements(projectId, branchId) {
  *
  * @param {object} user - The requesting user.
  * @param {object} orgObj - The mcf org object.
+ * @param {string} token - The SDVC token.
  *
  * @returns {object} An MMS3 organization.
  */
-async function createSDVCOrganization(user, orgObj) {
+async function createSDVCOrganization(user, orgObj, token) {
   try {
     let url = `${config.url}:${config.port}/orgs`;
     if (!config.port) {
@@ -395,10 +424,7 @@ async function createSDVCOrganization(user, orgObj) {
     const org = await axios({
       method: 'post',
       url: url,
-      auth: {
-        username: config.auth.username,
-        password: config.auth.password
-      },
+      headers: { Authorization: `Bearer ${token}` },
       data: {
         orgs: [
           formattedOrg
@@ -408,6 +434,7 @@ async function createSDVCOrganization(user, orgObj) {
     return org.data.orgs[0];
   }
   catch (error) {
+    M.log.error(error);
     throw new M.ServerError('Error creating MMS3 SDVC organization: ' + error);
   }
 }
@@ -417,10 +444,11 @@ async function createSDVCOrganization(user, orgObj) {
  *
  * @param {object} user - The requesting user.
  * @param {object} projectObj - The mcf project object.
+ * @param {string} token - The SDVC token.
  *
  * @returns {object} An MMS3 project.
  */
-async function createSDVCProject(user, projectObj) {
+async function createSDVCProject(user, projectObj, token) {
   try {
     let url = `${config.url}:${config.port}/projects`;
     if (!config.port) {
@@ -433,14 +461,12 @@ async function createSDVCProject(user, projectObj) {
       orgId: formattedProj.orgId,
       name: formattedProj.name
     }
+
     // creating the project
     const proj = await axios({
       method: 'post',
       url: url,
-      auth: {
-        username: config.auth.username,
-        password: config.auth.password
-      },
+      headers: { Authorization: `Bearer ${token}` },
       data: {
         projects: [
           project
@@ -451,6 +477,7 @@ async function createSDVCProject(user, projectObj) {
     return proj.data.projects[0];
   }
   catch (error) {
+    M.log.error(error);
     throw new M.ServerError('Error creating MMS3 SDVC project');
   }
 }
@@ -461,15 +488,17 @@ async function createSDVCProject(user, projectObj) {
  * @param {object} user - The requesting user.
  * @param {string} projectId - The project id.
  * @param {object} branchObj - The mcf branch object.
+ * @param {string} token - The SDVC token.
  *
  * @returns {object} An MMS3 ref/branch.
  */
-async function createSDVCBranch(user, projectId, branchObj) {
+async function createSDVCBranch(user, projectId, branchObj, token) {
   try {
     let url = `${config.url}:${config.port}/projects/${projectId}/refs`;
     if (!config.port) {
       url = `${config.url}/projects/${projectId}/refs`;
     }
+
     // formatting organization
     const formattedBranch = mms3Formatter.mmsRef(user, branchObj);
     formattedBranch.type = 'branch';
@@ -477,10 +506,7 @@ async function createSDVCBranch(user, projectId, branchObj) {
     const branch = await axios({
       method: 'post',
       url: url,
-      auth: {
-        username: config.auth.username,
-        password: config.auth.password
-      },
+      headers: { Authorization: `Bearer ${token}` },
       data: {
         refs: [
           formattedBranch
@@ -490,6 +516,7 @@ async function createSDVCBranch(user, projectId, branchObj) {
     return branch.data.refs[0];
   }
   catch (error) {
+    M.log.error(error);
     throw new M.ServerError('Error creating mms3 sdvc ref/branch');
   }
 }
@@ -500,10 +527,11 @@ async function createSDVCBranch(user, projectId, branchObj) {
  * @param {string} projectId - The project id.
  * @param {string} branchId - The ref/branch id.
  * @param {object} mmsFormattedElementObj - The mms3 formatted element object.
+ * @param {string} token - The SDVC token.
  *
  * @returns {object} An MMS3 element.
  */
-async function createUpdateSDVCElement(projectId, branchId, mmsFormattedElementObj) {
+async function createUpdateSDVCElement(projectId, branchId, mmsFormattedElementObj, token) {
   try {
     let url = `${config.url}:${config.port}/projects/${projectId}/refs/${branchId}/elements`;
     if (!config.port) {
@@ -513,10 +541,7 @@ async function createUpdateSDVCElement(projectId, branchId, mmsFormattedElementO
     const element = await axios({
       method: 'post',
       url: url,
-      auth: {
-        username: config.auth.username,
-        password: config.auth.password
-      },
+      headers: { Authorization: `Bearer ${token}` },
       data: {
         elements: [
           mmsFormattedElementObj
@@ -526,6 +551,7 @@ async function createUpdateSDVCElement(projectId, branchId, mmsFormattedElementO
     return element.data.elements[0];
   }
   catch (error) {
+    M.log.error(error);
     throw new M.ServerError('Error creating mms3 sdvc element. Element probably never changed.');
   }
 }
@@ -579,6 +605,7 @@ async function getCommitsByElement(res, next, projectid, branchid, elementid) {
     res.locals.message = JSON.stringify(commits.data.commits);
   }
   catch (error) {
+    M.log.error(error);
     throw new M.ServerError('Error getting commits from SDVC for element '+elementid);
   }
   next();
@@ -614,10 +641,10 @@ async function getCommitById(req, res, next) {
         password: config.auth.password
       }
     });
-    console.log(commit.data);
     return commit.data.commit[0];
   }
   catch (error) {
+    M.log.error(error);
     throw new M.ServerError('Error getting commit by commitId');
   }
 }
