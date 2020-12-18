@@ -107,7 +107,7 @@ async function postSdvcUser(req, res, next) {
     if (!config.port) {
       url = `${config.url}/user`;
     }
-    
+
     const user = await axios({
       method: 'post',
       url: url,
@@ -116,7 +116,7 @@ async function postSdvcUser(req, res, next) {
         password: config.auth.password
       },
       data: {
-        username: req.params.username,
+        username: req.params.token,
         password: req.body.password,
         admin: false
       }
