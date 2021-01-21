@@ -49,6 +49,7 @@ const mcfUtils = M.require('lib.utils');
 const jmi = M.require('lib.jmi-conversions');
 const errors = M.require('lib.errors');
 const mbeeCrypto = M.require('lib.crypto');
+const btoa = require('btoa');
 
 // Adapter modules
 const format = require('./formatter.js');
@@ -67,20 +68,26 @@ const namespace = utils.customDataNamespace;
 async function getSdvcUser(req, res, next) {
   const config = M.config.server.plugins.plugins['mms3-adapter'].sdvc;
   try {
+    // set headers
+    const headers = {
+      'Authorization': 'Basic '+btoa(`${config.auth.username}:${config.auth.password}`), 
+      'Content-Type': 'application/json;charset=UTF-8'
+    };
+
     let url = `${config.url}:${config.port}/checkAuth`;
     if (!config.port) {
       url = `${config.url}/checkAuth`;
     }
-    
-    const user = await axios({
+
+    const response = await axios({
       method: 'get',
       url: url,
-      headers: { Authorization: `Bearer ${token}` }
+      headers: headers
     });
 
     // Set the status code and response message
-    res.locals.statusCode = 200;
-    res.locals.message = user.data;
+    res.locals.statusCode = response.status;
+    res.locals.message = response.data;
   }
   catch (error) {
     M.log.warn(error.message);
@@ -99,33 +106,38 @@ async function getSdvcUser(req, res, next) {
  * @param {Function} next - Middleware callback to trigger the next function.
  */
 async function postSdvcUser(req, res, next) {
+  M.log.info('creating SDVC user');
   const config = M.config.server.plugins.plugins['mms3-adapter'].sdvc;
   try {
+    // set headers
+    const headers = {
+      'Authorization': 'Basic '+btoa(`${config.auth.username}:${config.auth.password}`), 
+      'Content-Type': 'application/json;charset=UTF-8'
+    };
+
     let url = `${config.url}:${config.port}/user`;
     if (!config.port) {
       url = `${config.url}/user`;
     }
 
-    const user = await axios({
+    // sending post request to create sdvc user
+    const response = await axios({
       method: 'post',
       url: url,
-      auth: {
-        username: config.auth.username,
-        password: config.auth.password
-      },
+      headers: headers,
       data: {
-        username: req.params.token,
+        username: req.params.username,
         password: req.body.password,
         admin: false
       }
     });
 
-    // Set the status code and response message
-    res.locals.statusCode = 200;
-    res.locals.message = user.data;
+    M.log.info(`success: created sdvc user ${req.params.username}`);
+    res.locals.statusCode = response.status;
+    res.locals.message = response.data;
   }
   catch (error) {
-    M.log.warn(error.message);
+    M.log.error(error.message);
     res.locals.statusCode = getStatusCode(error);
     res.locals.message = error.message;
   }
@@ -143,27 +155,30 @@ async function postSdvcUser(req, res, next) {
 async function getSdvcAuthToken(req, res, next) {
   const config = M.config.server.plugins.plugins['mms3-adapter'].sdvc;
   try {
+    // set headers
+    const headers = {
+      'Content-Type': 'application/json;charset=UTF-8'
+    };
+
     let url = `${config.url}:${config.port}/authentication`;
     if (!config.port) {
       url = `${config.url}/authentication`;
     }
     
-    const token = await axios({
+    // sending post request to generate sdvc token
+    const response = await axios({
       method: 'post',
       url: url,
-      auth: {
-        username: req.params.username,
-        password: req.body.password
-      },
+      headers: headers,
       data: {
         username: req.params.username,
         password: req.body.password
       }
     });
 
-    // Set the status code and response message
-    res.locals.statusCode = 200;
-    res.locals.message = { token: token.data };
+    M.log.info(`success: created sdvc token for user ${req.params.username}`);
+    res.locals.statusCode = response.status;
+    res.locals.message = response.data;
   }
   catch (error) {
     M.log.warn(error.message);
