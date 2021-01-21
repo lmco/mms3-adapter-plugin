@@ -1865,7 +1865,7 @@ router.route('/sdvc-element')
  *       500:
  *         description: Internal Server Error
  */
-router.route('/sdvc-user/:token')
+router.route('/sdvc-user/:username')
 .get(
   utils.handleTicket,
   authenticate,
