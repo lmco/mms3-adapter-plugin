@@ -24,7 +24,7 @@
  * @author Leah De Laurell
  *
  * @description Exports functions which format MDK requests into MCF-friendly objects
- * and MCF objects into MMS3 objects.
+ * and MCF objects into MMS objects.
  */
 
 // MCF Modules
@@ -186,12 +186,12 @@ async function mcfElements(req, elements) {
 }
 
 /**
- * @description Formats an MCF org into an MMS3 org.
+ * @description Formats an MCF org into an MMS org.
  *
  * @param {object} reqUser - The requesting user.
  * @param {object} orgObj - The MCF org to format.
  *
- * @returns {object} An MMS3 formatted org.
+ * @returns {object} An MMS formatted org.
  */
 function mmsOrg(reqUser, orgObj) {
   // Get the public data of the org
@@ -204,12 +204,12 @@ function mmsOrg(reqUser, orgObj) {
 }
 
 /**
- * @description Formats an MCF project into an MMS3 project.
+ * @description Formats an MCF project into an MMS project.
  *
  * @param {object} reqUser - The requesting user.
  * @param {object} projObj - The MCF project to format.
  *
- * @returns {object} An MMS3 formatted project.
+ * @returns {object} An MMS formatted project.
  */
 function mmsProject(reqUser, projObj) {
   // Get the public data of the project
@@ -228,6 +228,8 @@ function mmsProject(reqUser, projObj) {
     orgId: projObj.org
   };
 
+  
+  //  of the project / reevaluate this
   project.categoryId = null;
   project._mounts = [];
   project._editable = true;
@@ -242,12 +244,12 @@ function mmsProject(reqUser, projObj) {
 }
 
 /**
- * @description Formats an MCF branch into an MMS3 ref.
+ * @description Formats an MCF branch into an MMS ref.
  *
  * @param {object} reqUser - The requesting user.
  * @param {object} branchObj - The MCF branch to format.
  *
- * @returns {object} An MMS3 formatted ref.
+ * @returns {object} An MMS formatted ref.
  */
 function mmsRef(reqUser, branchObj) {
   // Get the public data of the branch
@@ -258,7 +260,6 @@ function mmsRef(reqUser, branchObj) {
     name: publicBranch.name,
     type: (publicBranch.tag) ? 'tag' : 'Branch',
     parentRefId: (publicBranch.source) ? publicBranch.source : 'master',
-    _modified: publicBranch.updatedOn,
     _modifier: publicBranch.lastModifiedBy
   };
 
@@ -272,12 +273,12 @@ function mmsRef(reqUser, branchObj) {
 }
 
 /**
- * @description Formats an MCF element into an MMS3 element.
+ * @description Formats an MCF element into an MMS element.
  *
  * @param {object} reqUser - The requesting user.
  * @param {object} elemObj - The MCF element to format.
  *
- * @returns {object} An MMS3 formatted element.
+ * @returns {object} An MMS formatted element.
  */
 function mmsElement(reqUser, elemObj) {
   // Get the public data of the element
@@ -320,12 +321,12 @@ function mmsElement(reqUser, elemObj) {
 }
 
 /**
- * @description Formats an MCF artifact into an MMS3 artifact.
+ * @description Formats an MCF artifact into an MMS artifact.
  *
  * @param {object} reqUser - The requesting user.
  * @param {object} artifact - The MCF artifact to format.
  *
- * @returns {object} An MMS3 formatted artifact.
+ * @returns {object} An MMS formatted artifact.
  */
 function mmsArtifact(reqUser, artifact) {
   // Get the public data of the artifact

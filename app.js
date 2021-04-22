@@ -23,7 +23,7 @@
  * @author Austin Bieber
  * @author Leah De Laurell
  *
- * @description The application entry point for the MMS3 Adapter. Handles router
+ * @description The application entry point for the MMS Adapter. Handles router
  * initialization and all routing.
  */
 
@@ -32,10 +32,10 @@ const express = require('express');
 const app = express();
 const router = express.Router();
 
-// MBEE modules
+// MCF modules
 const { authenticate, doLogin } = M.require('lib.auth');
 const { logRoute, logResponse, respond, disableUserAPI } = M.require('lib.middleware');
-const { version, login, whoami, getUser } = M.require('controllers.api-controller');
+const { version, login, whoami, getUsers } = M.require('controllers.api-controller');
 
 // Adapter modules
 const APIController = require('./src/api-controller');
@@ -170,6 +170,41 @@ router.route('/mms/login/ticket/*')
   logResponse,
   respond
 );
+
+/**
+ * @swagger
+ * /checklogin:
+ *   get:
+ *     tags:
+ *       - general
+ *     description: Verifies a token is valid through the MCF auth module and
+ *        returns the user's username if successful.
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/checklogin')
+  .get(
+    authenticate,
+    logRoute,
+    utils.addHeaders,
+    APIController.getTicket,
+    logResponse,
+    respond
+  )
+  .options(
+    logRoute,
+    utils.addHeaders,
+    APIController.optionsDefault,
+    logResponse,
+    respond
+  );
 
 /**
  * @swagger
@@ -324,7 +359,14 @@ router.route('/api/users/:username')
   logRoute,
   disableUserAPI,
   utils.addHeaders,
-  getUser,
+  getUsers,
+  (req, res, next) => {
+    // Put the message into object format
+    const users = JSON.parse(res.locals.message);
+    const user = users[0];
+    res.locals.message = JSON.stringify(user);
+    next();
+  },
   logResponse,
   respond
 )
@@ -336,22 +378,16 @@ router.route('/api/users/:username')
   respond
 );
 
-/**
- * @swagger
- * /connection/jms:
- *   get:
- *     description: In rare cases View Editor has crashed without being able to ping this
- *                  endpoint.
- *     responses:
- *       200:
- *         description: OK
- */
+
 router.route('/connection/jms')
 .get(
+  logRoute,
   utils.addHeaders,
   (req, res, next) => {
-    res.status(200).send();
-  }
+    res.status(200);
+  },
+  logResponse,
+  respond
 )
 .options(
   logRoute,
@@ -369,7 +405,7 @@ router.route('/connection/jms')
  *       - organizations
  *     description: Finds and returns an array of organizations which the
  *        requesting user has at least read access on. Returns the organizations
- *        formatted for the MMS3 API.
+ *        formatted for the MMS API.
  *     produces:
  *       - application/json
  *     responses:
@@ -458,7 +494,7 @@ router.route('/orgs/:orgid')
  *       - projects
  *     description: Finds and returns an array of projects under the specified
  *        org which the requesting user has at least read access on. Returns the
- *        projects formatted for the MMS3 API.
+ *        projects formatted for the MMS API.
  *     produces:
  *       - application/json
  *     parameters:
@@ -517,7 +553,7 @@ router.route('/orgs/:orgid/projects')
  *       - projects
  *     description: Finds and returns an array containing all projects the user
  *        has at least read access on. Returns the projects formatted for the
- *        MMS3 API.
+ *        MMS API.
  *     produces:
  *       - application/json
  *     responses:
@@ -559,7 +595,7 @@ router.route('/projects')
  *     tags:
  *       - projects
  *     description: Finds and returns an array containing a single project
- *        object. Returns the project formatted for the MMS3 API.
+ *        object. Returns the project formatted for the MMS API.
  *     produces:
  *       - application/json
  *     parameters:
@@ -607,7 +643,7 @@ router.route('/projects/:projectid')
  *     tags:
  *       - branches
  *     description: Finds and returns an array of branches under the specified
- *        project. Returns the branches (refs) formatted for the MMS3 API.
+ *        project. Returns the branches (refs) formatted for the MMS API.
  *     produces:
  *       - application/json
  *     parameters:
@@ -634,7 +670,7 @@ router.route('/projects/:projectid')
  *     tags:
  *       - branches
  *     description: Creates multiple branches under the specified project.
- *        Returns the branches (refs) formatted for the MMS3 API.
+ *        Returns the branches (refs) formatted for the MMS API.
  *     produces:
  *       - application/json
  *     parameters:
@@ -692,7 +728,7 @@ router.route('/projects/:projectid/refs')
  *     tags:
  *       - branches
  *     description: Finds and returns a single branch from the refid provided in
- *        the request params. Returns the branch (ref) formatted for the MMS3
+ *        the request params. Returns the branch (ref) formatted for the MMS
  *        API.
  *     produces:
  *       - application/json
@@ -853,6 +889,66 @@ router.route('/projects/:projectid/refs/:refid/groups')
   logRoute,
   utils.addHeaders,
   APIController.getGroups,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
+
+/**
+ * @swagger
+ * /projects/{projectid}/refs/{refid}/elements/{elementid}/commits:
+ *   get:
+ *     tags:
+ *       - elements
+ *       - projects
+ *     description: Finds all commits for a given element.
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: projectid
+ *         description: The ID of the project which contains the searched
+ *                      branch/ref.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: refid
+ *         description: The ID of the ref to find.
+ *         in: path
+ *         required: true
+ *         type: string
+ *       - name: elementid
+ *         description: The ID of the searched element.
+ *         in: path
+ *         required: true
+ *         type: string
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ *   
+ */
+router.route('/projects/:projectid/refs/:refid/elements/:elementid/commits')
+.get(
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getElementCommits,
   logResponse,
   respond
 )
@@ -1119,7 +1215,7 @@ router.route('/projects/:projectid/refs/:refid/search')
  *     tags:
  *       - elements
  *     description: Finds and returns a single element under the specified
- *        project and ref (branch). Returns the element formatted for the MMS3
+ *        project and ref (branch). Returns the element formatted for the MMS
  *        API.
  *     produces:
  *       - application/json
@@ -1216,6 +1312,13 @@ router.route('/projects/:projectid/refs/:refid/elements/:elementid/cfids')
   logRoute,
   utils.addHeaders,
   APIController.getElementCfids,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
   logResponse,
   respond
 );
@@ -1559,13 +1662,315 @@ router.route('/commit/orgs/:orgid/projects/:projectid/branches/:branchid')
   authenticate,
   logRoute,
   doLogin,
-  APIController.postLogin,
   CommitController.handleCommit,
   logResponse,
   respond
 )
 .options(
   logRoute,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
+
+/**
+ * @swagger
+ * /projects/:projectid/refs/:refid/elements/:elementid
+ *   get:
+ *     parameters:
+ *       - name: commitId
+ *         description: The ID of the commit.
+ *         required: true
+ *         type: string
+ *     tags:
+ *       - general
+ *     description: get a commit by Id.
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal Server Error
+ *   options:
+ *     tags:
+ *       - general
+ *     description: Returns the commit.
+ *     responses:
+ *       200:
+ *         description: OK
+ */
+router.route('/projects/:projectid/refs/:refid/elements/:elementid')
+.get(
+  authenticate,
+  logRoute,
+  doLogin,
+  CommitController.getCommitById,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
+
+/**
+ * @swagger
+ * /mms-org:
+ *   post:
+ *     tags:
+ *       - mms organizations
+ *     description: Creates mms organization from the data provided in
+ *                  the request body. Returns the organization.
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/mms-org')
+.post(
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  CommitController.postOrg,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
+
+/**
+ * @swagger
+ * /mms-project:
+ *   post:
+ *     tags:
+ *       - mms project
+ *     description: Creates mms project from the data provided in
+ *                  the request body. Returns the project.
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/mms-project')
+.post(
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  CommitController.postProj,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
+
+/**
+ * @swagger
+ * /mms-branch:
+ *   post:
+ *     tags:
+ *       - mms branch
+ *     description: Creates mms branch from the data provided in
+ *                  the request body. Returns the branch.
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/mms-branch')
+.post(
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  CommitController.postBranch,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
+
+/**
+ * @swagger
+ * /mms-element:
+ *   post:
+ *     tags:
+ *       - mms element
+ *     description: Creates mms element from the data provided in
+ *                  the request body. Returns the element.
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/mms-element')
+.post(
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  CommitController.postElement,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
+
+/**
+ * @swagger
+ * /mms-user:
+ *   get:
+ *     tags:
+ *       - mms user
+ *     description: Gets an mms user. Returns mms user
+ *     produces:
+ *       - application/json
+ *     parameters:
+ *       - name: token
+ *         description: The token for the user.
+ *         required: true
+ *         type: string
+ *   post:
+ *     tags:
+ *       - mms user
+ *     description: Creates mms user. Returns user.
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/mms-user/:username')
+.get(
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getMmsUser,
+  logResponse,
+  respond
+)
+.post(
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.postMmsUser,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
+  utils.addHeaders,
+  APIController.optionsDefault,
+  logResponse,
+  respond
+);
+
+/**
+ * @swagger
+ * /mms-token:
+ *   post:
+ *     tags:
+ *       - mms user token
+ *     description: Authenticate with MMS. Returns user token.
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: OK
+ *       400:
+ *         description: Bad Request
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Not Found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.route('/mms-token/:username')
+.post(
+  utils.handleTicket,
+  authenticate,
+  logRoute,
+  utils.addHeaders,
+  APIController.getMmsAuthToken,
+  logResponse,
+  respond
+)
+.options(
+  logRoute,
+  utils.addHeaders,
   APIController.optionsDefault,
   logResponse,
   respond

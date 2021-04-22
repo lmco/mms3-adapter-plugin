@@ -23,24 +23,25 @@
  * @author Donte McDaniel
  *
  * @description Handles API Commit functions. Initializes a PUT request for
- * commiting elements to SDVC. Also sets up routes.
+ * commiting elements to MMS. Also sets up routes.
  */
 
 
 // NPM Modules
 const axios = require('axios');
 
-// MBEE Modules
+// MCF Modules
 const elementController = M.require('controllers.element-controller');
 const orgController = M.require('controllers.organization-controller');
 const projectController = M.require('controllers.project-controller');
 const branchController = M.require('controllers.branch-controller');
-const config = M.config.server.plugins.plugins['mms3-adapter'].sdvc;
+const config = M.config.server.plugins.plugins['mms-adapter'].mms;
 const mcfUtils = M.require('lib.utils');
 const errors = M.require('lib.errors');
+const { getStatusCode } = M.require('lib.errors');
 
-// MMS3 Adapter Modules
-const mms3Formatter = require('./formatter.js');
+// MMS Adapter Modules
+const MMSFormatter = require('./formatter.js');
 const validUpdateFields = ['name', 'documentation', 'custom', 'archived', 'parent', 'type',
   'source', 'target', 'artifact'];
 
@@ -99,26 +100,26 @@ async function handleCommit(req, res, next) {
       throw new M.NotFoundError(`Element ${updatedElement._id} does not exist in mcf database`);
     }
 
-    // Check if organization exist in MMS3 SDVC
-    let sdvcOrg = await getSDVCOrganization(organization);
-    if (!sdvcOrg) {
-      sdvcOrg = await createSDVCOrganization(req.user, orgMCF[0]);
+    // Check if organization exist in MMS
+    let mmsOrg = await getMMSOrganization(organization);
+    if (!mmsOrg) {
+      mmsOrg = await createMMSOrganization(req.user, orgMCF[0]);
     }
 
-    // Check if project exists in MMS3 SDVC
-    let sdvcProj = await getSDVCProject(project);
-    if (!sdvcProj) {
-      sdvcProj = await createSDVCProject(req.user, projMCF[0]);
+    // Check if project exists in MMS
+    let mmsProj = await getMMSProject(project);
+    if (!mmsProj) {
+      mmsProj = await createMMSProject(req.user, projMCF[0]);
     }
 
-    // Check if branch exists in MMS3 SDVC
-    let sdvcBranch = await getSDVCBranch(project, branch);
-    if (!sdvcBranch) {
-      sdvcBranch = await createSDVCBranch(req.user, project, branchMCF[0]);
+    // Check if branch exists in MMS
+    let mmsBranch = await getMMSBranch(project, branch);
+    if (!mmsBranch) {
+      mmsBranch = await createMMSBranch(req.user, project, branchMCF[0]);
     }
 
     // the element object being updated
-    const formattedUpdatedElement = mms3Formatter.mmsElement(req.user, updatedElement);
+    const formattedUpdatedElement = MMSFormatter.mmsElement(req.user, updatedElement);
 
     // Add all valid updated fields to formattedUpdatedElement
     // eslint-disable-next-line
@@ -130,7 +131,7 @@ async function handleCommit(req, res, next) {
 
     // Remove properties that are not needed.
     // If these properties get updated, the element gets deleted
-    // WARNING/NOTE: This is a limitation of SDVC and we are constrained to this implementation...
+    // WARNING/NOTE: This is a limitation of MMS and we are constrained to this implementation...
     delete formattedUpdatedElement.ownerId;
     delete formattedUpdatedElement._projectId;
     delete formattedUpdatedElement._refId;
@@ -141,14 +142,14 @@ async function handleCommit(req, res, next) {
     delete formattedUpdatedElement._editable;
 
     // Create or update the element
-    const sdvcElement = await createUpdateSDVCElement(project, branch, formattedUpdatedElement);
+    const mmsElement = await createUpdateMMSElement(project, branch, formattedUpdatedElement);
 
     res.locals.statusCode = 200;
     res.locals.message = JSON.stringify({
-      org: sdvcOrg,
-      proj: sdvcProj,
-      branch: sdvcBranch,
-      element: sdvcElement
+      org: mmsOrg,
+      proj: mmsProj,
+      branch: mmsBranch,
+      element: mmsElement
     });
   }
   catch (error) {
@@ -159,95 +160,240 @@ async function handleCommit(req, res, next) {
   next();
 }
 
+async function postOrg(req, res, next) {
+  try {
+    const mmsToken = req.get('MMS-TOKEN');
+    if (mmsToken) {
+      const org = await createMMSOrganization(req.user, req.body, mmsToken);
+      res.locals.statusCode = 200;
+      res.locals.message = { org };
+    }
+    else {
+      throw new M.ServerError('mms_token does not exit in user session. Unable to create MMS organization');
+    }
+  }
+  catch (error) {
+    M.log.error(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
+async function postProj(req, res, next) {
+  try {
+    const mmsToken = req.get('MMS-TOKEN');
+    if (mmsToken) {
+      const proj = await createMMSProject(req.user, req.body, mmsToken);
+      res.locals.statusCode = 200;
+      res.locals.message = { proj };
+    }
+    else {
+      throw new M.ServerError('mms_token does not exit in user session. Unable to create MMS project');
+    }
+  }
+  catch (error) {
+    M.log.error(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
+async function postBranch(req, res, next) {
+  try {
+    const mmsToken = req.get('MMS-TOKEN');
+    if (mmsToken) {
+      const projId = req.body.projectId;
+      const branchObj = req.body.branchObj;
+      const branch = await createMMSBranch(req.user, projId, branchObj, mmsToken);
+      res.locals.statusCode = 200;
+      res.locals.message = { branch };
+    }
+    else {
+      throw new M.ServerError('mms_token does not exit in user session. Unable to create MMS branch');
+    }
+  }
+  catch (error) {
+    M.log.error(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
+async function postElement(req, res, next) {
+  try {
+    const projId = req.body.projectId;
+    const branchId = req.body.branchId;
+    const formattedUpdatedElement = MMSFormatter.mmsElement(req.user, req.body.element);
+    const mmsToken = req.get('MMS-TOKEN');
+    
+    if (mmsToken) {
+      const mmsElement = await createUpdateMMSElement(projId, branchId, formattedUpdatedElement, mmsToken);
+      res.locals.statusCode = 200;
+      res.locals.message = { mmsElement };
+    }
+    else {
+      throw new M.ServerError('mms_token does not exit in user session. Unable to create MMS project');
+    }
+  }
+  catch (error) {
+    M.log.error(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
 // *********************************************** //
 // ***************** GET FUNCTIONS *************** //
 // *********************************************** //
 
 /**
- * @description GETs an MMS3 organization.
+ * @description GETs an MMS organization.
  *
  * @param {string} orgId - The organization id.
  *
- * @returns {object} An MMS3 formatted organization.
+ * @returns {object} An MMS formatted organization.
  */
-async function getSDVCOrganization(orgId) {
+async function getMMSOrganization(orgId) {
   try {
+    let url = `${config.url}:${config.port}/orgs`;
+    if (!config.port) {
+      url = `${config.url}/orgs`;
+    }
+    
     const org = await axios({
       method: 'get',
-      url: `${config.url}:${config.port}/orgs/${orgId}`,
+      url: url,
       auth: {
         username: config.auth.username,
         password: config.auth.password
       }
     });
-    if (org.data.orgs.length < 1) {
+
+    const organization = org.data.orgs.find(org => org.id === orgId);
+    if ([organization].length < 1) {
       return false;
     }
     else {
-      return org.data.orgs[0];
+      return organization;
     }
   }
   catch (error) {
-    throw new M.ServerError('Error getting organization from SDVC');
+    M.log.error(error);
+    throw new M.ServerError('Error getting organization from MMS');
   }
 }
 
 /**
- * @description GETs an MMS3 project.
+ * @description GETs an MMS project.
  *
  * @param {string} projectId - The project id.
  *
- * @returns {object} An MMS3 formatted project.
+ * @returns {object} An MMS formatted project.
  */
-async function getSDVCProject(projectId) {
+async function getMMSProject(projectId) {
   try {
+    let url = `${config.url}:${config.port}/projects`;
+    if (!config.port) {
+      url = `${config.url}/projects`;
+    }
+
     const project = await axios({
       method: 'get',
-      url: `${config.url}:${config.port}/projects/${projectId}`,
+      url: url,
       auth: {
         username: config.auth.username,
         password: config.auth.password
       }
     });
-    if (project.data.projects.length < 1) {
+    const proj = project.data.projects.find(proj => proj.id === projectId);
+    
+    if ([proj].length < 1) {
       return false;
     }
     else {
-      return project.data.projects[0];
+      return proj;
     }
   }
   catch (error) {
-    throw new M.ServerError('Error getting project from SDVC');
+    M.log.error(error);
+    throw new M.ServerError('Error getting project from MMS');
   }
 }
 
 /**
- * @description GETs an MMS3 ref/branch.
+ * @description GETs an MMS ref/branch.
  *
  * @param {string} projectId - The project id.
  * @param {string} branchId - The ref/branch id.
  *
- * @returns {object} An MMS3 formatted ref/branch.
+ * @returns {object} An MMS formatted ref/branch.
  */
-async function getSDVCBranch(projectId, branchId) {
+async function getMMSBranch(projectId, branchId) {
   try {
+    let url = `${config.url}:${config.port}/projects/${projectId}/refs/${branchId}`;
+    if (!config.port) {
+      url = `${config.url}/projects/${projectId}/refs/${branchId}`;
+    }
     const branch = await axios({
       method: 'get',
-      url: `${config.url}:${config.port}/projects/${projectId}/refs/${branchId}`,
+      url: url,
       auth: {
         username: config.auth.username,
         password: config.auth.password
       }
     });
-    if (branch.data.refs.length < 1) {
+    const ref = branch.data.refs.find(branch => branch.id === branchId);
+    
+    if ([ref].length < 1) {
       return false;
     }
     else {
-      return branch.data.refs[0];
+      return ref;
     }
   }
   catch (error) {
-    throw new M.ServerError('Error getting branch from SDVC');
+    M.log.error(error);
+    throw new M.ServerError('Error getting branch from MMS');
+  }
+}
+
+/**
+ * @description GETs an MMS elements.
+ *
+ * @param {string} projectId - The project id.
+ * @param {string} branchId - The ref/branch id.
+ *
+ * @returns {object} An MMS formatted element.
+ */
+async function getMMSElements(projectId, branchId) {
+  try {
+    let url = `${config.url}:${config.port}/projects/${projectId}/refs/${branchId}/elements`;
+    if (!config.port) {
+      url = `${config.url}/projects/${projectId}/refs/${branchId}/elements`;
+    }
+    const elements = await axios({
+      method: 'get',
+      url: url,
+      auth: {
+        username: config.auth.username,
+        password: config.auth.password
+      }
+    });
+    
+    if (elements.data.elements.length < 1) {
+      return false;
+    }
+    else {
+      return elements.data.elements;
+    }
+  }
+  catch (error) {
+    M.log.error(error);
+    throw new M.ServerError('Error getting elements from MMS');
   }
 }
 
@@ -257,26 +403,28 @@ async function getSDVCBranch(projectId, branchId) {
 // *********************************************** //
 
 /**
- * @description CREATES an MMS3 organization.
+ * @description CREATES an MMS organization.
  *
  * @param {object} user - The requesting user.
  * @param {object} orgObj - The mcf org object.
+ * @param {string} token - The MMS token.
  *
- * @returns {object} An MMS3 organization.
+ * @returns {object} An MMS organization.
  */
-async function createSDVCOrganization(user, orgObj) {
+async function createMMSOrganization(user, orgObj, token) {
   try {
+    let url = `${config.url}:${config.port}/orgs`;
+    if (!config.port) {
+      url = `${config.url}/orgs`;
+    }
     // formatting organization
-    const formattedOrg = mms3Formatter.mmsOrg(user, orgObj);
+    const formattedOrg = MMSFormatter.mmsOrg(user, orgObj);
     formattedOrg.type = 'org';
     // creating the organization
     const org = await axios({
       method: 'post',
-      url: `${config.url}:${config.port}/orgs`,
-      auth: {
-        username: config.auth.username,
-        password: config.auth.password
-      },
+      url: url,
+      headers: { Authorization: `Bearer ${token}` },
       data: {
         orgs: [
           formattedOrg
@@ -286,66 +434,79 @@ async function createSDVCOrganization(user, orgObj) {
     return org.data.orgs[0];
   }
   catch (error) {
-    throw new M.ServerError('Error creating MMS3 SDVC organization');
+    M.log.error(error);
+    throw new M.ServerError('Error creating MMS organization: ' + error);
   }
 }
 
 /**
- * @description CREATES an MMS3 project.
+ * @description CREATES an MMS project.
  *
  * @param {object} user - The requesting user.
  * @param {object} projectObj - The mcf project object.
+ * @param {string} token - The MMS token.
  *
- * @returns {object} An MMS3 project.
+ * @returns {object} An MMS project.
  */
-async function createSDVCProject(user, projectObj) {
+async function createMMSProject(user, projectObj, token) {
   try {
+    let url = `${config.url}:${config.port}/projects`;
+    if (!config.port) {
+      url = `${config.url}/projects`;
+    }
     // formatting project
-    const formattedProj = mms3Formatter.mmsProject(user, projectObj);
-    formattedProj.type = 'project';
+    const formattedProj = MMSFormatter.mmsProject(user, projectObj);
+    const project = {
+      id: formattedProj.id,
+      orgId: formattedProj.orgId,
+      name: formattedProj.name
+    }
+
     // creating the project
     const proj = await axios({
       method: 'post',
-      url: `${config.url}:${config.port}/projects`,
-      auth: {
-        username: config.auth.username,
-        password: config.auth.password
-      },
+      url: url,
+      headers: { Authorization: `Bearer ${token}` },
       data: {
         projects: [
-          formattedProj
+          project
         ]
       }
     });
+
     return proj.data.projects[0];
   }
   catch (error) {
-    throw new M.ServerError('Error creating MMS3 SDVC project');
+    M.log.error(error);
+    throw new M.ServerError('Error creating MMS project');
   }
 }
 
 /**
- * @description CREATES an MMS3 ref/branch.
+ * @description CREATES an MMS ref/branch.
  *
  * @param {object} user - The requesting user.
  * @param {string} projectId - The project id.
  * @param {object} branchObj - The mcf branch object.
+ * @param {string} token - The MMS token.
  *
- * @returns {object} An MMS3 ref/branch.
+ * @returns {object} An MMS ref/branch.
  */
-async function createSDVCBranch(user, projectId, branchObj) {
+async function createMMSBranch(user, projectId, branchObj, token) {
   try {
+    let url = `${config.url}:${config.port}/projects/${projectId}/refs`;
+    if (!config.port) {
+      url = `${config.url}/projects/${projectId}/refs`;
+    }
+
     // formatting organization
-    const formattedBranch = mms3Formatter.mmsRef(user, branchObj);
+    const formattedBranch = MMSFormatter.mmsRef(user, branchObj);
     formattedBranch.type = 'branch';
     // creating the organization
     const branch = await axios({
       method: 'post',
-      url: `${config.url}:${config.port}/projects/${projectId}/refs`,
-      auth: {
-        username: config.auth.username,
-        password: config.auth.password
-      },
+      url: url,
+      headers: { Authorization: `Bearer ${token}` },
       data: {
         refs: [
           formattedBranch
@@ -355,29 +516,32 @@ async function createSDVCBranch(user, projectId, branchObj) {
     return branch.data.refs[0];
   }
   catch (error) {
-    throw new M.ServerError('Error creating mms3 sdvc ref/branch');
+    M.log.error(error);
+    throw new M.ServerError('Error creating MMS ref/branch');
   }
 }
 
 /**
- * @description CREATES an MMS3 element.
+ * @description CREATES an MMS element.
  *
  * @param {string} projectId - The project id.
  * @param {string} branchId - The ref/branch id.
- * @param {object} mmsFormattedElementObj - The mms3 formatted element object.
+ * @param {object} mmsFormattedElementObj - The MMS formatted element object.
+ * @param {string} token - The MMS token.
  *
- * @returns {object} An MMS3 element.
+ * @returns {object} An MMS element.
  */
-async function createUpdateSDVCElement(projectId, branchId, mmsFormattedElementObj) {
+async function createUpdateMMSElement(projectId, branchId, mmsFormattedElementObj, token) {
   try {
+    let url = `${config.url}:${config.port}/projects/${projectId}/refs/${branchId}/elements`;
+    if (!config.port) {
+      url = `${config.url}/projects/${projectId}/refs/${branchId}/elements`;
+    }
     // creating the element
     const element = await axios({
       method: 'post',
-      url: `${config.url}:${config.port}/projects/${projectId}/refs/${branchId}/elements`,
-      auth: {
-        username: config.auth.username,
-        password: config.auth.password
-      },
+      url: url,
+      headers: { Authorization: `Bearer ${token}` },
       data: {
         elements: [
           mmsFormattedElementObj
@@ -387,10 +551,110 @@ async function createUpdateSDVCElement(projectId, branchId, mmsFormattedElementO
     return element.data.elements[0];
   }
   catch (error) {
-    throw new M.ServerError('Error creating mms3 sdvc element. Element probably never changed.');
+    M.log.error(error);
+    throw new M.ServerError('Error creating MMS element. Element probably never changed.');
+  }
+}
+
+/**
+ * @description Gets element commits
+ * @async
+ *
+ * @param {object} res - Response express object.
+ * @param {Function} next - Middleware callback to trigger the next function.
+ * @param {string} projectid - The project id.
+ * @param {string} branchid - The ref/branch id.
+ * @param {string} elementid - The element id.
+ */
+async function getCommitsByElement(res, next, projectid, branchid, elementid) {
+  try {
+    let url = `${config.url}:${config.port}/projects/${projectid}/refs/${branchid}/elements/${elementid}/commits`;
+    if (!config.port) {
+      url = `${config.url}/projects/${projectid}/refs/${branchid}/elements/${elementid}/commits`;
+    }
+
+    const mmsProj = await getMMSProject(projectid);
+    if (!mmsProj) {
+      res.locals.statusCode = 404;
+      res.locals.message = 'Project does not exist in MMS';
+    }
+
+    const mmsBranch = await getMMSBranch(projectid, branchid);
+    if (!mmsBranch) {
+      res.locals.statusCode = 404;
+      res.locals.message = 'Branch does not exist in MMS';
+    }
+
+    const mmsElements = await getMMSElements(projectid, branchid);
+    const foundElement = mmsElements.find(ele => ele.id === elementid);
+
+    if (!foundElement) {
+      res.locals.statusCode = 404;
+      res.locals.message = 'Element does not exist in MMS';
+    }
+
+    const commits = await axios({
+      method: 'get',
+      url: url,
+      auth: {
+        username: config.auth.username,
+        password: config.auth.password
+      }
+    });
+    res.locals.statusCode = 200;
+    res.locals.message = JSON.stringify(commits.data.commits);
+  }
+  catch (error) {
+    M.log.error(error);
+    throw new M.ServerError('Error getting commits from MMS for element '+elementid);
+  }
+  next();
+}
+
+/**
+ * @description Gets commit by Id.
+ * @async
+ *
+ * @param {object} res - Response express object.
+ * @param {Function} next - Middleware callback to trigger the next function.
+ */
+async function getCommitById(req, res, next) {
+  try {
+    const projectId = req.params.projectid;
+    const refId = req.params.refid;
+    const elementId = req.params.elementid;
+    const commitId = req.query.commitId;
+
+    let url = `${config.url}:${config.port}/projects/${projectId}/refs/${refId}/elements`;
+    if (!config.port) {
+      url = `${config.url}/projects/${projectId}/refs/${refId}/elements`;
+    }
+    // creating the element
+    const commit = await axios({
+      method: 'get',
+      url: url,
+      params: {
+        commitId: commitId
+      },
+      auth: {
+        username: config.auth.username,
+        password: config.auth.password
+      }
+    });
+    return commit.data.commit[0];
+  }
+  catch (error) {
+    M.log.error(error);
+    throw new M.ServerError('Error getting commit by commitId');
   }
 }
 
 module.exports = {
-  handleCommit
+  handleCommit,
+  getCommitsByElement,
+  postOrg,
+  postProj,
+  postBranch,
+  postElement,
+  getCommitById
 };
