@@ -28,7 +28,7 @@
 // NPM modules
 const chai = require('chai');
 
-// MBEE modules
+// MCF modules
 const ElementController = M.require('controllers.element-controller');
 const ProjectController = M.require('controllers.project-controller');
 const mcfUtils = M.require('lib.utils');

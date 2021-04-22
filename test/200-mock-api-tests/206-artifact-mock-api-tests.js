@@ -32,7 +32,7 @@ const path = require('path');
 // NPM modules
 const chai = require('chai');
 
-// MBEE modules
+// MCF modules
 const mcfUtils = M.require('lib.utils');
 const ProjectController = M.require('controllers.project-controller');
 

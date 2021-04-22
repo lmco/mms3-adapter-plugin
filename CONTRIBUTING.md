@@ -1,4 +1,4 @@
-# Contributing to MMS3 Adapter
+# Contributing to MMS Adapter
 
 **Contents**
 - [Reporting Bugs](#reporting-bugs)
@@ -10,13 +10,13 @@
 
 ### Reporting Bugs
 To report any bugs found in the software, please open a new issue on the 
-[MMS3 Adapter GitHub](https://github.com/Open-MBEE/mms3-adapter-plugin/issues/new). 
+[MMS Adapter GitHub](https://github.com/Open-MBEE/mms-adapter-plugin/issues/new). 
 It is important that you provide as much information as possible to help us reproduce 
 and fix the bug. The following information will be expected in all bug reports:
 
 - A detailed description of the issue
 - MBEE Version (found in the package.json file of your MBEE directory)
-- MMS3 Adapter Version (found in [package.json](./package.json))
+- MMS Adapter Version (found in [package.json](./package.json))
 - Node Version (found by running `node -v`)
 - Database Version
 
@@ -48,12 +48,12 @@ command in a terminal within the mcf project directory:
 #### Tests
 The current tests included with this plugin are not comprehensive, but intended to provide 
 testing of essential functionality for proper handling of model data.  The PDF generation 
-and SDVC commit features do not have any tests as of yet.  
+and MMS commit features do not have any tests as of yet.  
 
 The tests in this plugin must be run via the MCF script using the following command:
  
 ```bash
- node mbee test --plugin mms3-adapter
+ node mbee test --plugin mms-adapter
 ```
 
 #### Errors
@@ -67,7 +67,7 @@ These errors are attached to the global M object. Example usage is as follows:
     ...
   }
   catch(error) {
-    throw new M.ServerError('Error creating mms3 sdvc organization');
+    throw new M.ServerError('Error creating MMS organization');
   }
 ```
 
@@ -77,7 +77,7 @@ would be found in the [scripts](./scripts).
 
 ### Contributors
 Thanks to all of the following people who have directly contributed code to 
-the MMS3 Adapter Plugin:
+the MMS Adapter Plugin:
 
 - Connor Doyle
 - Austin Bieber

@@ -33,19 +33,23 @@ const path = require('path');
 // NPM modules
 const multer = require('multer');
 const upload = multer().single('file');
+const axios = require('axios');
 
-// MBEE modules
+// MCF modules
 const OrgController = M.require('controllers.organization-controller');
 const ProjectController = M.require('controllers.project-controller');
 const BranchController = M.require('controllers.branch-controller');
+const commitController = require('./commit-controller.js');
 const Branch = M.require('models.branch');
 const ElementController = M.require('controllers.element-controller');
 const ArtifactController = M.require('controllers.artifact-controller');
+const Element = M.require('models.element');
 const { getStatusCode } = M.require('lib.errors');
 const mcfUtils = M.require('lib.utils');
 const jmi = M.require('lib.jmi-conversions');
 const errors = M.require('lib.errors');
 const mbeeCrypto = M.require('lib.crypto');
+const btoa = require('btoa');
 
 // Adapter modules
 const format = require('./formatter.js');
@@ -53,6 +57,136 @@ const utils = require('./utils.js');
 const sjm = require('./sjm.js');
 const namespace = utils.customDataNamespace;
 
+/**
+ * @description Gets MMS User.
+ * @async
+ *
+ * @param {object} req - Request express object.
+ * @param {object} res - Response express object.
+ * @param {Function} next - Middleware callback to trigger the next function.
+ */
+async function getMmsUser(req, res, next) {
+  const config = M.config.server.plugins.plugins['mms-adapter'].mms;
+  try {
+    // set headers
+    const headers = {
+      'Authorization': 'Basic '+btoa(`${config.auth.username}:${config.auth.password}`), 
+      'Content-Type': 'application/json;charset=UTF-8'
+    };
+
+    let url = `${config.url}:${config.port}/checkAuth`;
+    if (!config.port) {
+      url = `${config.url}/checkAuth`;
+    }
+
+    const response = await axios({
+      method: 'get',
+      url: url,
+      headers: headers
+    });
+
+    // Set the status code and response message
+    res.locals.statusCode = response.status;
+    res.locals.message = response.data;
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
+/**
+ * @description Creates an MMS user. 
+ * @async
+ *
+ * @param {object} req - Request express object.
+ * @param {object} res - Response express object.
+ * @param {Function} next - Middleware callback to trigger the next function.
+ */
+async function postMmsUser(req, res, next) {
+  M.log.info('creating MMS user');
+  const config = M.config.server.plugins.plugins['mms-adapter'].mms;
+  try {
+    // set headers
+    const headers = {
+      'Authorization': 'Basic '+btoa(`${config.auth.username}:${config.auth.password}`), 
+      'Content-Type': 'application/json;charset=UTF-8'
+    };
+
+    let url = `${config.url}:${config.port}/user`;
+    if (!config.port) {
+      url = `${config.url}/user`;
+    }
+
+    // sending post request to create mms user
+    const response = await axios({
+      method: 'post',
+      url: url,
+      headers: headers,
+      data: {
+        username: req.params.username,
+        password: req.body.password,
+        admin: false
+      }
+    });
+
+    M.log.info(`success: created mms user ${req.params.username}`);
+    res.locals.statusCode = response.status;
+    res.locals.message = response.data;
+  }
+  catch (error) {
+    M.log.error(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
+
+/**
+ * @description Authenticates an MMS user. Returns token. 
+ * @async
+ *
+ * @param {object} req - Request express object.
+ * @param {object} res - Response express object.
+ * @param {Function} next - Middleware callback to trigger the next function.
+ */
+async function getMmsAuthToken(req, res, next) {
+  const config = M.config.server.plugins.plugins['mms-adapter'].mms;
+  try {
+    // set headers
+    const headers = {
+      'Content-Type': 'application/json;charset=UTF-8'
+    };
+
+    let url = `${config.url}:${config.port}/authentication`;
+    if (!config.port) {
+      url = `${config.url}/authentication`;
+    }
+    
+    // sending post request to generate mms token
+    const response = await axios({
+      method: 'post',
+      url: url,
+      headers: headers,
+      data: {
+        username: req.params.username,
+        password: req.body.password
+      }
+    });
+
+    M.log.info(`success: created mms token for user ${req.params.username}`);
+    res.locals.statusCode = response.status;
+    res.locals.message = response.data;
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
+  next();
+}
 
 /**
  * @description Formats the session token so that it can be cleanly represented in URIS.
@@ -101,7 +235,7 @@ function getTicket(req, res, next) {
 
 /**
  * @description Gets a single organization by id which a requesting user has access to. Returns
- * the org formatted as an MMS3 org in the MMS3 API style: { orgs: [foundOrg] }.
+ * the org formatted as an MMS org in the MMS API style: { orgs: [foundOrg] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -130,7 +264,7 @@ async function getOrg(req, res, next) {
 
 /**
  * @description Gets all organizations a requesting user has access to. Returns the orgs formatted
- * as MMS3 orgs in the MMS3 API style: { orgs: [...foundOrgs] }.
+ * as MMS orgs in the MMS API style: { orgs: [...foundOrgs] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -158,8 +292,8 @@ async function getOrgs(req, res, next) {
 }
 
 /**
- * @description Creates multiple organizations and returns them formatted as MMS3 orgs in the
- * in the MMS3 API style: { orgs: [...createdOrgs] }.
+ * @description Creates multiple organizations and returns them formatted as MMS orgs in the
+ * in the MMS API style: { orgs: [...createdOrgs] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -191,7 +325,7 @@ async function postOrgs(req, res, next) {
 
 /**
  * @description Gets all projects on a specific org which a requesting user has
- * access to. Returns the projects formatted as MMS3 projects in the MMS3 API style:
+ * access to. Returns the projects formatted as MMS projects in the MMS API style:
  * { projects: [...foundProjects] }.
  * @async
  *
@@ -221,7 +355,7 @@ async function getProjects(req, res, next) {
 
 /**
  * @description Creates multiple projects under a specified organization and returns the created
- * projects formatted as MMS3 projects in the MMS3 API style: { projects: [...createdProjects] }.
+ * projects formatted as MMS projects in the MMS API style: { projects: [...createdProjects] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -265,7 +399,7 @@ async function postProjects(req, res, next) {
 
 /**
  * @description Gets all projects a requesting user has access to. Returns the projects formatted
- * as MMS3 projects in the MMS3 API style: { projects: [...foundProjects] }.
+ * as MMS projects in the MMS API style: { projects: [...foundProjects] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -280,7 +414,7 @@ async function getAllProjects(req, res, next) {
 
 /**
  * @description Gets a single project on a specific org which a requesting user has access to.
- * Returns the project formatted as MMS3 project in the MMS3 API style:
+ * Returns the project formatted as MMS project in the MMS API style:
  * { projects: [foundProject] }.
  * @async
  *
@@ -315,8 +449,8 @@ async function getProject(req, res, next) {
 }
 
 /**
- * @description Gets all MCF branches (MMS3 refs) on a specific project which a requesting user
- * has access to. Returns the branches formatted as MMS3 refs in the MMS3 API style:
+ * @description Gets all MCF branches (MMS refs) on a specific project which a requesting user
+ * has access to. Returns the branches formatted as MMS refs in the MMS API style:
  * { refs: [...foundBranches] }.
  * @async
  *
@@ -348,8 +482,8 @@ async function getRefs(req, res, next) {
 }
 
 /**
- * @description Creates multiple MCF branches (MMS3 refs) under a specified project. Returns the
- * branches formatted as MMS3 refs in the MMS3 API style: { refs: [...createdBranches] }.
+ * @description Creates multiple MCF branches (MMS refs) under a specified project. Returns the
+ * branches formatted as MMS refs in the MMS API style: { refs: [...createdBranches] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -413,8 +547,8 @@ async function postRefs(req, res, next) {
 }
 
 /**
- * @description Gets a specific MCF branch (MMS3 ref) by ID. Returns the branch formatted as
- * an MMS3 ref in the MMS3 API style: { refs: [foundBranch] }.
+ * @description Gets a specific MCF branch (MMS ref) by ID. Returns the branch formatted as
+ * an MMS ref in the MMS API style: { refs: [foundBranch] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -447,7 +581,7 @@ async function getRef(req, res, next) {
 
 /**
  * @description Gets all mounts (referenced projects) of the specified project. Returns the found
- * projects formatted as MMS3 projects in the MMS3 API style: { projects: [...foundProjects] }.
+ * projects formatted as MMS projects in the MMS API style: { projects: [...foundProjects] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -532,7 +666,7 @@ async function getGroups(req, res, next) {
 
 /**
  * @description Creates or updates elements on the MCF. Returns the created elements formatted
- * as MMS3 elements in the MMS3 API style: { elements: [createdElements] }.
+ * as MMS elements in the MMS API style: { elements: [createdElements] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -587,11 +721,13 @@ async function postElements(req, res, next) {
         }
 
         // Additional processing for updates to child views
-        if (update.custom[namespace].hasOwnProperty('_childViews')) {
+        if (update.custom[namespace].hasOwnProperty('_childViews')
+          && Array.isArray(update.custom[namespace]._childViews)
+          && update.custom[namespace]._childViews.length !== 0) {
           const cvUpdate = update.custom[namespace]._childViews;
 
           // Verify that the _childViews update is valid
-          if (Array.isArray(cvUpdate) && cvUpdate.every((v) => typeof v.id === 'string'
+          if (cvUpdate.every((v) => typeof v.id === 'string'
             && typeof v.aggregation === 'string' && typeof v.propertyId === 'string')) {
             // Initialize the ownedAttributeIds field on the update
             update.custom[namespace].ownedAttributeIds = [];
@@ -601,6 +737,7 @@ async function postElements(req, res, next) {
             }
           }
           else {
+            console.log(JSON.stringify(update));
             throw new M.DataFormatError('Invalid update to _childViews field.', 'warn');
           }
           // Check if a child view is being added or removed by comparing existing and
@@ -728,7 +865,7 @@ async function postElements(req, res, next) {
  * to function. Instead of a create or replace request, MDK is actually requesting a
  * find operation by providing element ids. This function attempts to find elements
  * using the IDs passed in through the body of the request and returns all found elements
- * in the MMS3 api format: { elements: [...foundElements] }.
+ * in the MMS api format: { elements: [...foundElements] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -758,9 +895,9 @@ async function putElements(req, res, next) {
 
     // Extract options from request query
     const options = mcfUtils.parseOptions(req.query, validOptions);
-    // Remove MMS3 ticket from find
+    // Remove MMS ticket from find
     delete options.alf_ticket;
-    // Convert MMS3 depth to MCF
+    // Convert MMS depth to MCF
     if (options.depth !== 0) {
       options.subtree = true;
     }
@@ -795,7 +932,7 @@ async function putElements(req, res, next) {
 
 /**
  * @description Deletes elements by ID and returns the IDs of the successfully
- * deleted elements in the MMS3 API format: { elements: [...deletedIDs] }.
+ * deleted elements in the MMS API format: { elements: [...deletedIDs] }.
  * @async
  *
  * @param {object} req - Request express object.
@@ -844,25 +981,38 @@ async function putElementSearch(req, res, next) {
     await utils.getOrgId(req);
     let projID = req.params.projectid;
     const branchID = req.params.refid;
-    let elemID;
 
     if (req.body.query) {
-      elemID = req.body.query.bool.filter[0].term.id;
-      projID = req.body.query.bool.filter[1].term._projectId;
+      const searchQuery = utils.translateSearchQuery(req.body.query);
+      //const searchQuery = "Requirement Test";
+      //const textSearchQuery = { '$text': '{ $search: "' + `${JSON.stringify(searchQuery)}` + '"'};
+      console.log('searchQuery: ', searchQuery);
+      const elements = await Element.find(searchQuery);
+      console.log('textSearchElements: ', elements);
+      
+      
+      // Generate the child views of the element if there are any
+      await utils.generateChildViews(req.user, req.params.orgid, projID, branchID, elements);
+
+      // Return the public data of the elements in MMS format
+      const data = elements.map((e) => format.mmsElement(req.user, e));
+
+      // Set the status code and response message
+      res.locals.statusCode = 200;
+      res.locals.message = { elements: data };
     }
+    else if (req.body.aggs) {
+      const results = await utils.viewEditorMetatypesQuery(req.body.aggs);
 
-    const elements = await ElementController.find(req.user, req.params.orgid, projID, branchID,
-      elemID);
-
-    // Generate the child views of the element if there are any
-    await utils.generateChildViews(req.user, req.params.orgid, projID, branchID, elements);
-
-    // Return the public data of the elements in MMS format
-    const data = elements.map((e) => format.mmsElement(req.user, e));
-
-    // Set the status code and response message
-    res.locals.statusCode = 200;
-    res.locals.message = { elements: data };
+      // Set the status code and response message
+      res.locals.statusCode = 200;
+      res.locals.message = results;
+    }
+    else {
+      throw new M.DataFormatError('Invalid request: No query or aggs found in request body.');
+    }
+    // const elements = await ElementController.find(req.user, req.params.orgid, projID, branchID,
+    //   elemID);
   }
   catch (error) {
     M.log.warn(error.message);
@@ -887,7 +1037,7 @@ async function putElementSearch(req, res, next) {
 }
 
 /**
- * @description Gets a single element by ID and returns it in the MMS3 API format.
+ * @description Gets a single element by ID and returns it in the MMS API format.
  * @async
  *
  * @param {object} req - Request express object.
@@ -1016,7 +1166,7 @@ async function getDocuments(req, res, next) {
     await utils.generateChildViews(req.user, req.params.orgid, req.params.projectid,
       req.params.refid, documentElements);
 
-    // Convert elements into MMS3 format
+    // Convert elements into MMS format
     const formattedDocs = documentElements.map((e) => format.mmsElement(req.user, e));
 
     res.locals.statusCode = 200;
@@ -1192,7 +1342,7 @@ async function postHtml2Pdf(req, res, next) {
     await utils.getOrgId(req);
 
     // Get plugin configuration
-    const pluginCfg = M.config.server.plugins.plugins['mms3-adapter'];
+    const pluginCfg = M.config.server.plugins.plugins['mms-adapter'];
     const filename = pluginCfg.pdf.filename;
     const directory = pluginCfg.pdf.directory;
 
@@ -1216,15 +1366,16 @@ async function postHtml2Pdf(req, res, next) {
     // Generate the bearer token and encode it
     const userBearerToken = encodeURIComponent(mbeeCrypto.generateToken(userTokenData));
 
-    // Replace token with generated 24hr bearer token
+    // Replace token with newly generated tmp user token
     // eslint-disable-next-line
     const tokenizedHTML = removedTagsHTML.replace(/alf_ticket=[a-zA-Z0-9%]*\"/g,
     // eslint-disable-next-line
       `alf_ticket=${userBearerToken}\"`);
 
     // Define HTML/PDF file paths
-    const tempHtmlFileName = `${filename}_${Date.now()}.html`;
-    const tempPdfFileName = `${filename}_${Date.now()}.pdf`;
+    const date = Date.now();
+    const tempHtmlFileName = `${filename}_${date}.html`;
+    const tempPdfFileName = `${filename}_${date}.pdf`;
     const fullHtmlFilePath = path.join(directory, tempHtmlFileName);
     const fullPdfFilePath = path.join(directory, tempPdfFileName);
 
@@ -1262,8 +1413,18 @@ async function postHtml2Pdf(req, res, next) {
         // Email user
         await utils.emailBlobLink(req.user.email, link);
       }
+      
+      // Delete the temporary files
+      fs.unlink(fullPdfFilePath, (unlinkErr) => {
+        if (unlinkErr) throw unlinkErr;
+        M.log.info(`${fullPdfFilePath} deleted.`);
+      });
+      fs.unlink(fullHtmlFilePath, (unlinkErr) => {
+        if (unlinkErr) throw unlinkErr;
+        M.log.info(`${fullPdfFilePath} deleted.`);
+      });
     });
-
+    
     // Set status code
     res.locals.statusCode = 200;
   }
@@ -1273,6 +1434,45 @@ async function postHtml2Pdf(req, res, next) {
     res.locals.message = error.message;
   }
   next();
+}
+
+/**
+ * @description Gets element commits
+ * @async
+ *
+ * @param {object} req - The Express request object.
+ * @param {object} res - The Express response object.
+ * @param {Function} next - Middleware callback to trigger the next function.
+ */
+async function getElementCommits(req, res, next) {
+  try {
+    // Add valiation for params
+    const projectid = req.params.projectid;
+    const branchid = req.params.refid;
+    const elementid = req.params.elementid;
+
+    if (!projectid) {
+      res.locals.statusCode = 400;
+      res.locals.message = 'please provide project id';
+      next();
+    }
+    if (!branchid) {
+      res.locals.statusCode = 400;
+      res.locals.message = 'please branch project id';
+      next();
+    }
+    if (!elementid) {
+      res.locals.statusCode = 400;
+      res.locals.message = 'please element project id';
+      next();
+    }
+    return await commitController.getCommitsByElement(res, next, projectid, branchid, elementid);
+  }
+  catch (error) {
+    M.log.warn(error.message);
+    res.locals.statusCode = getStatusCode(error);
+    res.locals.message = error.message;
+  }
 }
 
 module.exports = {
@@ -1302,5 +1502,9 @@ module.exports = {
   postArtifact,
   putArtifacts,
   getBlob,
-  postHtml2Pdf
+  postHtml2Pdf,
+  getElementCommits,
+  getMmsUser,
+  postMmsUser,
+  getMmsAuthToken
 };
