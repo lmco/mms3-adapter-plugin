@@ -28,7 +28,7 @@
 // NPM modules
 const chai = require('chai');
 
-// MBEE modules
+// MCF modules
 const mcfUtils = M.require('lib.utils');
 
 // Adapter modules

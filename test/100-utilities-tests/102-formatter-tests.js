@@ -29,7 +29,7 @@
 // NPM modules
 const chai = require('chai');
 
-// MBEE modules
+// MCF modules
 const BranchController = M.require('controllers.branch-controller');
 const ElementController = M.require('controllers.element-controller');
 const mcfTestUtils = M.require('lib.test-utils');

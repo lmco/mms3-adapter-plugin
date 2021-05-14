@@ -1,9 +1,9 @@
-# MMS3 Adapter Plugin
-The MMS3 Adapter Plugin is a plugin designed to be run within MBEE Core Framework (MCF). 
-It exposes a MMS3 compatible interface from MCF. It mimics the MMS3 API endpoints, to 
-allow for a seamless transition between MMS3 and MCF formatted data. Each endpoint 
-accepts data in the same format which MMS3 would expect and returns data in the same 
-format which MMS3 would.
+# MMS Adapter Plugin
+The MMS Adapter Plugin is a plugin designed to be run within MBEE Core Framework (MCF). 
+It exposes a MMS compatible interface from MCF. It mimics the MMS API endpoints, to 
+allow for a seamless transition between MMS and MCF formatted data. Each endpoint 
+accepts data in the same format which MMS would expect and returns data in the same 
+format which MMS would.
 
 ## Prerequisites
 
@@ -21,8 +21,8 @@ For PDF generation, [Prince](https://www.princexml.com/) will have to be install
 separately with its executable path, file directory, and filename template included. 
 See [PDF Export Configuration](#pdf-export-configuration) section below.
 
-#### Structured Data Version Control (SDVC) Configuration
-To track element commit history this plugin leverages [MMS SDVC](https://github.com/Open-MBEE/mms).
+#### Structured Data Version Control (MMS) Configuration
+To track element commit history this plugin leverages [MMS](https://github.com/Open-MBEE/mms).
 Follow linked installation instructions within the `README.md` to deploy.
 
 #### Source Code
@@ -30,66 +30,66 @@ This source code can be cloned and referenced by the MCF config from your local 
 or by adding an MCF config reference to the hosted repo.
 
 ##### Clone
-1. Clone the MBEE code by running: `git clone https://github.com/Open-MBEE/mms3-adapter-plugin`. 
-2. Enter the directory with `cd mms3-adapter-plugin`.
+1. Clone the MBEE code by running: `git clone https://github.com/Open-MBEE/mms-adapter-plugin`. 
+2. Enter the directory with `cd mms-adapter-plugin`.
 
 ##### MCF Config References
 ```json
-"mms3-adapter": {
-  "source": "https://github.com/Open-MBEE/mms3-adapter-plugin.git",
-  "title": "MMS3 Adapter",
-  "name": "mms3-adapter"
+"mms-adapter": {
+  "source": "https://github.com/Open-MBEE/mms-adapter-plugin.git",
+  "title": "MMS Adapter",
+  "name": "mms-adapter"
 }
 ```
 
 ## Getting Started
-The requirements for installing the MMS3 Adapter Plugin are simple: a running
+The requirements for installing the MMS Adapter Plugin are simple: a running
 copy of MCF, version 0.10 or greater. To install the plugin, add the following
 to the **plugins.plugins** section of the running MCF configuration, ensure
 **plugins.enabled** is set to true, and restart MCF.
 
 ```json
-"mms3-adapter": {
-  "source": "https://github.com/Open-MBEE/mms3-adapter-plugin.git",
-  "title": "MMS3 Adapter",
-  "name": "mms3-adapter",
-  "sdvc": {
-    "url": "SDVC_HOST",
-    "port": "SDVC_PORT",
+"mms-adapter": {
+  "source": "https://github.com/Open-MBEE/mms-adapter-plugin.git",
+  "title": "MMS Adapter",
+  "name": "mms-adapter",
+  "mms": {
+    "url": "MMS_HOST",
+    "port": "MMS_PORT",
     "auth": {
-      "username": "SDVC_USERNAME",
-      "password": "SDVC_PASSWORD"
+      "username": "MMS_USERNAME",
+      "password": "MMS_PASSWORD"
     }
   },
   "emailServerUrl": "email.server.com",
   "emailServerPort": "25",
-  "senderAddress": "pdf_sender@server.com",
+  "supportEmail": "example-support@mail.com",
   "pdf": {
     "directory": "/tmp",
     "filename": "tmp.output",
-    "exec": "/path/to/prince/executable"
+    "exec": "/usr/local/bin/prince"
   }
 }
 ```
 
-### Structured Data Version Control (SDVC) Configuration
-To leverage SDVC commit tracking, supply the plugin config the following information:
+### Structured Data Version Control (MMS) Configuration
+To leverage MMS commit tracking, supply the plugin config the following information:
 
 ```json
-"mms3-adapter": {
-  "sdvc": {
-    "url": "SDVC_HOST",
-    "port": "SDVC_PORT",
+"mms-adapter": {
+  "mms": {
+    "url": "MMS_HOST",
+    "port": "MMS_PORT",
     "auth": {
-      "username": "SDVC_USERNAME",
-      "password": "SDVC_PASSWORD"
+      "username": "MMS_USERNAME",
+      "password": "MMS_PASSWORD"
     }
   }
 }
 ```
 
 **NOTE**: This plugin does not have a UI component. This commit tracking is handled 
-in a separate application. See [MMS SDVC](https://github.com/Open-MBEE/mms) for 
+in a separate application. See [MMS](https://github.com/Open-MBEE/mms) for 
 more detailed information.
 
 ### PDF Export Configuration
@@ -101,28 +101,27 @@ link to download the PDF.
 To set up PDF export, supply the configuration with the following information:
 
 ```
-"mms3-adapter": {
+"mms-adapter": {
   "emailServerUrl": "MAIL_SERVER",
   "emailServerPort": "MAIL_PORT",
-  "senderAddress": "SENDER_EMAIL",
   "pdf": {
     "directory": "/tmp",             # Location to store the documents. (HTML, PDF) 
     "filename": "tmp.output",        # Filename template prepended to each file.
-    "exec": "PRINCE_PATH"            # Prince executable path.
+    "exec": "/usr/local/bin/prince"  # Prince executable path.
   }
 }
 ```
 
 ### Accessing Endpoints
-Once the plugin is installed and MCF is restarted, all normal MMS3 API endpoints
+Once the plugin is installed and MCF is restarted, all normal MMS API endpoints
 should be accessible through the MCF API. Simply append
-`/plugins/mms3-adapter` to the normal MMS3 endpoint to access that endpoint in
-MCF. For example, to login through the MMS3 API on a localhost server on port
+`/plugins/mms-adapter` to the normal MMS endpoint to access that endpoint in
+MCF. For example, to login through the MMS API on a localhost server on port
 6233, the POST request route would look like 
-`http://localhost:6233/plugins/mms3-adapter/api/login`.
+`http://localhost:6233/plugins/mms-adapter/api/login`.
 
 ### View Editor Configuration
-To get the MMS3 Adapter working with View Editor, follow the instructions below.
+To get the MMS Adapter working with View Editor, follow the instructions below.
 Please note that the instructions below assume you are running an **unmodified**
 instance of View Editor from the [Open-MBEE GitHub](https://github.com/Open-MBEE/ve).
 
@@ -147,8 +146,8 @@ instance of View Editor from the [Open-MBEE GitHub](https://github.com/Open-MBEE
    allows View Editor to point to your MCF server.
    
    ```javascript
-   URLServiceProvider.setMmsUrl('http://{your-mcf-host}:{your-mcf-port}/plugins/mms3-adapter/alfresco/service');
-   URLServiceProvider.setBaseUrl('http://{your-mcf-host}:{your-mcf-port}/plugins/mms3-adapter/alfresco/service');
+   URLServiceProvider.setMmsUrl('http://{your-mcf-host}:{your-mcf-port}/plugins/mms-adapter/alfresco/service');
+   URLServiceProvider.setBaseUrl('http://{your-mcf-host}:{your-mcf-port}/plugins/mms-adapter/alfresco/service');
    ```
    3b. In `src/services/AuthorizationServices.js` replace line 25 with the
    following line. This allows View Editor to NOT point to alfresco for user
@@ -174,15 +173,12 @@ instance of View Editor from the [Open-MBEE GitHub](https://github.com/Open-MBEE
 
 ### Cameo Configuration
 If you are using NoMagic’s Cameo Enterprise Architecture along with OpenMBEE’s MDK and 
-you want to upload your model to MCF as you would to MMS3, you will have to give the 
+you want to upload your model to MCF as you would to MMS, you will have to give the 
 root element of your model in Cameo the “MMS url”. This should be:
 
 ```
-http://{your-mcf-host}:{your-mcf-port}/plugins/mms3-adapter
+http://{your-mcf-host}:{your-mcf-port}/plugins/mms-adapter
 ```
-
-There is some small modification needed to be made to the MDK in order to parse the
-url correctly as MDK by default cuts off everything after the port.
 
 ### Known Issues
 
@@ -192,5 +188,5 @@ See `SECURITY.md` for Known Issues.
 
 If an issue is identified in MBEE, please email
 [mbee-software.fc-space@lmco.com](mailto:mbee-software.fc-space@lmco.com).
-Refer to **SECURITY.md** for more information.
+Refer to **SECURITY.md** for more information as well as the PGP encryption key.
 

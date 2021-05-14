@@ -1,16 +1,17 @@
 {
-  "name": "mms3-adapter",
-  "version": "1.0.0",
-  "description": "MMS3 Adapter Plugin for MBEE Core Framework",
+  "name": "mms-adapter",
+  "version": "2.1.0",
+  "description": "MMS Adapter Plugin for MBEE Core Framework",
   "main": "app.js",
-  "repository": "https://github.com/lmco/mms3-adapter-plugin",
+  "repository": "https://github.com/open-mbee/mms-adapter-plugin",
   "author": "Lockheed Martin",
   "license": "Apache-2.0",
   "private": true,
   "dependencies": {
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "express": "^4.17.1",
     "multer": "^1.4.2",
-    "nodemailer": "^6.4.6"
+    "nodemailer": "^6.4.6",
+    "btoa": "1.2.1"
   }
 }

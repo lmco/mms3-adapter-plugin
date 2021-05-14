@@ -26,7 +26,7 @@
  * run.
  */
 
-// MBEE modules
+// MCF modules
 const Artifact = M.require('models.artifact');
 const Branch = M.require('models.branch');
 const Element = M.require('models.element');

@@ -29,9 +29,9 @@
 
 // NPM modules
 const nodemailer = require('nodemailer');
-const { execSync } = require('child_process');
+const { exec } = require('child_process');
 
-// MBEE modules
+// MCF modules
 const Project = M.require('models.project');
 const Element = M.require('models.element');
 const mcfUtils = M.require('lib.utils');
@@ -46,7 +46,7 @@ const customDataNamespace = 'CameoMDK';
  * @description Retrieves an AdapterSession object from the database, based on
  * the username of the user in the request object. If an AdapterSession is
  * found, the request parameter "orgid" is set equal to the session's org. This
- * is done as a workaround to MMS3 endpoints not containing the org ID. Modifies
+ * is done as a workaround to MMS endpoints not containing the org ID. Modifies
  * the request object by reference.
  * @async
  *
@@ -215,18 +215,24 @@ async function generateChildViews(reqUser, orgID, projID, branchID, elements) {
  * @param {string} fullPdfFilePath - String path of the generated pdf file.
  */
 async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath) {
-  const config = M.config.server.plugins.plugins['mms3-adapter'];
-  const exec = config.pdf.exec;
+  const config = M.config.server.plugins.plugins['mms-adapter'];
+  const execCmd = config.pdf.exec;
 
   // Generate the conversion command
-  const command = `${exec} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure`;
+  const command = `${execCmd} ${fullHtmlFilePath} -o ${fullPdfFilePath} --insecure`;
 
   // Execute and log command
   M.log.info(`Executing... ${command}`);
-  const stdout = execSync(command);
-
-  // Log Results
-  M.log.info(stdout.toString());
+  return new Promise((resolve, reject) => {
+    exec(command, (err, stdout, stderr) => {
+      if (err) {
+        M.log.error(stdout.toString());
+        M.log.error(stderr.toString());
+        return reject(`exec error: ${err}`);
+      }
+      return resolve();
+    });
+  });
 }
 
 /**
@@ -238,7 +244,7 @@ async function convertHtml2Pdf(fullHtmlFilePath, fullPdfFilePath) {
 async function emailBlobLink(userEmail, link) {
   try {
     // Get adapter configuration
-    const config = M.config.server.plugins.plugins['mms3-adapter'];
+    const config = M.config.server.plugins.plugins['mms-adapter'];
 
     // Create mail transporter
     const transporter = nodemailer.createTransport({
@@ -256,7 +262,7 @@ async function emailBlobLink(userEmail, link) {
 
     // Create the transporter and send the email
     await transporter.sendMail({
-      from: config.senderAddress,                              // sender address
+      from: ` "mbee support" <${config.supportEmail}>`, // sender address
       to: userEmail,
       subject: 'HTML to .pdf generation completed.',           // Subject line
       text: message                                            // plain text body
@@ -271,6 +277,592 @@ async function emailBlobLink(userEmail, link) {
   }
 }
 
+/**
+ * @description Translates an ElasticSearch query into a MongoDB query.
+ *
+ * @param {Object} query - The ElasticSearch query.
+ * @returns MongoDB query.
+ */
+function translateElasticSearchQuery(query) {
+  console.log('Initial ES query')
+  console.log(query)
+  // Initialize MongoDB query object
+  let q = {};
+
+  // Check for filter
+  if (query.bool && query.bool.filter) {
+    // Easiest scenario: filtering for a single element
+    if (query.bool.filter[0].term && query.bool.filter[0].term.id) {
+      q = {
+        _id: new RegExp(query.bool.filter[0].term.id),
+        project: new RegExp(query.bool.filter[1].term._projectId)
+      };
+      console.log('filter query')
+      console.log(q)
+    }
+    // Otherwise, process the filter
+    else if (query.bool.filter) {
+      //TODO: Add filter if needed.
+    }
+  }
+
+  
+
+  // There are 5 options unless it's an advanced search:
+  // "all"                    bool: { should: [ { term: { id: { value: VALUE } } }, { multi_match: { query: VALUE, fields: FIELDS } } }
+  // "name or documentation"  match: { [name or documentation]: { query: VALUE } }
+  // "id"                     term: { id: VALUE }
+  // "values"                 multi_match: { query: VALUE, fields: FIELDS }
+  // "metatypes"              bool: { should: [ { terms: { _appliedStereotypeIds: VALUE_1 } }, { terms: { type: VALUE_2 } } ], minimum_should_match: 1 }
+  // *** If it's an advanced search, it will look like this:
+  // AND:                     bool: { must: [ CLAUSE_1, CLAUSE_2 ] }
+  // OR:                      bool: { should: [ CLAUSE_1, CLAUSE_2 ], minimum_should_match: 1 }
+  // AND NOT:                 bool: { must: [ CLAUSE_1, { bool: { must_not: CLAUSE_2 } } ] }
+  if (query.bool) {
+    // Test whether it's an AND or AND NOT
+    if (query.bool.must) {
+      if (Array.isArray(query.bool.must)) {
+        // Test if AND
+        if (!(query.bool.must[1].bool && query.bool.must[1].bool.must_not)) {
+          const q1 = translateElasticSearchQuery(query.bool.must[0]);
+          const q2 = translateElasticSearchQuery(query.bool.must[1]);
+          q = {
+            ...q,
+            ...q1,
+            ...q2
+          };
+          return q;
+        }
+        // Test if AND NOT
+        else if (query.bool.must[1].bool && query.bool.must[1].bool.must_not) {
+          const q1 = translateElasticSearchQuery(query.bool.must[0]);
+          const q2 = translateElasticSearchQuery(query.bool.must[1].bool.must_not);
+          q = {
+            ...q,
+            ...q1,
+            '$nin': { ...q2 }
+          };
+          return q;
+        }
+      }
+      // otherwise it would be query.bool.must.bool; just start translating from there
+      else {
+        const q1 = translateElasticSearchQuery(query.bool.must);
+        q = {
+          ...q,
+          ...q1
+        };
+        return q;
+      }
+    }
+    // Test if it's an OR
+    else if (query.bool.should
+      && !(Array.isArray(query.bool.should) && ((query.bool.should[0].term && query.bool.should[1].multi_match) || (query.bool.should[0].terms && query.bool.should[1].terms)))) {
+      // Test if array
+      console.log('OR')
+      if (Array.isArray(query.bool.should) && !((query.bool.should[0].term && query.bool.should[1].multi_match) || (query.bool.should[0].terms && query.bool.should[1].terms))) {
+        console.log('OR array')
+        const q1 = translateElasticSearchQuery(query.bool.should[0]);
+        const q2 = translateElasticSearchQuery(query.bool.should[1]);
+        q = {
+          ...q,
+          '$or': [...q1, ...q2]
+        };
+        return q;
+      }
+      // run query on value if not an array
+      else {
+        console.log('OR object')
+        const q1 = translateElasticSearchQuery(query.bool.should);
+        q = {
+          ...q,
+          ...q1
+        };
+        return q
+      }
+    }
+    // Treat it like a normal query
+    else {
+      console.log('normal query')
+      // Determine if "all" or "metatypes" query
+      if (query.bool.should) {
+        // All scenario
+        if ((query.bool.should[0].term.id ) && query.bool.should[1].multi_match) {
+          const searchTerm = query.bool.should[0].id && query.bool.should[0].id.value
+            ? query.bool.should[0].id.value
+            : query.bool.should[0].term.id.value;
+          
+          q = {
+            ...q,
+            '$or': [
+            { _id: searchTerm },
+            { name: searchTerm },
+            { documentation: searchTerm },
+            { [`custom[${customDataNamespace}].defaultValue`]: searchTerm },
+            { [`custom[${customDataNamespace}].value`]: searchTerm },
+            { [`custom[${customDataNamespace}].specification`]: searchTerm }
+          ]};
+          return q;
+        }
+        // Metatypes scenario
+        else if (query.bool.should[0].terms && query.bool.should[1].terms) {
+          const searchTerm1 = query.bool.should[0].terms._appliedStereotypeIds;
+          const searchTerm2 = query.bool.should[1].terms.type;
+          q = {
+            ...q,
+            '$or': [
+              { [`custom[${customDataNamespace}]._appliedStereotypeIds`]: searchTerm1 },
+              { type: searchTerm2 }
+          ]};
+          return q;
+        }
+      }
+      // Determine if "name" or "documentation" query
+      else if (query.match) {
+        let searchTerm;
+        if (query.match.name) {
+          searchTerm = query.match.name;
+          q = {
+            ...q,
+            name: searchTerm
+          };
+          return q;
+        }
+        else if (query.match.documentation) {
+          searchTerm = query.match.documentation;
+          q = {
+            ...q,
+            documentation: searchTerm
+          };
+          return q;
+        }
+      }
+      // Determine if "id" query
+      else if (query.term) {
+        const searchTerm = query.term.id;
+        q = {
+          ...q,
+          _id: searchTerm
+        };
+        return q;
+      }
+      // Determine if "values" query
+      else if (query.multi_match) {
+        const searchTerm = query.multi_match.query;
+        q = {
+          ...q,
+          '$or': [
+          { [`custom[${customDataNamespace}].defaultValue`]: searchTerm },
+          { [`custom[${customDataNamespace}].value`]: searchTerm },
+          { [`custom[${customDataNamespace}].specification`]: searchTerm }
+        ]};
+        return q;
+      }
+    }
+  }
+
+  return q;
+}
+
+/**
+ * @description Translates an ElasticSearch query into a MongoDB query.
+ *
+ * @param {Object} query - The ElasticSearch query.
+ * @returns MongoDB query.
+ */
+function translateSearchQuery(query) {
+  // let q = {};
+  //
+  // // Check for filter
+  // if (query.bool && query.bool.filter) {
+  //   // Easiest scenario: filtering for a single element
+  //   if (query.bool.filter[0].term && query.bool.filter[0].term.id) {
+  //     q = {
+  //       _id: new RegExp(query.bool.filter[0].term.id),
+  //       project: new RegExp(query.bool.filter[1].term._projectId)
+  //     };
+  //     console.log('filter query')
+  //     console.log(q)
+  //   }
+  //   // Otherwise, process the filter
+  //   else if (query.bool.filter) {
+  //
+  //   }
+  // }
+  //
+  // // Determine if "all" or "metatypes" query
+  // if (query.bool.should) {
+  //   // All scenario
+  //   if ((query.bool.should[0].term.id || query.bool.should[0].term.id) && query.bool.should[1].multi_match) {
+  //     const searchTerm = query.bool.should[0].id && query.bool.should[0].id.value
+  //       ? query.bool.should[0].id.value
+  //       : query.bool.should[0].term.id.value;
+  //
+  //     q = { '$text': '{ $search: "' + `${JSON.stringify(searchTerm)}` + '"'};
+  //     return q;
+  //   }
+  // }
+  //
+  // // Test whether it's an AND or AND NOT
+  // if (query.bool.must) {
+  //   if (Array.isArray(query.bool.must)) {
+  //     // Test if AND
+  //     if (!(query.bool.must[1].bool && query.bool.must[1].bool.must_not)) {
+  //       const q1 = testSearchQuery(query.bool.must[0]);
+  //       const q2 = testSearchQuery(query.bool.must[1]);
+  //       q = {
+  //         ...q,
+  //         ...q1,
+  //         ...q2
+  //       };
+  //       return q;
+  //     }
+  //     // Test if AND NOT
+  //     else if (query.bool.must[1].bool && query.bool.must[1].bool.must_not) {
+  //       const q1 = testSearchQuery(query.bool.must[0]);
+  //       const q2 = testSearchQuery(query.bool.must[1].bool.must_not);
+  //       q = {
+  //         ...q,
+  //         ...q1,
+  //         '$nin': { ...q2 }
+  //       };
+  //
+  //       const searchTerm = query.bool.should[0].id && query.bool.should[0].id.value
+  //         ? query.bool.should[0].id.value
+  //         : query.bool.should[0].term.id.value;
+  //       q = { '$text': '{ $search: "' + `${JSON.stringify(searchTerm)}` + '"'};
+  //
+  //       return q;
+  //     }
+  //   }
+  // }
+  
+  // Initialize MongoDB query object
+  let q = {};
+  
+  // Check for filter
+  if (query.bool && query.bool.filter) {
+    // Easiest scenario: filtering for a single element
+    if (query.bool.filter[0].term && query.bool.filter[0].term.id) {
+      q = {
+        _id: new RegExp(query.bool.filter[0].term.id),
+        project: new RegExp(query.bool.filter[1].term._projectId)
+      };
+      console.log('filter query')
+      console.log(q)
+    }
+    // Otherwise, process the filter
+    else if (query.bool.filter) {
+      
+    }
+  }
+  
+  
+  
+  // There are 5 options unless it's an advanced search:
+  // "all"                    bool: { should: [ { term: { id: { value: VALUE } } }, { multi_match: { query: VALUE, fields: FIELDS } } }
+  // "name or documentation"  match: { [name or documentation]: { query: VALUE } }
+  // "id"                     term: { id: VALUE }
+  // "values"                 multi_match: { query: VALUE, fields: FIELDS }
+  // "metatypes"              bool: { should: [ { terms: { _appliedStereotypeIds: VALUE_1 } }, { terms: { type: VALUE_2 } } ], minimum_should_match: 1 }
+  // *** If it's an advanced search, it will look like this:
+  // AND:                     bool: { must: [ CLAUSE_1, CLAUSE_2 ] }
+  // OR:                      bool: { should: [ CLAUSE_1, CLAUSE_2 ], minimum_should_match: 1 }
+  // AND NOT:                 bool: { must: [ CLAUSE_1, { bool: { must_not: CLAUSE_2 } } ] }
+  if (query.bool) {
+    // Test whether it's an AND or AND NOT
+    if (query.bool.must) {
+      if (Array.isArray(query.bool.must)) {
+        // Test if AND
+        if (!(query.bool.must[1].bool && query.bool.must[1].bool.must_not)) {
+          const q1 = translateSearchQuery(query.bool.must[0]);
+          const q2 = translateSearchQuery(query.bool.must[1]);
+          q = {
+            ...q,
+            ...q1,
+            ...q2
+          };
+          return q;
+        }
+        // Test if AND NOT
+        else if (query.bool.must[1].bool && query.bool.must[1].bool.must_not) {
+          const q1 = translateSearchQuery(query.bool.must[0]);
+          const q2 = translateSearchQuery(query.bool.must[1].bool.must_not);
+          q = {
+            ...q,
+            ...q1,
+            '$nin': { ...q2 }
+          };
+          return q;
+        }
+      }
+      // otherwise it would be query.bool.must.bool; just start translating from there
+      else {
+        const q1 = translateSearchQuery(query.bool.must);
+        q = {
+          ...q,
+          ...q1
+        };
+        return q;
+      }
+    }
+    // Test if it's an OR
+    else if (query.bool.should
+      && !(Array.isArray(query.bool.should) && ((query.bool.should[0].term && query.bool.should[1].multi_match) || (query.bool.should[0].terms && query.bool.should[1].terms)))) {
+      // Test if array
+      console.log('OR')
+      if (Array.isArray(query.bool.should) && !((query.bool.should[0].term && query.bool.should[1].multi_match) || (query.bool.should[0].terms && query.bool.should[1].terms))) {
+        console.log('OR array')
+        const q1 = translateSearchQuery(query.bool.should[0]);
+        const q2 = translateSearchQuery(query.bool.should[1]);
+        q = {
+          ...q,
+          '$or': [...q1, ...q2]
+        };
+        return q;
+      }
+      // run query on value if not an array
+      else {
+        console.log('OR object')
+        const q1 = translateSearchQuery(query.bool.should);
+        q = {
+          ...q,
+          ...q1
+        };
+        return q
+      }
+    }
+    // Treat it like a normal query
+    else {
+      console.log('normal query')
+      // Determine if "all" or "metatypes" query
+      if (query.bool.should) {
+        // All scenario
+        if ((query.bool.should[0].term.id ) && query.bool.should[1].multi_match) {
+          const searchTerm = query.bool.should[0].id && query.bool.should[0].id.value
+            ? query.bool.should[0].id.value
+            : query.bool.should[0].term.id.value;
+          
+          // q = {
+          //   ...q,
+          //   '$or': [
+          //     { _id: searchTerm },
+          //     { name: searchTerm },
+          //     { documentation: searchTerm },
+          //     { [`custom[${customDataNamespace}].defaultValue`]: searchTerm },
+          //     { [`custom[${customDataNamespace}].value`]: searchTerm },
+          //     { [`custom[${customDataNamespace}].specification`]: searchTerm }
+          //   ]};
+  
+          q = { '$text': '{ $search: "' + `${JSON.stringify(searchTerm)}` + '"'};
+          return q;
+        }
+        // Metatypes scenario
+        else if (query.bool.should[0].terms && query.bool.should[1].terms) {
+          const searchTerm1 = query.bool.should[0].terms._appliedStereotypeIds;
+          const searchTerm2 = query.bool.should[1].terms.type;
+          q = {
+            ...q,
+            '$or': [
+              { [`custom[${customDataNamespace}]._appliedStereotypeIds`]: searchTerm1 },
+              { type: searchTerm2 }
+            ]};
+          return q;
+        }
+      }
+      // Determine if "name" or "documentation" query
+      else if (query.match) {
+        let searchTerm;
+        if (query.match.name) {
+          searchTerm = query.match.name;
+          // q = {
+          //   ...q,
+          //   name: searchTerm
+          // };
+          const q1 = { name: query.match.name };
+          q = { '$text': '{ $search: "' + `${JSON.stringify(searchTerm)}` + '"'};
+          q = {
+            ...q,
+            q1
+          };
+          return q;
+        }
+        else if (query.match.documentation) {
+          searchTerm = query.match.documentation;
+          const q1 = { documentation: query.match.documentation };
+          q = { '$text': '{ $search: "' + `${JSON.stringify(searchTerm)}` + '"'};
+          q = {
+            ...q,
+            q1,
+          };
+          return q;
+        }
+      }
+      // Determine if "id" query
+      else if (query.term) {
+        const searchTerm = query.term.id;
+        q = {
+          ...q,
+          _id: searchTerm
+        };
+        return q;
+      }
+      // Determine if "values" query
+      else if (query.multi_match) {
+        const searchTerm = query.multi_match.query;
+        q = { '$text': '{ $search: "' + `${JSON.stringify(searchTerm)}` + '"'};
+        // q = {
+        //   ...q,
+        //   '$or': [
+        //     { [`custom[${customDataNamespace}].defaultValue`]: searchTerm },
+        //     { [`custom[${customDataNamespace}].value`]: searchTerm },
+        //     { [`custom[${customDataNamespace}].specification`]: searchTerm }
+        //   ]};
+        return q;
+      }
+    }
+  }
+  
+  return q;
+}
+
+/**
+ * @description Handles the aggregate query from View Editor.
+ *
+ * @param query - The ElasticSearch aggregate query from View Editor.
+ * @returns The results of the aggregate query, after translating it from ElasticSearch to MongoDB
+ * and manually running the aggregate calculations.
+ */
+async function viewEditorMetatypesQuery(query){
+  let elemProjId;
+  let elemRefId;
+  let elemStereotypeFilter;
+  let elemTypeFilter;
+
+  let stereotypeProjId;
+  let stereotypeRefId;
+  let stereotypeStereotypeFilter;
+  let stereotypeTypeFilter;
+
+  if (query.elements) {
+    // ----- Handle the filters ----- //
+    if (query.elements.filter && query.elements.filter.bool) {
+      // ----- These variables will store values that the query MUST match ----- //
+      if (query.elements.filter.bool.must) {
+        elemProjId = query.elements.filter.bool.must[0].term._projectId;
+        elemRefId = query.elements.filter.bool.must[1].term._refId;
+      }
+      // ----- These variables will store values that the query MUST NOT match ----- //
+      if (query.elements.filter.bool.must_not) {
+        elemStereotypeFilter = query.elements.filter.bool.must_not[0].terms._appliedStereotypeIds;
+        elemTypeFilter = query.elements.filter.bool.must_not[1].terms.type;
+      }
+    }
+  }
+  if (query.stereotypedElements) {
+    // ----- Handle the filters ----- //
+    if (query.stereotypedElements.filter && query.stereotypedElements.filter.bool) {
+      // ----- These variables will store values that the query MUST match ----- //
+      if (query.stereotypedElements.filter.bool.must) {
+        stereotypeProjId = query.stereotypedElements.filter.bool.must[0].term._projectId;
+        stereotypeRefId = query.stereotypedElements.filter.bool.must[1].term._inRefIds;
+      }
+      // ----- These variables will store values that the query MUST NOT match ----- //
+      if (query.stereotypedElements.filter.bool.must_not) {
+        stereotypeStereotypeFilter = query.stereotypedElements.filter.bool.must_not[0].terms._appliedStereotypeIds;
+        stereotypeTypeFilter = query.stereotypedElements.filter.bool.must_not[1].terms.type;
+      }
+    }
+  }
+
+  // Construct the query for the elements
+  const eQ = {
+    project: new RegExp(elemProjId),
+    branch: new RegExp(elemRefId),
+    type: {
+      '$nin': elemTypeFilter
+    },
+    [`custom[${customDataNamespace}]._appliedStereotypeIds`]: {
+      '$nin': elemStereotypeFilter
+    }
+  };
+
+
+  // Construct the query for the stereotyped elements
+  const sQ = {
+    project: new RegExp(stereotypeProjId),
+    branch: new RegExp(stereotypeRefId),
+    type: {
+      '$nin': stereotypeTypeFilter
+    },
+    [`custom.${customDataNamespace}._appliedStereotypeIds`]: { '$exists': true, '$nin': stereotypeStereotypeFilter }
+  };
+
+  // Query for the elements
+  const elemMatchResults = await Element.find(eQ);
+  const elemTypes = {};
+  let elemDocCount = 0;
+  const elemBuckets = [];
+
+  // Count the types
+  for (let i = 0; i < elemMatchResults.length; i++) {
+    if (elemMatchResults[i].type !== '') {
+      elemTypes[elemMatchResults[i].type] = elemTypes[elemMatchResults[i].type]
+        ? elemTypes[elemMatchResults[i].type] + 1
+        : 1;
+      elemDocCount = elemDocCount + 1;
+    }
+  }
+
+  // Format the types into the top 20 buckets
+  for (let i = 0; i < 20; i++) {
+    const maxVal = Math.max(...Object.values(elemTypes));
+    const type = Object.keys(elemTypes)[Object.values(elemTypes).indexOf(maxVal)];
+    elemBuckets.push({ key: type, doc_count: maxVal });
+    delete elemTypes[type];
+  }
+
+  // Query for the stereotyped elements
+  const stereotypeMatchResults = await Element.find(sQ);
+  const stereoTypes = {};
+  let stereoDocCount = 0;
+  const stereoBuckets = [];
+
+  for (let i = 0; i < stereotypeMatchResults.length; i++) {
+    for (let j = 0; j < stereotypeMatchResults[i].custom[customDataNamespace]._appliedStereotypeIds.length; j++) {
+      stereoTypes[stereotypeMatchResults[i].custom[customDataNamespace]._appliedStereotypeIds[j]] = stereoTypes[stereotypeMatchResults[i].custom[customDataNamespace]._appliedStereotypeIds[j]]
+        ? stereoTypes[stereotypeMatchResults[i].custom[customDataNamespace]._appliedStereotypeIds[j]] + 1
+        : 1;
+      stereoDocCount = stereoDocCount + 1;
+    }
+  }
+
+  for (let i = 0; i < 20; i++) {
+    const maxVal = Math.max(...Object.values(stereoTypes));
+    const _stereotypeId = Object.keys(stereoTypes)[Object.values(stereoTypes).indexOf(maxVal)];
+    stereoBuckets.push({ key: _stereotypeId, doc_count: maxVal });
+    delete stereoTypes[_stereotypeId];
+  }
+
+
+  return {
+    aggregations: {
+      elements: {
+        doc_count: elemDocCount,
+        types: {
+          buckets: elemBuckets
+        }
+      },
+      stereotypedElements: {
+        doc_count: stereoDocCount,
+        stereotypeIds: {
+          buckets: stereoBuckets
+        }
+      }
+    }
+  };
+}
+
 // Export the module
 module.exports = {
   getOrgId,
@@ -281,5 +873,8 @@ module.exports = {
   generateChildViews,
   customDataNamespace,
   convertHtml2Pdf,
-  emailBlobLink
+  emailBlobLink,
+  translateElasticSearchQuery,
+  viewEditorMetatypesQuery,
+  translateSearchQuery
 };
